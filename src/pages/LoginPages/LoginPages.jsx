@@ -34,7 +34,7 @@ const LoginPages = () => {
       <motion.div className="h-screen w-screen flex-col absolute flex items-center justify-center">
         {/* Content Layer - Glass Login Form */}
         <motion.div
-          className="z-10 relative overflow-hidden shadow-2xl mx-4 sm:mx-0"
+          className="z-20 relative overflow-hidden shadow-2xl mx-4 sm:mx-0"
           style={{
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
@@ -43,8 +43,7 @@ const LoginPages = () => {
             boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
           }}
           initial={{
-            // backgroundColor: "rgba(255, 255, 255, 0.1)",
-            backgroundColor: "#0C2A28",
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
             opacity: 1,
           }}
           animate={{
@@ -69,7 +68,7 @@ const LoginPages = () => {
 
          {/* Logo Layer - Higher z-index */}
         <motion.div
-          className="text-2xl sm:text-3xl md:text-4xl font-bold h-screen w-screen flex fixed items-center justify-center z-[50]"
+          className="text-2xl sm:text-3xl md:text-4xl font-bold h-screen w-screen flex fixed items-center justify-center z-10"
           initial={{
             opacity: 1,
             height: "100%",
