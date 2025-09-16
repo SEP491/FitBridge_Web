@@ -26,11 +26,12 @@ import ManageSlotGym from "./pages/GymPages/ManageSlotGym/ManageSlotGym";
 import OrderProcessPage from "./pages/OrderProcessPage/OrderProcessPage";
 import ManageTransactionPage from "./pages/AdminPages/ManageTransactionPage/ManageTransactionPage";
 import ManagePremiumPage from "./pages/AdminPages/ManagePremiumPage/ManagePremiumPage";
+import LoginPages from "./pages/LoginPages/LoginPages";
 function App() {
   const router = createBrowserRouter([
     {
       path: route.welcomeLogin,
-      element: <HomeLoginPage />,
+      element: <LoginPages />,
     },
     {
       path: route.orderProcess,

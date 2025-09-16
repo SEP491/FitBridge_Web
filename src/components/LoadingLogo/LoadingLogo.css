@@ -1,0 +1,92 @@
+/* Container for the logo */
+.logo-container {
+  position: relative;
+}
+
+/* Logo path styling */
+.logo-path {
+  fill-opacity: 0;
+  stroke: #ED2946;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawOutline 1s ease-in-out forwards, fillLogo 1s ease-in-out 2.6s forwards;
+}
+
+/* Individual path colors matching the original SVG */
+.logo-path:nth-child(1) { fill: #ED2946; stroke: #ED2946; }
+.logo-path:nth-child(2) { fill: #F1594D; stroke: #F1594D; }
+.logo-path:nth-child(3) { fill: #EE3248; stroke: #EE3248; }
+.logo-path:nth-child(4) { fill: #EF3E49; stroke: #EF3E49; }
+.logo-path:nth-child(5) { fill: #F26450; stroke: #F26450; }
+.logo-path:nth-child(6) { fill: #ED2D47; stroke: #ED2D47; }
+.logo-path:nth-child(7) { fill: #EE3047; stroke: #EE3047; }
+.logo-path:nth-child(8) { fill: #F36950; stroke: #F36950; }
+
+/* Draw the outline animation */
+@keyframes drawOutline {
+  0% {
+    stroke-dashoffset: 1000;
+    fill-opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    fill-opacity: 0;
+  }
+}
+
+/* Fill the logo animation - fade in effect after all outlines are drawn */
+@keyframes fillLogo {
+  0% {
+    fill-opacity: 0;
+  }
+  100% {
+    fill-opacity: 1;
+  }
+}
+
+/* Stagger the outline drawing for each path */
+.logo-path:nth-child(1) { animation-delay: 0s, 2.6s; }
+.logo-path:nth-child(2) { animation-delay: 0.2s, 2.6s; }
+.logo-path:nth-child(3) { animation-delay: 0.4s, 2.6s; }
+.logo-path:nth-child(4) { animation-delay: 0.6s, 2.6s; }
+.logo-path:nth-child(5) { animation-delay: 0.8s, 2.6s; }
+.logo-path:nth-child(6) { animation-delay: 1s, 2.6s; }
+.logo-path:nth-child(7) { animation-delay: 1.2s, 2.6s; }
+.logo-path:nth-child(8) { animation-delay: 1.4s, 2.6s; }
+
+/* Container animation for a subtle pulse effect */
+.logo-container {
+  animation: containerPulse 6s ease-in-out infinite;
+}
+
+@keyframes containerPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.6));
+  }
+}
+
+/* Alternative smoother animation */
+@keyframes smoothLoading {
+  0% {
+    transform: rotate(0deg) scale(0.9);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(360deg) scale(0.9);
+  }
+}
+
+/* Uncomment to use the smoother animation instead */
+/* .loading-animation {
+  animation: smoothLoading 1.5s linear infinite;
+} */

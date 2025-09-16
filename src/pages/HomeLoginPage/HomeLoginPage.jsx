@@ -16,6 +16,7 @@ import { login } from "../../redux/features/userSlice";
 import { useNavigate } from "react-router-dom";
 import { route } from "./../../routes/index";
 import Cookies from "js-cookie";
+import LoadingLogo from "../../components/LoadingLogo/LoadingLogo";
 export default function HomeLoginPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -88,11 +89,12 @@ export default function HomeLoginPage() {
         >
           {/* Top white section with logo */}
           <div className="pt-8 pb-4 px-8 text-center">
-            <img
+            {/* <img
               src={LogoColor}
               alt="GymRadar Logo"
               className="h-30 w-30 items-center justify-center mx-auto"
-            />
+            /> */}
+            <LoadingLogo/>
             <h1 className="text-[#FF3A50] font-bold text-3xl ">GymRadar</h1>
             <h2 className="text-[#FF3A50] font-bold text-3xl mt-5">
               Đăng Nhập
