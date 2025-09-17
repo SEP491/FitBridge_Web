@@ -7,14 +7,13 @@ import {
   ArrowLeftOutlined,
   CheckCircleOutlined
 } from "@ant-design/icons";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import authService from "../../services/authServices";
 
 const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }) => {
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   // Get email and token from URL params with manual + character handling
@@ -58,7 +57,7 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
     } finally {
       setLoading(false);
     }
-  }, [email, token, navigate]); // Dependencies for useCallback
+  }, [email, token]); // Dependencies for useCallback
 
 
   return (

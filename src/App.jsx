@@ -1,6 +1,4 @@
-import { useState } from "react";
 
-import LogoColor from "./assets/LogoColor.png";
 import "./index.css";
 import {
   createBrowserRouter,
