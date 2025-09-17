@@ -17,9 +17,17 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Get email and token from URL params with hardcoded fallbacks
+  // Get email and token from URL params with manual + character handling
   const email = searchParams.get('email') || 'user@gymradar.com';
-  const token = searchParams.get('token') || 'ABC123';
+  
+  // Fix the token by replacing spaces back to + characters
+  const rawToken = searchParams.get('token') || 'ABC123';
+  const token = rawToken.replace(/ /g, '+'); // Replace all spaces with + characters
+
+  // Debug logging to show extracted values
+  console.log("Extracted from URL - Email:", email);
+  console.log("Raw Token (with spaces):", rawToken);
+  console.log("Fixed Token (with +):", token);
 
   const handleVerify = useCallback(async () => {
     setLoading(true);
@@ -33,10 +41,6 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
       setVerified(true);
       toast.success("Email đã được xác thực thành công!");
       
-      // Navigate back to login after success animation
-      setTimeout(() => {
-        navigate("/");
-      }, 3000);
       
     } catch (error) {
       console.error("Email verification error:", error);
@@ -81,7 +85,7 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
 
       {/* Email Info */}
       <motion.div 
-        className="text-center mb-6"
+        className="text-center mb-6 space-y-3"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 7.2 }}
@@ -90,6 +94,7 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
           <MailOutlined className="text-blue-200" />
           {email}
         </p>
+        
       </motion.div>
 
       {/* Success Animation or Verify Button */}
