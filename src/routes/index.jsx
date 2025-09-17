@@ -1,5 +1,6 @@
 export const route = {
   welcomeLogin: "/",
+  confirmEmail: "/confirm-email",
   admin: "/admin",
   dashboard: "dashboard",
   manageGym: "manage-gym",
@@ -20,4 +21,5 @@ export const route = {
   manageSlotGym: "manage-slot-gym",
 
   orderProcess: "order-process",
+
 };
