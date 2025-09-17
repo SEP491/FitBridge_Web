@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Button } from "antd";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,7 +21,7 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
   const email = searchParams.get('email') || 'user@gymradar.com';
   const token = searchParams.get('token') || 'ABC123';
 
-  const handleVerify = async () => {
+  const handleVerify = useCallback(async () => {
     setLoading(true);
     console.log("Verifying with token:", token, "for email:", email);
     
@@ -54,7 +54,7 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, token, navigate]); // Dependencies for useCallback
 
 
   return (
@@ -113,8 +113,10 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
                 onClick={handleVerify}
                 loading={loading}
                 className="w-full h-12 sm:h-14 rounded-lg text-base sm:text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg"
-                style={{
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                 style={{
+                  background: 'linear-gradient(to right, #FF914D, #FF3A50)',
+                  border: 'none',
+                  boxShadow: '0 4px 15px 0 rgba(255, 145, 77, 0.3)'
                 }}
               >
                 {loading ? "Đang xác thực..." : "Xác Thực Email"}
@@ -165,59 +167,12 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8, duration: 0.5 }}
             >
-              Email của bạn đã được xác thực. Đang chuyển hướng...
+              Email của bạn đã được xác thực
             </motion.p>
-
-            {/* Loading Dots */}
-            <motion.div 
-              className="flex space-x-1"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1, duration: 0.5 }}
-            >
-              {[0, 1, 2].map((index) => (
-                <motion.div
-                  key={index}
-                  className="w-2 h-2 bg-white/60 rounded-full"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.6, 1, 0.6],
-                  }}
-                  transition={{
-                    duration: 1,
-                    repeat: Infinity,
-                    delay: index * 0.2,
-                  }}
-                />
-              ))}
-            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Back to Login Button - Only show when not verified */}
-      {!verified && (
-        <motion.div 
-          className="flex justify-center mt-6 w-full max-w-md"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 8.0 }}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 8.2 }}
-          >
-            <Button
-              onClick={() => navigate("/")}
-              className="px-6 h-10 sm:h-11 rounded-lg text-xs sm:text-sm font-medium bg-white/10 backdrop-blur-sm text-white border border-white/20 hover:bg-white/20 transition-all duration-300"
-            >
-              <ArrowLeftOutlined className="mr-1 sm:mr-2" />
-              Quay lại đăng nhập
-            </Button>
-          </motion.div>
-        </motion.div>
-      )}
     </motion.div>
   );
 };
