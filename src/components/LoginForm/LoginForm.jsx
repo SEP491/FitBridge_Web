@@ -9,6 +9,7 @@ import {
   EyeTwoTone,
   LockOutlined,
   PhoneOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { login } from "../../redux/features/userSlice";
@@ -25,8 +26,13 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
   const handleLogin = async (values) => {
     setLoading(true);
     console.log("Login values:", values);
+    
+    // Determine if the identifier is email or phone
+    const identifier = values.identifier;
+    const isEmail = identifier.includes('@');
+    
     const requestData = {
-      phone: values.phone,
+      ...(isEmail ? { identifier: identifier } : { phone: identifier }),
       password: values.password,
     };
     console.log("Request data:", requestData);
@@ -104,40 +110,50 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
             <Form.Item
               label={
                 <span className="text-sm sm:text-base md:text-lg font-bold text-white drop-shadow">
-                  Số điện thoại
+                  Email hoặc Số điện thoại
                 </span>
               }
-              name="phone"
+              name="identifier"
               rules={[
                 {
                   required: true,
                   message: (
                     <p className="text-red-300 !mt-1">
-                      Vui lòng nhập số điện thoại
+                      Vui lòng nhập email hoặc số điện thoại
                     </p>
                   ),
                 },
                 {
-                  pattern: /^[0-9]+$/,
-                  message: (
-                    <p className="text-red-300 !mt-1">
-                      Vui lòng chỉ nhập số
-                    </p>
-                  ),
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve();
+                    
+                    // Check if it's an email
+                    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (emailPattern.test(value)) {
+                      return Promise.resolve();
+                    }
+                    
+                    // Check if it's a phone number (only digits)
+                    const phonePattern = /^[0-9]{10}$/;
+                    if (phonePattern.test(value)) {
+                      return Promise.resolve();
+                    }
+                    
+                    return Promise.reject(
+                      new Error(
+                        <p className="text-red-300 !mt-1">
+                          Vui lòng nhập email hợp lệ hoặc số điện thoại 10 số
+                        </p>
+                      )
+                    );
+                  },
                 },
               ]}
             >
               <Input
-                prefix={<PhoneOutlined className="text-gray-500" />}
-                placeholder="09XXXXXXXX"
-                type="tel"
+                prefix={<UserOutlined className="text-gray-500" />}
+                placeholder="email@example.com hoặc 09XXXXXXXX"
                 className="rounded-lg py-2 sm:py-3 px-3 border-0 bg-white/80 backdrop-blur-sm text-sm sm:text-base transition-all duration-300 hover:bg-white/90 focus:bg-white/90"
-                maxLength={10}
-                onKeyPress={(event) => {
-                  if (!/[0-9]/.test(event.key)) {
-                    event.preventDefault();
-                  }
-                }}
               />
             </Form.Item>
           </motion.div>
