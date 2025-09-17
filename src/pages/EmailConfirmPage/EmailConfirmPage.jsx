@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import bg1 from "../../assets/BackGroundLogin1.jpg";
 import { motion } from "framer-motion";
 import LoadingLogo from "../../components/LoadingLogo/LoadingLogo";
-import AuthForm from "../../components/AuthForm/AuthForm";
+import EmailConfirmForm from "../../components/EmailConfirmForm/EmailConfirmForm";
 
-const LoginPages = () => {
+const EmailConfirmPage = () => {
   const [windowSize, setWindowSize] = useState({ 
     width: window.innerWidth, 
     height: window.innerHeight 
@@ -32,7 +32,7 @@ const LoginPages = () => {
       }}
     >
       <motion.div className="h-screen w-screen flex-col absolute flex items-center justify-center">
-        {/* Content Layer - Glass Login Form */}
+        {/* Content Layer - Glass Email Confirm Form */}
         <motion.div
           className="z-20 relative overflow-hidden shadow-2xl mx-4 sm:mx-0"
           style={{
@@ -63,10 +63,10 @@ const LoginPages = () => {
             times: [0, 0.5, 1],
           }}
         >
-          <AuthForm title="FitBridge" />
+          <EmailConfirmForm title="FitBridge" />
         </motion.div>
 
-         {/* Logo Layer - Higher z-index */}
+         {/* Background Layer */}
         <motion.div
           className="text-2xl sm:text-3xl md:text-4xl font-bold h-screen w-screen flex fixed items-center justify-center z-10"
           initial={{
@@ -125,4 +125,4 @@ const LoginPages = () => {
   );
 };
 
-export default LoginPages;
+export default EmailConfirmPage;

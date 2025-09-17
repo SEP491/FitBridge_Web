@@ -1,9 +1,10 @@
 import React, { useState } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import LoginForm from "../LoginForm/LoginForm";
 import RegisterForm from "../RegisterForm/RegisterForm";
 
-const AuthForm = ({ title = "GymRadar" }) => {
+const AuthForm = ({ title = "FitBridge" }) => {
   const [isLogin, setIsLogin] = useState(true);
 
   const toggleForm = () => {
@@ -26,7 +27,7 @@ const AuthForm = ({ title = "GymRadar" }) => {
           animate="animate"
           exit="exit"
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="w-full h-full"
+          className="w-full h-full pt-[20%]"
         >
           <LoginForm 
             title={title} 
@@ -42,7 +43,7 @@ const AuthForm = ({ title = "GymRadar" }) => {
           animate="animate"
           exit="exit"
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="w-full h-full"
+          className="w-full h-full pt-[20%]"
         >
           <RegisterForm 
             title={title} 

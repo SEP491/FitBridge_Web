@@ -27,11 +27,16 @@ import OrderProcessPage from "./pages/OrderProcessPage/OrderProcessPage";
 import ManageTransactionPage from "./pages/AdminPages/ManageTransactionPage/ManageTransactionPage";
 import ManagePremiumPage from "./pages/AdminPages/ManagePremiumPage/ManagePremiumPage";
 import LoginPages from "./pages/LoginPages/LoginPages";
+import EmailConfirmPage from "./pages/EmailConfirmPage/EmailConfirmPage";
 function App() {
   const router = createBrowserRouter([
     {
       path: route.welcomeLogin,
       element: <LoginPages />,
+    },
+    {
+      path: route.confirmEmail,
+      element: <EmailConfirmPage />,
     },
     {
       path: route.orderProcess,
