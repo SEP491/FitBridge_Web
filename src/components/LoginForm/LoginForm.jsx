@@ -23,6 +23,28 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // JWT Decode function
+  const decodeJWT = (token) => {
+    try {
+      // Split the token into parts
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT token');
+      }
+
+      // Decode the payload (second part)
+      const payload = parts[1];
+      // Add padding if needed
+      const paddedPayload = payload + '==='.slice((payload.length + 3) % 4);
+      const decoded = atob(paddedPayload.replace(/-/g, '+').replace(/_/g, '/'));
+      
+      return JSON.parse(decoded);
+    } catch (error) {
+      console.error('JWT decode error:', error);
+      return null;
+    }
+  };
+
   const handleLogin = async (values) => {
     setLoading(true);
     console.log("Login values:", values);
@@ -39,23 +61,52 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
     try {
       const response = await authService.login(requestData);
       console.log("Login response:", response);
-      console.log(response.data.role);
-      if (response.data.role === "ADMIN") {
+      
+      // Decode the idToken to get user data
+      let decodedToken = null;
+      if (response.data.idToken) {
+        decodedToken = decodeJWT(response.data.idToken);
+        console.log("Decoded JWT Token:", decodedToken);
+      }
+
+      // Use decoded token data if available, otherwise use response data
+      const userData = decodedToken || response.data;
+      const userRole = userData.role || response.data.role;
+      
+      console.log("User role:", userRole);
+      
+      // Route based on role
+      if (userRole === "Admin") {
         navigate(`${route.admin}/${route.dashboard}`);
-      } else if (response.data.role === "GYM") {
+      } else if (userRole === "GYM" || userRole === "GymOwner") {
         navigate(`${route.gym}/${route.dashboardGym}`);
       } else {
         toast.error("Tài khoản không có quyền truy cập");
         return;
       }
+      
+      // Create user object from decoded token or response data
       const user = {
-        id: response.data.id,
-        fullName: response.data.fullName,
-        phone: response.data.phone,
-        role: response.data.role,
+        id: userData.sub || userData.id || response.data.id,
+        fullName: userData.name || userData.fullName || response.data.fullName,
+        email: userData.email || response.data.email,
+        phone: userData.phone_number || userData.phone || response.data.phone,
+        role: userRole,
+        gymName: userData.gymName,
+        gender: userData.gender,
+        birthdate: userData.birthdate,
+        senderAvatar: userData.senderAvatar,
       };
+      
+      console.log("Final user object:", user);
+      
+      // Store tokens and user data
       Cookies.set("token", response.data.accessToken);
+      if (response.data.idToken) {
+        Cookies.set("idToken", response.data.idToken);
+      }
       Cookies.set("user", JSON.stringify(user));
+      
       dispatch(login(user));
       toast.success("Đăng nhập thành công");
     } catch (error) {

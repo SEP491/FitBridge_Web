@@ -59,7 +59,7 @@
 
 /* Container animation for a subtle pulse effect */
 .logo-container {
-  animation: containerPulse 6s ease-in-out infinite;
+  animation: containerPulse 5s ease-in-out infinite;
 }
 
 @keyframes containerPulse {

@@ -1,7 +1,7 @@
 import { request } from "./request";
 
 const gymService = {
-  addPT: (data) => request("POST", "v1/pt", data),
+  registerGymPT: (data) => request("POST", "/identities/register-gym-pt", data),
   getPTofGym: (params) => request("GET", "v1/pt", null, {}, params),
   deletePT: (id) => request("DELETE", `v1/pt/${id}`),
 

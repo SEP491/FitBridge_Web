@@ -6,7 +6,6 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { route } from "./routes";
-import HomeLoginPage from "./pages/HomeLoginPage/HomeLoginPage";
 import ManageGymPage from "./pages/AdminPages/ManageGymPage/ManageGymPage";
 import AdminLayout from "./layouts/AdminLayout/AdminLayout";
 import DashboardPage from "./pages/AdminPages/DashboardPage/DashboardPage";

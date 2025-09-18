@@ -332,14 +332,14 @@ export default function ManagePTGym() {
         dob: dayjs(values.dob).format("YYYY-MM-DD"),
         weight: values.weight,
         height: values.height,
-        goalTraining: values.goalTraining,
+        goalTrainings: values.goalTrainings, // Now an array
         experience: values.experience,
-        gender: values.gender,
+        isMale: values.isMale, // Changed from gender to isMale boolean
       },
     };
     console.log("Request Add PT Gym", requestData);
     try {
-      const response = await gymService.addPT(requestData);
+      const response = await gymService.registerGymPT(requestData);
       toast.success("Thêm PT thành công");
       fetchPTGym();
       setIsModalAddGymOpen(false);
@@ -763,12 +763,12 @@ export default function ManagePTGym() {
                     Giới tính
                   </span>
                 }
-                name="gender"
+                name="isMale"
                 rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
               >
                 <Select placeholder="Chọn giới tính" size="large">
-                  <Select.Option value="Male">Nam</Select.Option>
-                  <Select.Option value="Female">Nữ</Select.Option>
+                  <Select.Option value={true}>Nam</Select.Option>
+                  <Select.Option value={false}>Nữ</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -777,13 +777,35 @@ export default function ManagePTGym() {
               <Form.Item
                 label={
                   <span className="text-base font-semibold text-gray-700">
-                    Mục tiêu tập luyện
+                    Chuyên môn tập luyện
                   </span>
                 }
-                name="goalTraining"
-                rules={[{ required: true, message: "Vui lòng nhập mục tiêu" }]}
+                name="goalTrainings"
+                rules={[{ required: true, message: "Vui lòng chọn ít nhất một chuyên môn" }]}
               >
-                <Input placeholder="Tăng cơ, giảm mỡ, ..." size="large" />
+                <Select 
+                  mode="multiple"
+                  placeholder="Chọn các bộ phận cơ thể chuyên môn" 
+                  size="large"
+                  allowClear
+                  maxTagCount="responsive"
+                >
+                  <Select.Option value="Chest">Ngực (Chest)</Select.Option>
+                  <Select.Option value="Back">Lưng (Back)</Select.Option>
+                  <Select.Option value="Shoulders">Vai (Shoulders)</Select.Option>
+                  <Select.Option value="Arms">Tay (Arms)</Select.Option>
+                  <Select.Option value="Legs">Chân (Legs)</Select.Option>
+                  <Select.Option value="Core">Bụng (Core)</Select.Option>
+                  <Select.Option value="Glutes">Mông (Glutes)</Select.Option>
+                  <Select.Option value="Cardio">Tim mạch (Cardio)</Select.Option>
+                  <Select.Option value="Flexibility">Dẻo dai (Flexibility)</Select.Option>
+                  <Select.Option value="Strength">Sức mạnh (Strength)</Select.Option>
+                  <Select.Option value="Endurance">Sức bền (Endurance)</Select.Option>
+                  <Select.Option value="Weight Loss">Giảm cân (Weight Loss)</Select.Option>
+                  <Select.Option value="Muscle Gain">Tăng cơ (Muscle Gain)</Select.Option>
+                  <Select.Option value="Athletic Performance">Thể thao (Athletic Performance)</Select.Option>
+                  <Select.Option value="Rehabilitation">Phục hồi chấn thương (Rehabilitation)</Select.Option>
+                </Select>
               </Form.Item>
             </Col>
           </Row>
