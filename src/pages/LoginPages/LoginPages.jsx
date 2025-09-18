@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import bg1 from "../../assets/BackGroundLogin1.jpg";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import LoadingLogo from "../../components/LoadingLogo/LoadingLogo";
 import AuthForm from "../../components/AuthForm/AuthForm";

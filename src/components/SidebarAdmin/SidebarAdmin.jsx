@@ -23,6 +23,7 @@ import { GrTransaction } from "react-icons/gr";
 import { LiaFileContractSolid } from "react-icons/lia";
 import { GiGymBag } from "react-icons/gi";
 
+// eslint-disable-next-line no-unused-vars
 export default function SidebarAdmin({ collapsed, onCollapse }) {
   function getItem(label, key, icon, children) {
     return { key, label, icon, children };
@@ -39,7 +40,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
   );
 
   useEffect(() => {
-    if (user?.role === "ADMIN") {
+    if (user?.role === "Admin") {
       setItems([
         getItem(
           "Dashboard",
@@ -82,7 +83,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           <NotificationOutlined className="text-lg" />
         ),
       ]);
-    } else if (user?.role === "GYM") {
+    } else if (user?.role === "GymOwner") {
       setItems([
         getItem(
           "Dashboard",

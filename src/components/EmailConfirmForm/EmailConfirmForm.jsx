@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "antd";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,21 +14,53 @@ import authService from "../../services/authServices";
 const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }) => {
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [searchParams] = useSearchParams();
 
   // Get email and token from URL params with manual + character handling
-  const email = searchParams.get('email') || 'user@gymradar.com';
-  
-  // Fix the token by replacing spaces back to + characters
-  const rawToken = searchParams.get('token') || 'ABC123';
-  const token = rawToken.replace(/ /g, '+'); // Replace all spaces with + characters
+  const email = searchParams.get('email');
+  const rawToken = searchParams.get('token');
+  const token = rawToken ? rawToken.replace(/ /g, '+') : null; // Replace all spaces with + characters
+
+  // Validate that we have proper email and token
+  const isValidData = email && token && email.includes('@') && token.length > 10;
+
+  useEffect(() => {
+    // Add a small delay to ensure URL params are fully loaded
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Debug logging to show extracted values
   console.log("Extracted from URL - Email:", email);
   console.log("Raw Token (with spaces):", rawToken);
   console.log("Fixed Token (with +):", token);
+  console.log("Is valid data:", isValidData);
+  console.log("Is ready:", isReady);
 
   const handleVerify = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (loading || verified) {
+      console.log("Verification already in progress or completed");
+      return;
+    }
+
+    // Validate data before making API call
+    if (!isValidData) {
+      toast.error("Dữ liệu xác thực không hợp lệ. Vui lòng kiểm tra link email.");
+      console.error("Invalid email or token:", { email, token });
+      return;
+    }
+
+    // Ensure component is ready
+    if (!isReady) {
+      toast.error("Vui lòng chờ trang tải hoàn tất");
+      return;
+    }
+
     setLoading(true);
     console.log("Verifying with token:", token, "for email:", email);
     
@@ -51,13 +83,15 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
         toast.error("Không tìm thấy email hoặc token");
       } else if (error.response?.status === 409) {
         toast.error("Email đã được xác thực trước đó");
+        // If already verified, mark as verified
+        setVerified(true);
       } else {
         toast.error("Xác thực email thất bại. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
     }
-  }, [email, token]); // Dependencies for useCallback
+  }, [email, token, loading, verified, isValidData, isReady]); // Dependencies for useCallback
 
 
   return (
@@ -89,10 +123,17 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 7.2 }}
       >
-        <p className="text-sm sm:text-base font-semibold text-white bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 inline-flex items-center gap-2">
-          <MailOutlined className="text-blue-200" />
-          {email}
-        </p>
+        {email ? (
+          <p className="text-sm sm:text-base font-semibold text-white bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 inline-flex items-center gap-2">
+            <MailOutlined className="text-blue-200" />
+            {email}
+          </p>
+        ) : (
+          <p className="text-sm sm:text-base font-semibold text-red-300 bg-red-500/20 backdrop-blur-sm rounded-lg px-3 py-2 inline-flex items-center gap-2">
+            <MailOutlined className="text-red-300" />
+            Email không hợp lệ
+          </p>
+        )}
         
       </motion.div>
 
@@ -116,14 +157,17 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
                 type="primary"
                 onClick={handleVerify}
                 loading={loading}
-                className="w-full h-12 sm:h-14 rounded-lg text-base sm:text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg"
+                disabled={!isValidData || !isReady || loading || verified}
+                className="w-full h-12 sm:h-14 rounded-lg text-base sm:text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                  style={{
-                  background: 'linear-gradient(to right, #FF914D, #FF3A50)',
+                  background: isValidData && isReady ? 'linear-gradient(to right, #FF914D, #FF3A50)' : '#666',
                   border: 'none',
                   boxShadow: '0 4px 15px 0 rgba(255, 145, 77, 0.3)'
                 }}
               >
-                {loading ? "Đang xác thực..." : "Xác Thực Email"}
+                {!isReady ? "Đang tải..." : 
+                 !isValidData ? "Dữ liệu không hợp lệ" :
+                 loading ? "Đang xác thực..." : "Xác Thực Email"}
               </Button>
             </motion.div>
           </motion.div>
