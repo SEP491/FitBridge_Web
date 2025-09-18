@@ -168,11 +168,7 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: (
-                    <p className="text-red-300 !mt-1">
-                      Vui lòng nhập email hoặc số điện thoại
-                    </p>
-                  ),
+                  message: "Vui lòng nhập email hoặc số điện thoại",
                 },
                 {
                   validator: (_, value) => {
@@ -191,11 +187,7 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
                     }
                     
                     return Promise.reject(
-                      new Error(
-                        <p className="text-red-300 !mt-1">
-                          Vui lòng nhập email hợp lệ hoặc số điện thoại 10 số
-                        </p>
-                      )
+                      new Error("Vui lòng nhập email hợp lệ hoặc số điện thoại 10 số")
                     );
                   },
                 },
@@ -224,11 +216,7 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: (
-                    <p className="text-red-300 !mt-1">
-                      Vui lòng nhập mật khẩu
-                    </p>
-                  ),
+                  message: "Vui lòng nhập mật khẩu",
                 },
               ]}
               className="mb-6"
