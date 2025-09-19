@@ -8,8 +8,7 @@ import {
   EyeInvisibleOutlined,
   EyeTwoTone,
   LockOutlined,
-  PhoneOutlined,
-  UserOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { login } from "../../redux/features/userSlice";
@@ -49,12 +48,8 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
     setLoading(true);
     console.log("Login values:", values);
     
-    // Determine if the identifier is email or phone
-    const identifier = values.identifier;
-    const isEmail = identifier.includes('@');
-    
     const requestData = {
-      ...(isEmail ? { identifier: identifier } : { phone: identifier }),
+      email: values.email,
       password: values.password,
     };
     console.log("Request data:", requestData);
@@ -161,41 +156,25 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
             <Form.Item
               label={
                 <span className="text-sm sm:text-base md:text-lg font-bold text-white drop-shadow">
-                  Email hoặc Số điện thoại
+                  Email
                 </span>
               }
-              name="identifier"
+              name="email"
               rules={[
                 {
                   required: true,
-                  message: "Vui lòng nhập email hoặc số điện thoại",
+                  message: "Vui lòng nhập email",
                 },
                 {
-                  validator: (_, value) => {
-                    if (!value) return Promise.resolve();
-                    
-                    // Check if it's an email
-                    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (emailPattern.test(value)) {
-                      return Promise.resolve();
-                    }
-                    
-                    // Check if it's a phone number (only digits)
-                    const phonePattern = /^[0-9]{10}$/;
-                    if (phonePattern.test(value)) {
-                      return Promise.resolve();
-                    }
-                    
-                    return Promise.reject(
-                      new Error("Vui lòng nhập email hợp lệ hoặc số điện thoại 10 số")
-                    );
-                  },
+                  type: "email",
+                  message: "Vui lòng nhập email hợp lệ",
                 },
               ]}
             >
               <Input
-                prefix={<UserOutlined className="text-gray-500" />}
-                placeholder="email@example.com hoặc 09XXXXXXXX"
+                prefix={<MailOutlined className="text-gray-500" />}
+                placeholder="email@example.com"
+                type="email"
                 className="rounded-lg py-2 sm:py-3 px-3 border-0 bg-white/80 backdrop-blur-sm text-sm sm:text-base transition-all duration-300 hover:bg-white/90 focus:bg-white/90"
               />
             </Form.Item>
