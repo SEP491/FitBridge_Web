@@ -49,7 +49,7 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
     console.log("Login values:", values);
     
     const requestData = {
-      email: values.email,
+      identifier: values.email,
       password: values.password,
     };
     console.log("Request data:", requestData);
