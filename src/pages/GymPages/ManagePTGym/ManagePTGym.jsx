@@ -41,12 +41,11 @@ import {
   PhoneOutlined,
   MailOutlined,
 } from "@ant-design/icons";
-import { FaPlus } from "react-icons/fa";
 import gymService from "../../../services/gymServices";
 import dayjs from "dayjs";
-import { ImBin } from "react-icons/im";
-import { MdEdit } from "react-icons/md";
 import { IoBarbell } from "react-icons/io5";
+import { useSelector } from "react-redux";
+import { selectUser } from "../../../redux/features/userSlice";
 
 const { Option } = Select;
 
@@ -63,6 +62,8 @@ export default function ManagePTGym() {
     pageSize: 10,
     total: 0,
   });
+ const user = useSelector(selectUser);
+
 
   // Statistics state
   const [statistics, setStatistics] = useState({
@@ -72,10 +73,10 @@ export default function ManagePTGym() {
     totalClients: 0,
   });
 
-  const fetchPTGym = async (page = 1, pageSize = 10) => {
+  const fetchPTGym = async () => {
     setLoading(true);
     try {
-      const response = await gymService.getPTofGym({ page, size: pageSize });
+      const response = await gymService.getPTofGym({ gymId: user?.id });
       const { items, total, page: currentPage } = response.data;
       setPts(items);
 
@@ -96,7 +97,6 @@ export default function ManagePTGym() {
 
       setPagination({
         current: currentPage,
-        pageSize,
         total,
       });
     } catch (error) {

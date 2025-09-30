@@ -20,6 +20,7 @@ import {
   Avatar,
   Tooltip,
   Progress,
+  Upload,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -37,16 +38,20 @@ import {
   EditOutlined,
   DeleteOutlined,
   UserAddOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import { FaEye, FaPlus, FaPlusCircle } from "react-icons/fa";
 import gymService from "../../../services/gymServices";
 import { ImBin } from "react-icons/im";
 import { MdEdit } from "react-icons/md";
 import { IoBarbell } from "react-icons/io5";
+import { selectUser } from "../../../redux/features/userSlice";
+import { useSelector } from "react-redux";
 
 const { Option } = Select;
 
 export default function ManageGymPackages() {
+  const user = useSelector(selectUser);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -65,6 +70,7 @@ export default function ManageGymPackages() {
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [loadingAddGymCoursePT, setLoadingAddGymCoursePT] = useState(false);
   const [ptsInCourse, setPtsInCourse] = useState([]);
+  const [fileList, setFileList] = useState([]);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -84,6 +90,7 @@ export default function ManageGymPackages() {
     setLoading(true);
     try {
       const response = await gymService.getCourseOfGym({
+        gymId: user.id,
         page,
         size: pageSize,
       });
@@ -92,7 +99,7 @@ export default function ManageGymPackages() {
 
       // Calculate statistics
       const withPTCount = items.filter(
-        (course) => course.type === "WithPT"
+        (course) => course.type === "WithPT" || course.type === "WithPt"
       ).length;
       const normalCount = items.filter(
         (course) => course.type === "Normal"
@@ -177,11 +184,11 @@ export default function ManageGymPackages() {
   };
 
   const getTypeColor = (type) => {
-    return type === "WithPT" ? "success" : "blue";
+    return (type === "WithPT" || type === "WithPt") ? "success" : "blue";
   };
 
   const getTypeIcon = (type) => {
-    return type === "WithPT" ? <UserOutlined /> : <TrophyOutlined />;
+    return (type === "WithPT" || type === "WithPt") ? <UserOutlined /> : <TrophyOutlined />;
   };
 
   const columns = [
@@ -245,7 +252,7 @@ export default function ManageGymPackages() {
           color={getTypeColor(type)}
           className="px-3 py-1"
         >
-          {type === "WithPT" ? "Có PT" : "Bình thường"}
+          {(type === "WithPT" || type === "WithPt") ? "Có PT" : "Bình thường"}
         </Tag>
       ),
     },
@@ -281,7 +288,7 @@ export default function ManageGymPackages() {
             />
           </Tooltip>
 
-          {record.type === "WithPT" && (
+          {(record.type === "WithPT" || record.type === "WithPt") && (
             <Tooltip title="Thêm PT">
               <Button
                 type="text"
@@ -329,28 +336,57 @@ export default function ManageGymPackages() {
       ? (item.name?.toLowerCase() || "").includes(searchText.toLowerCase())
       : true;
 
-    const matchesType = typeFilter === "all" || item.type === typeFilter;
+    const matchesType = typeFilter === "all" || item.type === typeFilter || 
+      (typeFilter === "WithPt" && (item.type === "WithPT" || item.type === "WithPt"));
 
     return matchesSearch && matchesType;
   });
 
+  // Upload handlers
+  const handleUploadChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+    console.log("Updated fileList:", newFileList);
+  };
+
+  const beforeUpload = (file) => {
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp';
+    if (!isJpgOrPng) {
+      toast.error('Chỉ có thể tải lên file JPG/PNG/WEBP!');
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      toast.error('Hình ảnh phải nhỏ hơn 2MB!');
+    }
+    return isJpgOrPng && isLt2M;
+  };
+
   const handleAddCourseGym = async (values) => {
     setLoadingAdd(true);
+    
+    // Get image URL from uploaded files
+    let imageUrl = "https://via.placeholder.com/400x300?text=Gym+Package";
+    if (fileList.length > 0 && fileList[0].response) {
+      imageUrl = fileList[0].response.url; // Assuming your upload returns { url: "..." }
+    } else if (fileList.length > 0 && fileList[0].url) {
+      imageUrl = fileList[0].url;
+    }
+
     const requestData = {
       name: values.name,
-      description: values.description,
       price: values.price,
       duration: values.duration,
       type: values.type,
-      image: values.image || "image",
+      description: values.description,
+      imageUrl:"https://ztltswmqxsfoobwvbynz.supabase.co/storage/v1/object/public/Image/LogoColor.png",
     };
 
     try {
-      const response = await gymService.addCourse(requestData);
+      await gymService.addCourse(requestData);``
       toast.success("Thêm gói tập thành công");
       fetchCoursesGym();
       setIsModalAddCourseOpen(false);
       formAdd.resetFields();
+      setFileList([]); // Reset file list
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi thêm gói tập thất bại");
     } finally {
@@ -367,7 +403,7 @@ export default function ManageGymPackages() {
     };
 
     try {
-      const response = await gymService.addPTToCourse(requestData);
+      await gymService.addPTToCourse(requestData);
       toast.success("Thêm PT vào gói tập thành công");
       setIsModalAddGymCoursePTOpen(false);
       formAddGymCourse.resetFields();
@@ -532,7 +568,7 @@ export default function ManageGymPackages() {
                 suffixIcon={<FilterOutlined />}
               >
                 <Option value="all">Tất cả loại gói</Option>
-                <Option value="WithPT">Có PT</Option>
+                <Option value="WithPt">Có PT</Option>
                 <Option value="Normal">Bình thường</Option>
               </Select>
             </div>
@@ -571,7 +607,7 @@ export default function ManageGymPackages() {
                   {" "}
                   | Lọc:{" "}
                   <Tag color={getTypeColor(typeFilter)} className="ml-1">
-                    {typeFilter === "WithPT" ? "Có PT" : "Bình thường"}
+                    {typeFilter === "WithPt" ? "Có PT" : "Bình thường"}
                   </Tag>
                 </span>
               )}
@@ -616,7 +652,11 @@ export default function ManageGymPackages() {
       {/* Add Course Modal */}
       <Modal
         open={isModalAddCourseOpen}
-        onCancel={() => setIsModalAddCourseOpen(false)}
+        onCancel={() => {
+          setIsModalAddCourseOpen(false);
+          formAdd.resetFields();
+          setFileList([]);
+        }}
         title={
           <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
             <IoBarbell />
@@ -708,7 +748,7 @@ export default function ManageGymPackages() {
             rules={[{ required: true, message: "Vui lòng chọn loại gói tập" }]}
           >
             <Select placeholder="Chọn loại gói tập" className="rounded-lg">
-              <Select.Option value="WithPT">
+              <Select.Option value="WithPt">
                 <div className="flex items-center gap-2">
                   <UserOutlined />
                   Có Personal Trainer
@@ -721,6 +761,32 @@ export default function ManageGymPackages() {
                 </div>
               </Select.Option>
             </Select>
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <p className="text-xl font-bold text-[#ED2A46]">Hình ảnh gói tập</p>
+            }
+            name="imageUrl"
+          >
+            <Upload
+              action="https://68cd19feda4697a7f304bc9f.mockapi.io/upload" // Replace with your upload endpoint
+              listType="picture-card"
+              fileList={fileList}
+              onChange={handleUploadChange}
+              beforeUpload={beforeUpload}
+              maxCount={1}
+              accept="image/*"
+              className="upload-list-inline"
+            >
+              {fileList.length < 1 && (
+                <div className="flex flex-col items-center justify-center p-2">
+                  <UploadOutlined style={{ fontSize: '24px', color: '#FF914D' }} />
+                  <div className="mt-2 text-sm text-gray-600">Tải lên hình ảnh</div>
+                  <div className="text-xs text-gray-400">JPG, PNG, WEBP &lt; 2MB</div>
+                </div>
+              )}
+            </Upload>
           </Form.Item>
 
           <div className="text-center pt-4">
@@ -875,6 +941,24 @@ export default function ManageGymPackages() {
         }
         .custom-pagination .ant-pagination-item:hover a {
           color: #ff914d;
+        }
+        
+        /* Upload component styling */
+        :global(.upload-list-inline .ant-upload-select) {
+          width: 120px !important;
+          height: 120px !important;
+          border: 2px dashed #FF914D !important;
+          border-radius: 8px !important;
+        }
+        :global(.upload-list-inline .ant-upload-select:hover) {
+          border-color: #ED2A46 !important;
+        }
+        :global(.upload-list-inline .ant-upload-list-picture-card-container) {
+          width: 120px !important;
+          height: 120px !important;
+        }
+        :global(.upload-list-inline .ant-upload-list-item) {
+          border-radius: 8px !important;
         }
       `}</style>
     </div>

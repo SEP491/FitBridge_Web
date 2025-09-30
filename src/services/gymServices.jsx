@@ -2,11 +2,17 @@ import { request } from "./request";
 
 const gymService = {
   registerGymPT: (data) => request("POST", "/identities/register-gym-pt", data),
-  getPTofGym: (params) => request("GET", "v1/pt", null, {}, params),
+  getPTofGym: (params) => {
+    const { gymId, ...otherParams } = params;
+    return request("GET", `/gyms/${gymId}/pts`, null, {}, otherParams);
+  },
   deletePT: (id) => request("DELETE", `v1/pt/${id}`),
 
-  getCourseOfGym: (params) => request("GET", "v1/course", null, {}, params),
-  addCourse: (data) => request("POST", "v1/course", data),
+  getCourseOfGym: (params) => {
+    const { gymId, ...otherParams } = params;
+    return request("GET", `/gym-courses/${gymId}`, null, {}, otherParams);
+  },
+  addCourse: (data) => request("POST", "/gym-courses", data),
 
   getSlotOfGym: (params) => request("GET", "v1/slot", null, {}, params),
   addSlot: (data) => request("POST", "v1/slot", data),

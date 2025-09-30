@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Breadcrumb, Layout } from "antd";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import SidebarAdmin from "../../components/SidebarAdmin/SidebarAdmin";

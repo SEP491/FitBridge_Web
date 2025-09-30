@@ -71,9 +71,9 @@ export default function HeaderAdmin() {
 
   const getRoleDisplayName = (role) => {
     switch (role) {
-      case "ADMIN":
+      case "Admin":
         return "Quản trị viên";
-      case "GYM":
+      case "GymOwner":
         return "Quản lý phòng tập";
       default:
         return role || "N/A";
