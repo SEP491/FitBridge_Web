@@ -280,12 +280,13 @@ export default function ManageSlotGym() {
     setLoadingEdit(true);
     try {
       const requestData = {
+        id: editingSlot.id,
         name: values.name.trim(),
         startTime: dayjs(values.startTime).format("HH:mm:ss"),
         endTime: dayjs(values.endTime).format("HH:mm:ss"),
       };
 
-      await gymService.updateSlot(editingSlot.id, requestData);
+      await gymService.updateSlot(requestData);
       toast.success("Cập nhật slot thành công");
       fetchSlotsGym(pagination.current, pagination.pageSize, searchText);
       setIsModalEditSlotOpen(false);
