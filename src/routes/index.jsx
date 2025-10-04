@@ -9,6 +9,7 @@ export const route = {
   manageUser: "manage-user",
   manageNotification: "manage-notification",
   manageTransaction: "manage-transaction",
+  manageVoucher: "manage-voucher",
 
   gym: "/gym",
   dashboardGym: "dashboard-gym",
@@ -21,5 +22,11 @@ export const route = {
   manageSlotGym: "manage-slot-gym",
 
   orderProcess: "order-process",
+
+  freelancePt: "/freelance-pt",
+  dashboardPT: "dashboard-pt",
+  manageSchedulePT: "manage-schedule-pt",
+  manageVoucherPT: "manage-voucher-pt",
+  managePackageFPT: "manage-package-fpt",
 
 };

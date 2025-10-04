@@ -75,6 +75,8 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
         navigate(`${route.admin}/${route.dashboard}`);
       } else if (userRole === "GYM" || userRole === "GymOwner") {
         navigate(`${route.gym}/${route.dashboardGym}`);
+      } else if (userRole === "PT" || userRole === "FreelancePT") {
+        navigate(`${route.freelancePt}/${route.manageVoucherPT}`);
       } else {
         toast.error("Tài khoản không có quyền truy cập");
         return;
@@ -96,10 +98,9 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
       console.log("Final user object:", user);
       
       // Store tokens and user data
-      Cookies.set("token", response.data.accessToken);
-      if (response.data.idToken) {
-        Cookies.set("idToken", response.data.idToken);
-      }
+      Cookies.set("accessToken", response.data.accessToken);
+      Cookies.set("idToken", response.data.idToken);
+      Cookies.set("refreshToken", response.data.refreshToken);
       Cookies.set("user", JSON.stringify(user));
       
       dispatch(login(user));

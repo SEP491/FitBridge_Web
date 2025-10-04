@@ -78,6 +78,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           <DropboxOutlined className="text-lg" />
         ),
         getItem(
+          "Quản Lý Voucher",
+          `${route.admin}/${route.manageVoucher}`,
+          <GiGymBag className="text-lg" />
+        ),
+        getItem(
           "Thông Báo",
           `${route.admin}/${route.manageNotification}`,
           <NotificationOutlined className="text-lg" />
@@ -119,6 +124,29 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Hợp Đồng & Hóa Đơn",
           `${route.gym}/${route.billandcontract}`,
           <LiaFileContractSolid className="text-lg" />
+        ),
+      ]);
+    } else if (user?.role === "FreelancePT") {
+      setItems([
+        getItem(
+          "Dashboard",
+          `${route.freelancePt}/${route.dashboardPT}`,
+          <BarChartOutlined className="text-lg" />
+        ),
+        getItem(
+          "Quản Lý Gói Tập",
+          `${route.freelancePt}/${route.managePackageFPT}`,
+          <GiGymBag className="text-lg" />
+        ),
+        getItem(
+          "Quản Lý Lịch Dạy",
+          `${route.freelancePt}/${route.manageSchedulePT}`,
+          <FaRegCalendarCheck className="text-lg" />
+        ),
+        getItem(
+          "Quản Lý Voucher",
+          `${route.freelancePt}/${route.manageVoucherPT}`,
+          <GiGymBag className="text-lg" />
         ),
       ]);
     }
