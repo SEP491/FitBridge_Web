@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import Cookies from "js-cookie";
 const request = async (method, url, data = null, headers = {}, params = {}) => {
   try {
-    const accessToken = Cookies.get("token")?.replaceAll('"', "");
+    const accessToken = Cookies.get("accessToken");
 
     const authHeaders = accessToken
       ? { Authorization: `Bearer ${accessToken}` }

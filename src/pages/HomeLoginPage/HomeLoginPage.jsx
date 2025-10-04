@@ -74,35 +74,37 @@ export default function HomeLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#242424] flex items-center justify-center">
+    <div className="min-h-screen bg-[#242424] flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <motion.div
-        className="w-full max-w-xl"
+        className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <motion.div
-          className="bg-white rounded-3xl shadow-xl overflow-hidden"
+          className="bg-white rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl overflow-hidden"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
           {/* Top white section with logo */}
-          <div className="pt-8 pb-4 px-8 text-center">
+          <div className="pt-6 sm:pt-8 pb-3 sm:pb-4 px-4 sm:px-6 md:px-8 text-center">
             {/* <img
               src={LogoColor}
               alt="GymRadar Logo"
               className="h-30 w-30 items-center justify-center mx-auto"
             /> */}
-            <LoadingLogo/>
-            <h1 className="text-[#FF3A50] font-bold text-3xl ">GymRadar</h1>
-            <h2 className="text-[#FF3A50] font-bold text-3xl mt-5">
+            <div className="scale-75 sm:scale-90 md:scale-100">
+              <LoadingLogo/>
+            </div>
+            <h1 className="text-[#FF3A50] font-bold text-2xl sm:text-3xl lg:text-4xl">GymRadar</h1>
+            <h2 className="text-[#FF3A50] font-bold text-xl sm:text-2xl lg:text-3xl mt-3 sm:mt-5">
               Đăng Nhập
             </h2>
           </div>
 
           {/* Middle gradient section with form */}
-          <div className="!bg-gradient-to-br !from-[#FF914D] !to-[#FF3A50] !py-10 !px-20">
+          <div className="!bg-gradient-to-br !from-[#FF914D] !to-[#FF3A50] !py-6 sm:!py-8 md:!py-10 !px-4 sm:!px-8 md:!px-12 lg:!px-20">
             <Form
               form={form}
               layout="vertical"
@@ -111,7 +113,7 @@ export default function HomeLoginPage() {
             >
               <Form.Item
                 label={
-                  <span className="text-xl font-bold text-white">
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-white">
                     Số điện thoại
                   </span>
                 }
@@ -141,7 +143,7 @@ export default function HomeLoginPage() {
                   }
                   placeholder="09XXXXXXXX"
                   type="tel"
-                  className="!rounded-lg !py-3 !px-3 !border-0"
+                  className="!rounded-lg !py-2 sm:!py-3 !px-3 !border-0 !text-sm sm:!text-base"
                   maxLength={10}
                   onKeyPress={(event) => {
                     if (!/[0-9]/.test(event.key)) {
@@ -153,7 +155,7 @@ export default function HomeLoginPage() {
 
               <Form.Item
                 label={
-                  <span className="text-xl font-bold text-white">Mật khẩu</span>
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-white">Mật khẩu</span>
                 }
                 name="password"
                 rules={[
@@ -173,7 +175,7 @@ export default function HomeLoginPage() {
                     </>
                   }
                   placeholder="••••••"
-                  className="!rounded-lg !py-3 !px-3 !border-0"
+                  className="!rounded-lg !py-2 sm:!py-3 !px-3 !border-0 !text-sm sm:!text-base"
                   iconRender={(visible) =>
                     visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
                   }
@@ -183,13 +185,13 @@ export default function HomeLoginPage() {
           </div>
 
           {/* Bottom white section with buttons */}
-          <div className="px-6 py-6 bg-white text-center">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 bg-white text-center">
             <Button
               onClick={() => form.submit()}
               loading={loading}
               color="orange"
               variant="solid"
-              className="!w-[35%] !rounded-full !h-10 !font-medium !border-0"
+              className="!w-full sm:!w-[60%] md:!w-[50%] lg:!w-[35%] !rounded-full !h-10 sm:!h-12 !font-medium !border-0 !text-sm sm:!text-base"
             >
               Đăng nhập
             </Button>

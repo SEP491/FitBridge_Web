@@ -25,38 +25,47 @@ const LoginPages = () => {
 
   return (
     <div
-      className="w-full h-screen flex items-center justify-center"
+      className="w-full h-screen flex items-center justify-center p-2 sm:p-4 md:p-6"
       style={{
         backgroundImage: `url(${bg1})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      <motion.div className="h-screen w-screen flex-col absolute flex items-center justify-center">
+      <motion.div className="h-screen w-screen   flex-col absolute flex items-center justify-center">
         {/* Content Layer - Glass Login Form */}
         <motion.div
-          className="z-20 relative overflow-hidden shadow-2xl mx-4 sm:mx-0"
+          className="z-20 relative overflow-y-scroll shadow-lg sm:shadow-xl mx-2 sm:mx-4 md:mx-0"
           style={{
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
+            backdropFilter: "blur(15px) sm:blur(20px)",
+            WebkitBackdropFilter: "blur(15px) sm:blur(20px)",
             background: "rgba(255, 255, 255, 0.1)",
             border: "1px solid rgba(255, 255, 255, 0.2)",
-            boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
+            boxShadow: "0 4px 20px 0 rgba(31, 38, 135, 0.3)",
           }}
           initial={{
             backgroundColor: "rgba(255, 255, 255, 0.1)",
             opacity: 1,
           }}
           animate={{
-            height: ["0%", "5%", windowSize.width < 640 ? "80%" : windowSize.width < 1024 ? "85%" : "85%"],
-            width: ["0%", 
-              windowSize.width < 640 ? "95%" : windowSize.width < 768 ? "90%" : windowSize.width < 1024 ? "75%" : "35%", 
-              windowSize.width < 640 ? "95%" : windowSize.width < 768 ? "90%" : windowSize.width < 1024 ? "75%" : "35%"
+            height: [
+              "0%", 
+              "5%", 
+              windowSize.width < 480 ? "90%" : windowSize.width < 640 ? "85%" : windowSize.width < 768 ? "80%" : windowSize.width < 1024 ? "75%" : "70%"
+            ],
+            width: [
+              "0%", 
+              windowSize.width < 480 ? "98%" : windowSize.width < 640 ? "95%" : windowSize.width < 768 ? "85%" : windowSize.width < 1024 ? "70%" : "40%", 
+              windowSize.width < 480 ? "98%" : windowSize.width < 640 ? "95%" : windowSize.width < 768 ? "85%" : windowSize.width < 1024 ? "70%" : "40%"
             ],
             y: [-200, -200, 0],
-            paddingTop: ["0px", "0px", windowSize.width < 640 ? "5vh" : "8vh"],
+            paddingTop: [
+              "0px", 
+              "0px", 
+              windowSize.width < 480 ? "2vh" : windowSize.width < 640 ? "3vh" : windowSize.width < 1024 ? "2vh" : "2vh"
+            ],
             backgroundColor: ["rgba(255, 255, 255, 0.1)"],
-            borderRadius: ["0%", "0%", "3%"],
+            borderRadius: ["0%", "0%", windowSize.width < 640 ? "2%" : "3%"],
           }}
           transition={{
             duration: 1.4,
@@ -67,9 +76,9 @@ const LoginPages = () => {
           <AuthForm title="FitBridge" />
         </motion.div>
 
-         {/* Logo Layer - Higher z-index */}
+         {/* Background Layer */}
         <motion.div
-          className="text-2xl sm:text-3xl md:text-4xl font-bold h-screen w-screen flex fixed items-center justify-center z-10"
+          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold h-screen w-screen flex fixed items-center justify-center z-10"
           initial={{
             opacity: 1,
             height: "100%",
@@ -91,7 +100,7 @@ const LoginPages = () => {
 
         {/* Logo Layer - Higher z-index */}
         <motion.div
-          className="text-2xl sm:text-3xl md:text-4xl font-bold h-screen w-screen flex fixed items-center justify-center z-[100]"
+          className="text-xl  sm:text-2xl md:text-3xl lg:text-4xl font-bold h-screen w-screen flex fixed items-center justify-center z-[100]"
           initial={{
             opacity: 1,
             height: "100%",
@@ -100,8 +109,8 @@ const LoginPages = () => {
           animate={{
             opacity: [1, 1, 1, 1],
             height: ["100%", "100%", "2%", "0%"],
-            width: ["100%", "100%", "80%", "80%"],
-            y: [0, 0, 0, -230],
+            width: ["100%", "100%", windowSize.width < 640 ? "90%" : "80%", windowSize.width < 640 ? "90%" : "80%"],
+            y: [0, 0, 0, windowSize.width < 640 ? -180 : windowSize.width < 1024 ? -200 : -180],
           }}
           transition={{
             duration: 4,
@@ -111,8 +120,8 @@ const LoginPages = () => {
           }}
         >
           <motion.div
-            initial={{ scale: 3 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: windowSize.width < 480 ? 2.5 : windowSize.width < 640 ? 2.8 : 3 }}
+            animate={{ scale: windowSize.width < 480 ? 0.8 : windowSize.width < 640 ? 0.9 : 1 }}
             transition={{
               duration: 1,
               delay: 3.5,
