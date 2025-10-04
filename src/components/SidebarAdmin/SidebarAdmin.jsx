@@ -134,6 +134,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           <BarChartOutlined className="text-lg" />
         ),
         getItem(
+          "Quản Lý Gói Tập",
+          `${route.freelancePt}/${route.managePackageFPT}`,
+          <GiGymBag className="text-lg" />
+        ),
+        getItem(
           "Quản Lý Lịch Dạy",
           `${route.freelancePt}/${route.manageSchedulePT}`,
           <FaRegCalendarCheck className="text-lg" />

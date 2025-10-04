@@ -29,6 +29,7 @@ import EmailConfirmPage from "./pages/EmailConfirmPage/EmailConfirmPage";
 import ManageVoucherPT from "./pages/FreelancePT-Pages/ManageVoucher/ManageVoucherPT";
 import { useEffect } from "react";
 import ManageVoucher from "./pages/AdminPages/ManageVoucher/ManageVoucher";
+import ManagePackageFPT from "./pages/FreelancePT-Pages/ManagePackageFPT/ManagePackageFPT";
 
 // JWT Decode function
 const decodeJWT = (token) => {
@@ -296,6 +297,14 @@ function App() {
           element: (
             <ProtectedRoute allowedRoles={['FreelancePT']}>
               <ManageVoucherPT />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: route.managePackageFPT,
+          element: (
+            <ProtectedRoute allowedRoles={['FreelancePT']}>
+              <ManagePackageFPT />
             </ProtectedRoute>
           ),
         },

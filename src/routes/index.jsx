@@ -27,5 +27,6 @@ export const route = {
   dashboardPT: "dashboard-pt",
   manageSchedulePT: "manage-schedule-pt",
   manageVoucherPT: "manage-voucher-pt",
+  managePackageFPT: "manage-package-fpt",
 
 };
