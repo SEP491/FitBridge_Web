@@ -21,6 +21,7 @@ import {
 } from "antd";
 import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 import {
   LoadingOutlined,
   SearchOutlined,

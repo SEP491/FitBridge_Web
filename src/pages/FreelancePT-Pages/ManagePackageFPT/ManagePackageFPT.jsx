@@ -19,6 +19,7 @@ import {
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 import {
   LoadingOutlined,
   SearchOutlined,
@@ -535,21 +536,17 @@ export default function ManagePackageFPT() {
       </div>
 
       {/* Add Package Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalAddPackageOpen}
         onCancel={() => {
           setIsModalAddPackageOpen(false);
           formAdd.resetFields();
           setFileList([]);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <IoBarbell />
-            Thêm Gói Tập Mới
-          </p>
-        }
-        footer={null}
+        title="Thêm Gói Tập Mới"
+        titleIcon={<IoBarbell />}
         width={700}
+        logoSize="medium"
       >
         <Form
           form={formAdd}
@@ -702,10 +699,10 @@ export default function ManagePackageFPT() {
             </Button>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Edit Package Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalEditOpen}
         onCancel={() => {
           setIsModalEditOpen(false);
@@ -713,14 +710,10 @@ export default function ManagePackageFPT() {
           setSelectedPackage(null);
           setFileList([]);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <EditOutlined />
-            Chỉnh Sửa Gói Tập
-          </p>
-        }
-        footer={null}
+        title="Chỉnh Sửa Gói Tập"
+        titleIcon={<EditOutlined />}
         width={700}
+        logoSize="medium"
       >
         <Form
           form={formEdit}
@@ -873,23 +866,19 @@ export default function ManagePackageFPT() {
             </Button>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Detail Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalDetailOpen}
         onCancel={() => {
           setIsModalDetailOpen(false);
           setSelectedPackage(null);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <EyeOutlined />
-            Chi Tiết Gói Tập: {selectedPackage?.name}
-          </p>
-        }
-        footer={null}
+        title={`Chi Tiết Gói Tập: ${selectedPackage?.name || ''}`}
+        titleIcon={<EyeOutlined />}
         width={800}
+        logoSize="large"
       >
         {selectedPackage && (
           <div className="py-4">
@@ -967,7 +956,7 @@ export default function ManagePackageFPT() {
             </Row>
           </div>
         )}
-      </Modal>
+      </FitBridgeModal>
 
       <style jsx>{`
         .custom-pagination .ant-pagination-item-active {

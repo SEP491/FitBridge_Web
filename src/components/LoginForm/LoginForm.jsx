@@ -61,7 +61,6 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
       let decodedToken = null;
       if (response.data.idToken) {
         decodedToken = decodeJWT(response.data.idToken);
-        console.log("Decoded JWT Token:", decodedToken);
       }
 
       // Use decoded token data if available, otherwise use response data

@@ -21,8 +21,9 @@ export default function HeaderAdmin() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    Cookies.remove("token");
-    Cookies.remove("user");
+    Cookies.remove("idToken");
+    Cookies.remove("refreshToken");
+    Cookies.remove("accessToken");
     dispatch(logout());
     navigate(route.welcomeLogin);
   };

@@ -20,6 +20,7 @@ import {
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 import {
   LoadingOutlined,
   SearchOutlined,
@@ -36,6 +37,7 @@ import {
   StopOutlined,
 } from "@ant-design/icons";
 import { couponService } from "../../../services/couponService";
+import DetailVoucher from "./DetailVoucher";
 
 export default function ManageVoucherPT() {
   const [coupons, setCoupons] = useState([]);
@@ -200,9 +202,9 @@ export default function ManageVoucherPT() {
 
   const columns = [
     {
-      title: "Coupon ID",
-      dataIndex: "id",
-      key: "id",
+      title: "Coupon Code",
+      dataIndex: "couponCode",
+      key: "couponCode",
       align: "left",
       render: (text) => (
         <div className="flex items-center gap-3">
@@ -213,9 +215,9 @@ export default function ManageVoucherPT() {
           />
           <div>
             <div className="font-medium text-gray-900 text-xs">
-              {text.substring(0, 8)}...
+              {text}
             </div>
-            <div className="text-xs text-gray-500"></div>
+            <div className="text-xs text-gray-500">Voucher</div>
           </div>
         </div>
       ),
@@ -345,7 +347,7 @@ export default function ManageVoucherPT() {
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} className="mb-8">
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Tổng Coupon"
@@ -359,7 +361,7 @@ export default function ManageVoucherPT() {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Đang Hoạt Động"
@@ -373,7 +375,21 @@ export default function ManageVoucherPT() {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Statistic
+                title="Không Hoạt Động"
+                value={statistics.inactiveCoupons}
+                prefix={<StopOutlined style={{ color: "#f5222d" }} />}
+                valueStyle={{
+                  color: "#f5222d",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={8}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Tổng Số Lượng"
@@ -387,16 +403,30 @@ export default function ManageVoucherPT() {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="% Giảm TB"
                 value={statistics.averageDiscountPercent}
                 suffix="%"
-                prefix={<PercentageOutlined style={{ color: "#722ed1" }} />}
                 valueStyle={{
                   color: "#722ed1",
                   fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={8}>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Statistic
+                title="Tổng Giá Trị Tối Đa"
+                value={statistics.totalMaxDiscount}
+                formatter={(value) => `${value?.toLocaleString("vi")}₫`}
+                prefix={<DollarOutlined style={{ color: "#13c2c2" }} />}
+                valueStyle={{
+                  color: "#13c2c2",
+                  fontSize: "20px",
                   fontWeight: "bold",
                 }}
               />
@@ -487,20 +517,16 @@ export default function ManageVoucherPT() {
       </div>
 
       {/* Add Coupon Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalAddCouponOpen}
         onCancel={() => {
           setIsModalAddCouponOpen(false);
           formAdd.resetFields();
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <GiftOutlined />
-            Thêm Coupon Mới
-          </p>
-        }
-        footer={null}
+        title="Thêm Coupon Mới"
+        titleIcon={<GiftOutlined />}
         width={600}
+        logoSize="medium"
       >
         <Form
           form={formAdd}
@@ -548,6 +574,7 @@ export default function ManageVoucherPT() {
               min={1000}
               placeholder="10,000"
               className="!w-full rounded-lg"
+              addonAfter="VNĐ"
               formatter={(value) =>
                 `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
               }
@@ -584,24 +611,20 @@ export default function ManageVoucherPT() {
             </Button>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Edit Coupon Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalEditOpen}
         onCancel={() => {
           setIsModalEditOpen(false);
           formEdit.resetFields();
           setSelectedCoupon(null);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <EditOutlined />
-            Chỉnh Sửa Coupon
-          </p>
-        }
-        footer={null}
+        title="Chỉnh Sửa Coupon"
+        titleIcon={<EditOutlined />}
         width={600}
+        logoSize="medium"
       >
         <Form
           form={formEdit}
@@ -690,88 +713,22 @@ export default function ManageVoucherPT() {
             </Button>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Detail Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalDetailOpen}
         onCancel={() => {
           setIsModalDetailOpen(false);
           setSelectedCoupon(null);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <EyeOutlined />
-            Chi Tiết Coupon
-          </p>
-        }
-        footer={null}
-        width={600}
+        title="Chi Tiết Coupon"
+        titleIcon={<EyeOutlined />}
+        width={700}
+        logoSize="medium"
       >
-        {selectedCoupon && (
-          <div className="py-4">
-            <Row gutter={[16, 16]}>
-              <Col span={24}>
-                <Card className="mb-4">
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Statistic
-                        title="Phần trăm giảm giá"
-                        value={selectedCoupon.discountPercent}
-                        suffix="%"
-                        prefix={<PercentageOutlined />}
-                        valueStyle={{ color: "#1890ff" }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="Số tiền giảm tối đa"
-                        value={selectedCoupon.maxDiscount}
-                        formatter={(value) => `${value?.toLocaleString("vi")}₫`}
-                        prefix={<DollarOutlined />}
-                        valueStyle={{ color: "#52c41a" }}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card>
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Statistic
-                        title="Số lượng coupon"
-                        value={selectedCoupon.quantity}
-                        prefix={<NumberOutlined />}
-                        valueStyle={{ color: "#722ed1" }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <div className="text-center">
-                        <p className="text-gray-500 mb-2">Trạng thái</p>
-                        <Tag
-                          icon={selectedCoupon.isActive ? <CheckCircleOutlined /> : <StopOutlined />}
-                          color={selectedCoupon.isActive ? "success" : "error"}
-                          className="px-4 py-2 text-base"
-                        >
-                          {selectedCoupon.isActive ? "Hoạt động" : "Không hoạt động"}
-                        </Tag>
-                      </div>
-                    </Col>
-                  </Row>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card title="Thông tin ID" className="mt-4">
-                  <p className="text-sm text-gray-600 break-all">
-                    {selectedCoupon.id}
-                  </p>
-                </Card>
-              </Col>
-            </Row>
-          </div>
-        )}
-      </Modal>
+        <DetailVoucher selectedCoupon={selectedCoupon} />
+      </FitBridgeModal>
 
       <style jsx>{`
         .custom-pagination .ant-pagination-item-active {

@@ -24,6 +24,7 @@ import {
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 import {
   LoadingOutlined,
   SearchOutlined,
@@ -363,13 +364,13 @@ export default function ManageGymPackages() {
   const handleAddCourseGym = async (values) => {
     setLoadingAdd(true);
     
-    // Get image URL from uploaded files
-    let imageUrl = "https://via.placeholder.com/400x300?text=Gym+Package";
-    if (fileList.length > 0 && fileList[0].response) {
-      imageUrl = fileList[0].response.url; // Assuming your upload returns { url: "..." }
-    } else if (fileList.length > 0 && fileList[0].url) {
-      imageUrl = fileList[0].url;
-    }
+    // // Get image URL from uploaded files
+    // let imageUrl = "https://via.placeholder.com/400x300?text=Gym+Package";
+    // if (fileList.length > 0 && fileList[0].response) {
+    //   imageUrl = fileList[0].response.url; // Assuming your upload returns { url: "..." }
+    // } else if (fileList.length > 0 && fileList[0].url) {
+    //   imageUrl = fileList[0].url;
+    // }
 
     const requestData = {
       name: values.name,

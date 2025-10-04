@@ -20,6 +20,7 @@ import {
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 import {
   LoadingOutlined,
   SearchOutlined,
@@ -487,20 +488,16 @@ export default function ManageVoucher() {
       </div>
 
       {/* Add Coupon Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalAddCouponOpen}
         onCancel={() => {
           setIsModalAddCouponOpen(false);
           formAdd.resetFields();
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <GiftOutlined />
-            Thêm Coupon Mới
-          </p>
-        }
-        footer={null}
+        title="Thêm Coupon Mới"
+        titleIcon={<GiftOutlined />}
         width={600}
+        logoSize="medium"
       >
         <Form
           form={formAdd}
@@ -584,24 +581,20 @@ export default function ManageVoucher() {
             </Button>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Edit Coupon Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalEditOpen}
         onCancel={() => {
           setIsModalEditOpen(false);
           formEdit.resetFields();
           setSelectedCoupon(null);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <EditOutlined />
-            Chỉnh Sửa Coupon
-          </p>
-        }
-        footer={null}
+        title="Chỉnh Sửa Coupon"
+        titleIcon={<EditOutlined />}
         width={600}
+        logoSize="medium"
       >
         <Form
           form={formEdit}
@@ -690,23 +683,19 @@ export default function ManageVoucher() {
             </Button>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Detail Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalDetailOpen}
         onCancel={() => {
           setIsModalDetailOpen(false);
           setSelectedCoupon(null);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <EyeOutlined />
-            Chi Tiết Coupon
-          </p>
-        }
-        footer={null}
-        width={600}
+        title="Chi Tiết Coupon"
+        titleIcon={<EyeOutlined />}
+        width={700}
+        logoSize="medium"
       >
         {selectedCoupon && (
           <div className="py-4">
@@ -771,7 +760,7 @@ export default function ManageVoucher() {
             </Row>
           </div>
         )}
-      </Modal>
+      </FitBridgeModal>
 
       <style jsx>{`
         .custom-pagination .ant-pagination-item-active {
