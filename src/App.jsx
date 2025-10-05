@@ -31,6 +31,7 @@ import { useEffect } from "react";
 import ManageVoucher from "./pages/AdminPages/ManageVoucher/ManageVoucher";
 import ManagePackageFPT from "./pages/FreelancePT-Pages/ManagePackageFPT/ManagePackageFPT";
 import DashboardFPT from "./pages/FreelancePT-Pages/DashboardFPT/DashboardFPT";
+import CustomerVoucherPage from "./pages/CustomerVoucherPage/CustomerVoucherPage";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -205,6 +206,10 @@ function App() {
     {
       path: route.orderProcess,
       element: <OrderProcessPage />,
+    },
+    {
+      path: "/voucher",
+      element: <CustomerVoucherPage />,
     },
 
     // Admin Routes - Protected for Admin role only

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Card, Tag, Divider, Button, InputNumber, Space } from "antd";
+import { Card, Tag, Divider, Button, InputNumber, Space, Statistic, Modal, Input, message } from "antd";
 import {
   GiftOutlined,
   DollarOutlined,
@@ -8,129 +8,41 @@ import {
   StopOutlined,
   PercentageOutlined,
   PrinterOutlined,
+  ShareAltOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
 import { selectUser } from "../../../redux/features/userSlice";
 import { useSelector } from "react-redux";
-import logoColor from "../../../assets/LogoColor.png";
-import { QRCodeCanvas } from "qrcode.react";
 import { useReactToPrint } from "react-to-print";
 import toast from "react-hot-toast";
+import VoucherCard from "../../../components/VoucherCard/VoucherCard";
 
 const DetailVoucher = ({ selectedCoupon, allowPrint = true }) => {
   const contentRef = useRef(null);
   const [printQuantity, setPrintQuantity] = useState(1);
+  const [shareModalVisible, setShareModalVisible] = useState(false);
   const user = useSelector(selectUser);
   
-  // Voucher Card Component
-  const VoucherCard = () => (
-    <div
-      className="voucher-container relative overflow-hidden shadow-2xl mb-4"
-      style={{ borderRadius: "20px" }}
-    >
-      {/* Left Side - Discount Section */}
-      <div className="flex">
-        <div
-          className="voucher-left p-8 relative"
-          style={{
-            background: "linear-gradient(135deg, #FF914D 0%, #ED2A46 100%)",
-            color: "white",
-            flex: "4",
-          }}
-        >
-          {/* Decorative elements */}
-          <div className="absolute top-4 left-4">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-white/30 rounded-full"></div>
-              <div className="w-2 h-2 bg-white/30 rounded-full"></div>
-              <div className="w-2 h-2 bg-white/30 rounded-full"></div>
-            </div>
-          </div>
+  // Generate share link
+  const generateShareLink = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/voucher?voucherId=${selectedCoupon.id}`;
+  };
 
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center mb-2">
-              <span className="text-2xl font-extrabold text-white/90">
-                FITBRIDGE - {user?.fullName || "Personal Trainer"}
-              </span>
-            </div>
-            <h2 className="text-sm font-bold text-white m-0 uppercase tracking-wide">
-              Gift Voucher
-            </h2>
-          </div>
+  // Handle copy link
+  const handleCopyLink = () => {
+    const shareLink = generateShareLink();
+    navigator.clipboard.writeText(shareLink).then(() => {
+      message.success('Đã sao chép link chia sẻ!');
+    }).catch(() => {
+      message.error('Không thể sao chép link!');
+    });
+  };
 
-          {/* Main Discount */}
-          <div className="text-center my-2">
-            <div className="text-6xl font-bold text-white mb-2">
-              GIẢM {selectedCoupon.discountPercent}%
-            </div>
-          </div>
-
-          {/* Expiry or validity info */}
-          <div className="mt-8">
-            <div className="text-white/80 text-xs">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
-                ✨ Áp dụng cho tất cả gói tập của{" "}
-                {user?.fullName || "Personal Trainer"} trên FitBridge
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Details Section */}
-        <div
-          className="voucher-right p-8 bg-white relative border-l-2 border-dashed border-gray-200"
-          style={{ minHeight: "300px", flex: "2" }}
-        >
-          {/* Voucher Code */}
-          <div className="mb-6">
-            <div className="border-2 items-center flex flex-col border-gray-300 rounded-lg p-3 bg-gray-50">
-              <div className="text-xs text-gray-600 mb-1 uppercase font-semibold">
-                Voucher Code
-              </div>
-              <div className="text-xl font-bold text-gray-800 tracking-wider">
-                {selectedCoupon.couponCode}
-              </div>
-            </div>
-          </div>
-
-          {/* Details */}
-          <div className="space-y-4 border-b flex justify-end border-gray-200 pb-4 mb-4">
-            <div>
-              <div className="text-xs text-gray-600 mb-1 uppercase font-semibold">
-                Giá trị tối đa
-              </div>
-              <div className="text-sm font-medium justify-end flex text-gray-800">
-                {selectedCoupon.maxDiscount?.toLocaleString("vi", {
-                  style: "currency",
-                  currency: "VND",
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* QR Code */}
-          <div className="mb-6">
-            <div className="w-full h-24 flex items-center justify-center rounded-lg">
-              <QRCodeCanvas
-                bgColor="#ffffff"
-                fgColor="#000000"
-                value={selectedCoupon.couponCode}
-                size={80}
-              />
-            </div>
-          </div>
-
-          {/* Website */}
-          <div className="absolute flex flex-row items-center bottom-1 right-1">
-            <div className="text-xs font-bold text-gray-600">
-              fitbridge.shop
-            </div>
-            <img src={logoColor} alt="FitBridge Logo" className="w-12 h-12" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Handle share button click
+  const handleShareClick = () => {
+    setShareModalVisible(true);
+  };
   
   const reactToPrintFn = useReactToPrint({
     contentRef,
@@ -179,23 +91,23 @@ const DetailVoucher = ({ selectedCoupon, allowPrint = true }) => {
   }
 
   return (
-    <div className="py-4">
+    <div className="">
       {/* Print Controls - Only show if allowPrint is true */}
       {allowPrint && (
-        <div className="text-center mb-6">
-          <Space size="large" direction="vertical">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Số lượng voucher muốn in:
-              </label>
-              <InputNumber
-                min={1}
-                max={30}
-                value={printQuantity}
-                onChange={(value) => setPrintQuantity(value || 1)}
-                className="w-20"
-              />
-            </div>
+        <div className="text-center flex-col items-center  flex mb-6">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Số lượng voucher muốn in:
+            </label>
+            <InputNumber
+              min={1}
+              max={30}
+              value={printQuantity}
+              onChange={(value) => setPrintQuantity(value || 1)}
+              className="w-20"
+            />
+          </div>
+          <div className="w-full justify-end flex flex-row items-center">
             <Button
               type="primary"
               icon={<PrinterOutlined />}
@@ -205,7 +117,35 @@ const DetailVoucher = ({ selectedCoupon, allowPrint = true }) => {
             >
               In {printQuantity} Voucher{printQuantity > 1 ? 's' : ''}
             </Button>
-          </Space>
+            <Button
+              type="default"
+              icon={<ShareAltOutlined />}
+              onClick={handleShareClick}
+              className="ml-4"
+              style={{ background: "linear-gradient(135deg, #FF914D 0%, #ED2A46 100%)", color: 'white' }}
+              size="large"
+            >
+              Chia sẻ nhanh
+            </Button>
+          </div>
+        {/* Statistic Cards */}
+        <div className="mt-4 flex flex-col md:flex-row gap-4 justify-center">
+          <Card>
+            <Statistic
+              title="Số lượng voucher đã phát hành"
+              value={100}
+              prefix={<GiftOutlined />}
+            />
+          </Card>
+          <Card>
+            <Statistic
+              title="Trang thái voucher"
+              value={selectedCoupon.isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+              valueStyle={{ color: selectedCoupon.isActive ? '#3f8600' : '#cf1322' }}
+              prefix={<CheckCircleOutlined />}
+            />
+          </Card>
+        </div>
         </div>
       )}
       
@@ -214,7 +154,7 @@ const DetailVoucher = ({ selectedCoupon, allowPrint = true }) => {
         <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
           {allowPrint ? 'Xem trước voucher:' : 'Chi tiết voucher:'}
         </h3>
-        <VoucherCard />
+        <VoucherCard selectedCoupon={selectedCoupon} />
       </div>
       
       {/* Hidden Print Content - Only include if allowPrint is true */}
@@ -225,76 +165,44 @@ const DetailVoucher = ({ selectedCoupon, allowPrint = true }) => {
             className="print-container"
           >
             {Array.from({ length: printQuantity }, (_, index) => (
-              <VoucherCard key={index} />
+              <VoucherCard key={index} selectedCoupon={selectedCoupon} />
             ))}
           </div>
         </div>
       )}
 
+      {/* Share Modal */}
+      <Modal
+        title="Chia sẻ voucher"
+        open={shareModalVisible}
+        onCancel={() => setShareModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setShareModalVisible(false)}>
+            Đóng
+          </Button>,
+          <Button key="copy" type="primary" icon={<CopyOutlined />} onClick={handleCopyLink}>
+            Sao chép link
+          </Button>
+        ]}
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            Chia sẻ voucher này với khách hàng bằng cách gửi link bên dưới:
+          </p>
+          <Input.TextArea
+            value={generateShareLink()}
+            readOnly
+            rows={3}
+            className="font-mono text-sm"
+          />
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <p className="text-sm text-blue-600 mb-0">
+              💡 <strong>Lưu ý:</strong> Khách hàng có thể xem voucher và sử dụng mã này khi mua gói tập.
+            </p>
+          </div>
+        </div>
+      </Modal>
 
-
-
-      <style jsx>{`
-        .voucher-container {
-          max-width: 800px;
-          margin: 0 auto;
-          background: white;
-          position: relative;
-        }
-
-        .voucher-left {
-          position: relative;
-          border-top-left-radius: 20px;
-          border-bottom-left-radius: 20px;
-        }
-
-        .voucher-right {
-          position: relative;
-          border-top-right-radius: 20px;
-          border-bottom-right-radius: 20px;
-          border-top: 3px solid  #e5e7eb;
-          border-right: 3px solid  #e5e7eb;
-          border-bottom: 3px solid  #e5e7eb;
-        }
-
-        .voucher-left::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          right: -1px;
-          bottom: 0;
-          width: 2px;
-          background: repeating-linear-gradient(
-            to bottom,
-            transparent 0px,
-            transparent 8px,
-            #e5e7eb 8px,
-            #e5e7eb 16px
-          );
-        }
-
-        @media (max-width: 640px) {
-          .voucher-container .flex {
-            flex-direction: column;
-          }
-
-          .voucher-left {
-            border-radius: 20px 20px 0 0;
-          }
-
-          .voucher-right {
-            border-radius: 0 0 20px 20px;
-            border-top: none;
-            border-left: 3px solid  #e5e7eb;
-          border-right: 3px solid  #e5e7eb;
-          border-bottom: 3px solid  #e5e7eb;
-          }
-
-          .voucher-left::after {
-            display: none;
-          }
-        }
-      `}</style>
     </div>
   );
 };

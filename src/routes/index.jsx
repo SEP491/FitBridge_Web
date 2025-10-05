@@ -1,6 +1,7 @@
 export const route = {
   welcomeLogin: "/",
   confirmEmail: "/confirm-email",
+  customerVoucher: "/voucher",
   admin: "/admin",
   dashboard: "dashboard",
   manageGym: "manage-gym",
