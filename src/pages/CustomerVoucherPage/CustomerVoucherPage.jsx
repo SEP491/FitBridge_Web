@@ -15,28 +15,54 @@ const CustomerVoucherPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const mockVoucher = {
+    id: "1",
+    couponCode: "FITBRIDGE50",
+    discountPercent: 50,
+    maxDiscount: 200000,
+    isActive: true,
+  };
+
   // Mock function to fetch voucher data
   // In real implementation, you would call your API here
-  const fetchVoucherData = async (voucherId) => {
+//   const fetchVoucherData = async (voucherId) => {
+//     try {
+//       setLoading(true);
+      
+//       const response = await couponService.getCouponById(voucherId);
+//       if (response && response.data) {
+//         setVoucher(response.data);
+//         setError(null);
+//       } else {
+//         throw new Error("Voucher không tồn tại hoặc đã hết hạn");
+//       }
+      
+//     } catch (err) {
+//       setError(err.message);
+//       setVoucher(null);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+const fetchVoucherData = async (voucherId) => {
     try {
       setLoading(true);
-      
-      const response = await couponService.getCouponById(voucherId);
-      if (response && response.data) {
-        setVoucher(response.data);
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // For demonstration, we use the mock voucher
+        setVoucher(mockVoucher);
         setError(null);
-      } else {
-        throw new Error("Voucher không tồn tại hoặc đã hết hạn");
-      }
-      
+        // Uncomment below to simulate an error
+        // throw new Error("Voucher không tồn tại hoặc đã hết hạn");
     } catch (err) {
       setError(err.message);
       setVoucher(null);
-    } finally {
+    }
+    finally {
       setLoading(false);
     }
-  };
-
+    };
   useEffect(() => {
     // Get voucherId from URL params
     const getVoucherIdFromParams = () => {
