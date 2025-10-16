@@ -15,9 +15,10 @@ import {
   Form,
   InputNumber,
   message,
+  Progress,
 } from "antd";
-import React, { useEffect, useState } from "react";
-import adminService from "../../../services/adminServices";
+import React, { useEffect, useState, useCallback } from "react";
+import membershipService from "../../../services/membershipServices";
 import {
   LoadingOutlined,
   SearchOutlined,
@@ -53,12 +54,38 @@ export default function ManagePremiumPage() {
     lowestPrice: 0,
   });
 
+  const calculateStatistics = useCallback((data) => {
+    if (data.length === 0) {
+      setStatistics({
+        totalPackages: 0,
+        averagePrice: 0,
+        highestPrice: 0,
+        lowestPrice: 0,
+      });
+      return;
+    }
+
+    const prices = data.map((pkg) => pkg.serviceCharge || 0);
+    const totalPackages = data.length;
+    const averagePrice =
+      prices.reduce((sum, price) => sum + price, 0) / totalPackages;
+    const highestPrice = Math.max(...prices);
+    const lowestPrice = Math.min(...prices);
+
+    setStatistics({
+      totalPackages,
+      averagePrice,
+      highestPrice,
+      lowestPrice,
+    });
+  }, []);
+
   // API service functions
-  const fetchPremiumPackages = async (page = 1, pageSize = 10) => {
+  const fetchPremiumPackages = useCallback(async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      // Using your actual API structure
-      const response = await adminService.getAllPremiumSubscriptions({
+      // Using membership API
+      const response = await membershipService.getAllMemberships({
         page,
         size: pageSize,
       });
@@ -76,80 +103,54 @@ export default function ManagePremiumPage() {
       // Calculate statistics from the data
       calculateStatistics(items);
     } catch (error) {
-      console.error("Error fetching premium packages:", error);
-      message.error("Không thể tải danh sách gói premium");
+      console.error("Error fetching memberships:", error);
+      message.error("Không thể tải danh sách gói membership");
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateStatistics = (data) => {
-    if (data.length === 0) {
-      setStatistics({
-        totalPackages: 0,
-        averagePrice: 0,
-        highestPrice: 0,
-        lowestPrice: 0,
-      });
-      return;
-    }
-
-    const prices = data.map((pkg) => pkg.price || 0);
-    const totalPackages = data.length;
-    const averagePrice =
-      prices.reduce((sum, price) => sum + price, 0) / totalPackages;
-    const highestPrice = Math.max(...prices);
-    const lowestPrice = Math.min(...prices);
-
-    setStatistics({
-      totalPackages,
-      averagePrice,
-      highestPrice,
-      lowestPrice,
-    });
-  };
+  }, [calculateStatistics]);
 
   const createPremiumPackage = async (values) => {
     try {
-      await adminService.createPremiumPackage(values);
-      message.success("Tạo gói premium thành công!");
+      await membershipService.createMembership(values);
+      message.success("Tạo gói membership thành công!");
       setModalVisible(false);
       form.resetFields();
       fetchPremiumPackages(pagination.current, pagination.pageSize);
     } catch (error) {
-      console.error("Error creating premium package:", error);
-      message.error("Không thể tạo gói premium");
+      console.error("Error creating membership:", error);
+      message.error("Không thể tạo gói membership");
     }
   };
 
   const updatePremiumPackage = async (id, values) => {
     try {
-      await adminService.updatePremiumPackage(id, values);
-      message.success("Cập nhật gói premium thành công!");
+      await membershipService.updateMembership(id, values);
+      message.success("Cập nhật gói membership thành công!");
       setModalVisible(false);
       setEditingPackage(null);
       form.resetFields();
       fetchPremiumPackages(pagination.current, pagination.pageSize);
     } catch (error) {
-      console.error("Error updating premium package:", error);
-      message.error("Không thể cập nhật gói premium");
+      console.error("Error updating membership:", error);
+      message.error("Không thể cập nhật gói membership");
     }
   };
 
   const deletePremiumPackage = async (id) => {
     try {
-      await adminService.deletePremiumPackage(id);
-      message.success("Xóa gói premium thành công!");
+      await membershipService.deleteMembership(id);
+      message.success("Xóa gói membership thành công!");
       fetchPremiumPackages(pagination.current, pagination.pageSize);
     } catch (error) {
-      console.error("Error deleting premium package:", error);
-      message.error("Không thể xóa gói premium");
+      console.error("Error deleting membership:", error);
+      message.error("Không thể xóa gói membership");
     }
   };
 
   useEffect(() => {
     fetchPremiumPackages();
-  }, []);
+  }, [fetchPremiumPackages]);
 
   const handleTableChange = (pagination) => {
     fetchPremiumPackages(pagination.current, pagination.pageSize);
@@ -172,17 +173,18 @@ export default function ManagePremiumPage() {
   const handleEditPackage = (record) => {
     setEditingPackage(record);
     form.setFieldsValue({
-      name: record.name,
-      description: record.description,
-      price: record.price,
+      serviceName: record.serviceName,
+      serviceCharge: record.serviceCharge,
+      maximumHotResearchSlot: record.maximumHotResearchSlot,
+      availableHotResearchSlot: record.availableHotResearchSlot,
     });
     setModalVisible(true);
   };
 
   const handleDeletePackage = (record) => {
     Modal.confirm({
-      title: "Xác nhận xóa gói premium",
-      content: `Bạn có chắc chắn muốn xóa gói "${record.name}"?`,
+      title: "Xác nhận xóa gói membership",
+      content: `Bạn có chắc chắn muốn xóa gói "${record.serviceName}"?`,
       okText: "Xóa",
       cancelText: "Hủy",
       okType: "danger",
@@ -201,8 +203,8 @@ export default function ManagePremiumPage() {
   const columns = [
     {
       title: "Tên Gói",
-      dataIndex: "name",
-      key: "name",
+      dataIndex: "serviceName",
+      key: "serviceName",
       align: "left",
       render: (text) => (
         <div className="flex items-center gap-3">
@@ -212,31 +214,46 @@ export default function ManagePremiumPage() {
           <div>
             <div className="font-medium text-gray-900">{text}</div>
             <Tag color="gold" size="small">
-              Premium
+              Membership
             </Tag>
           </div>
         </div>
       ),
     },
     {
-      title: "Mô Tả",
-      dataIndex: "description",
-      key: "description",
-      align: "left",
-      render: (text) => (
-        <div className="max-w-xs">
-          <p className="text-gray-700 truncate" title={text}>
-            {text || "Chưa có mô tả"}
-          </p>
+      title: "Số lượng Slot",
+      key: "hotResearchSlot",
+      align: "center",
+      render: (_, record) => (
+        <div className="text-center">
+          <div className="text-gray-700">
+            <span className="font-semibold text-blue-600">
+              {record.availableHotResearchSlot || 0}
+            </span>
+            <span className="text-gray-500"> / </span>
+            <span className="font-semibold text-gray-600">
+              {record.maximumHotResearchSlot || 0}
+            </span>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Có sẵn / Tối đa</div>
+          <Progress
+            percent={
+              record.maximumHotResearchSlot
+                ? (record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100
+                : 0
+            }
+            strokeColor={(record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100 > 50 ? '#52c41a' : (record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100 > 20 ? '#faad14' : '#f5222d'}
+              showInfo={false}
+          />
         </div>
       ),
     },
     {
       title: "Giá",
-      dataIndex: "price",
-      key: "price",
+      dataIndex: "serviceCharge",
+      key: "serviceCharge",
       align: "center",
-      sorter: (a, b) => (a.price || 0) - (b.price || 0),
+      sorter: (a, b) => (a.serviceCharge || 0) - (b.serviceCharge || 0),
       render: (price) => (
         <div className="font-semibold text-green-600 text-lg">
           {formatCurrency(price)}
@@ -256,18 +273,20 @@ export default function ManagePremiumPage() {
               className="text-blue-600 hover:bg-blue-50"
               onClick={() => {
                 Modal.info({
-                  title: `Chi tiết gói: ${record.name}`,
+                  title: `Chi tiết gói: ${record.serviceName}`,
                   content: (
                     <div className="mt-4">
                       <p>
-                        <strong>Tên gói:</strong> {record.name}
+                        <strong>Tên gói:</strong> {record.serviceName}
                       </p>
                       <p>
-                        <strong>Mô tả:</strong>{" "}
-                        {record.description || "Chưa có mô tả"}
+                        <strong>Giá:</strong> {formatCurrency(record.serviceCharge)}
                       </p>
                       <p>
-                        <strong>Giá:</strong> {formatCurrency(record.price)}
+                        <strong>Slot Hot Research tối đa:</strong> {record.maximumHotResearchSlot}
+                      </p>
+                      <p>
+                        <strong>Slot Hot Research có sẵn:</strong> {record.availableHotResearchSlot}
                       </p>
                       <p>
                         <strong>ID:</strong> {record.id}
@@ -302,10 +321,7 @@ export default function ManagePremiumPage() {
 
   const filteredData = premiumPackages.filter((item) => {
     const matchesSearch = searchText
-      ? (item.name?.toLowerCase() || "").includes(searchText.toLowerCase()) ||
-        (item.description?.toLowerCase() || "").includes(
-          searchText.toLowerCase()
-        )
+      ? (item.serviceName?.toLowerCase() || "").includes(searchText.toLowerCase())
       : true;
 
     return matchesSearch;
@@ -331,10 +347,10 @@ export default function ManagePremiumPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Quản Lý Gói Premium
+            Quản Lý Gói Membership
           </h1>
           <p className="text-gray-600">
-            Quản lý các gói premium có sẵn trong hệ thống
+            Quản lý các gói membership có sẵn trong hệ thống
           </p>
         </div>
 
@@ -407,7 +423,7 @@ export default function ManagePremiumPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
-                placeholder="Tìm kiếm theo tên hoặc mô tả..."
+                placeholder="Tìm kiếm theo tên gói..."
                 prefix={<SearchOutlined className="text-gray-400" />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
@@ -422,7 +438,7 @@ export default function ManagePremiumPage() {
               className="bg-orange-500 hover:bg-orange-600 border-orange-500"
               onClick={handleAddPackage}
             >
-              Thêm Gói Premium
+              Thêm Gói Membership
             </Button>
           </div>
 
@@ -435,7 +451,7 @@ export default function ManagePremiumPage() {
               </span>{" "}
               trong tổng số{" "}
               <span className="font-semibold">{statistics.totalPackages}</span>{" "}
-              gói premium
+              gói membership
               {searchText && (
                 <span>
                   {" "}
@@ -486,7 +502,7 @@ export default function ManagePremiumPage() {
         {/* Add/Edit Modal */}
         <Modal
           title={
-            editingPackage ? "Chỉnh Sửa Gói Premium" : "Thêm Gói Premium Mới"
+            editingPackage ? "Chỉnh Sửa Gói Membership" : "Thêm Gói Membership Mới"
           }
           open={modalVisible}
           onCancel={() => {
@@ -500,35 +516,21 @@ export default function ManagePremiumPage() {
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               label="Tên Gói"
-              name="name"
+              name="serviceName"
               rules={[
                 { required: true, message: "Vui lòng nhập tên gói!" },
                 { min: 2, message: "Tên gói phải có ít nhất 2 ký tự!" },
               ]}
             >
               <Input
-                placeholder="Nhập tên gói premium"
+                placeholder="Nhập tên gói membership"
                 prefix={<CrownOutlined />}
               />
             </Form.Item>
 
             <Form.Item
-              label="Mô Tả"
-              name="description"
-              rules={[
-                { required: true, message: "Vui lòng nhập mô tả!" },
-                { min: 10, message: "Mô tả phải có ít nhất 10 ký tự!" },
-              ]}
-            >
-              <TextArea
-                rows={4}
-                placeholder="Nhập mô tả chi tiết về gói premium"
-              />
-            </Form.Item>
-
-            <Form.Item
               label="Giá (VND)"
-              name="price"
+              name="serviceCharge"
               rules={[
                 { required: true, message: "Vui lòng nhập giá!" },
                 {
@@ -540,12 +542,50 @@ export default function ManagePremiumPage() {
             >
               <InputNumber
                 style={{ width: "100%" }}
-                placeholder="Nhập giá gói premium"
+                placeholder="Nhập giá gói membership"
                 formatter={(value) =>
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                 }
                 parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
                 prefix={<DollarOutlined />}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Slot Hot Research Tối Đa"
+              name="maximumHotResearchSlot"
+              rules={[
+                { required: true, message: "Vui lòng nhập số slot tối đa!" },
+                {
+                  type: "number",
+                  min: 0,
+                  message: "Số slot phải lớn hơn hoặc bằng 0!",
+                },
+              ]}
+            >
+              <InputNumber
+                style={{ width: "100%" }}
+                placeholder="Nhập số slot tối đa"
+                min={0}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Slot Hot Research Có Sẵn"
+              name="availableHotResearchSlot"
+              rules={[
+                { required: true, message: "Vui lòng nhập số slot có sẵn!" },
+                {
+                  type: "number",
+                  min: 0,
+                  message: "Số slot phải lớn hơn hoặc bằng 0!",
+                },
+              ]}
+            >
+              <InputNumber
+                style={{ width: "100%" }}
+                placeholder="Nhập số slot có sẵn"
+                min={0}
               />
             </Form.Item>
 
