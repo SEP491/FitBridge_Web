@@ -9,7 +9,7 @@ const authService = {
     const encodedEmail = encodeURIComponent(email);
     console.log("API Call - Original Token:", token);
     console.log("API Call - Encoded Token:", encodedToken);
-    return request("GET", `/v1/identities/confirm-email?token=${encodedToken}&email=${encodedEmail}`);
+    return request("POST", `/v1/identities/confirm-email?token=${encodedToken}&email=${encodedEmail}`);
   },
 };
 
