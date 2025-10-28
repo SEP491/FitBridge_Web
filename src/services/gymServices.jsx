@@ -1,7 +1,8 @@
 import { request } from "./request";
 
 const gymService = {
-  registerGymPT: (data) => request("POST", "/v1/identities/register-gym-pt", data),
+  registerGymPT: (data) =>
+    request("POST", "/v1/identities/register-gym-pt", data),
   getPTofGym: (params) => {
     const { gymId, ...otherParams } = params;
     return request("GET", `/v1/gyms/${gymId}/pts`, null, {}, otherParams);
@@ -17,7 +18,8 @@ const gymService = {
   getSlotOfGym: (params) => request("GET", "/v1/gym-slots", null, {}, params),
   addSlot: (data) => request("POST", "/v1/gym-slots", data),
   deleteSlot: (id) => request("DELETE", `/v1/gym-slots/${id}`),
-  deactivateSlot: (id) => request("POST", `/v1/gym-slots/deactivated-slots`, id),
+  deactivateSlot: (id) =>
+    request("POST", `/v1/gym-slots/deactivated-slots`, id),
   updateSlot: (data) => request("PUT", `/v1/gym-slots`, data),
 
   addPTToCourse: (data) => request("POST", "/v1/course-pt", data),
@@ -25,6 +27,9 @@ const gymService = {
 
   getRevenueOfGym: (params) =>
     request("GET", "/v1/gym/me/dashboard", null, {}, params),
+
+  getCustomersOfGym: (params) =>
+    request("GET", "/v1/gyms/owner/customers", null, {}, params),
 };
 
 export default gymService;

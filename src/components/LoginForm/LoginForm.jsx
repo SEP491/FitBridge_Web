@@ -16,7 +16,11 @@ import { useNavigate } from "react-router-dom";
 import { route } from "../../routes/index";
 import Cookies from "js-cookie";
 
-const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleForm }) => {
+const LoginForm = ({
+  title = "GymRadar",
+  subtitle = "Đăng Nhập",
+  onToggleForm,
+}) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
@@ -26,20 +30,20 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
   const decodeJWT = (token) => {
     try {
       // Split the token into parts
-      const parts = token.split('.');
+      const parts = token.split(".");
       if (parts.length !== 3) {
-        throw new Error('Invalid JWT token');
+        throw new Error("Invalid JWT token");
       }
 
       // Decode the payload (second part)
       const payload = parts[1];
       // Add padding if needed
-      const paddedPayload = payload + '==='.slice((payload.length + 3) % 4);
-      const decoded = atob(paddedPayload.replace(/-/g, '+').replace(/_/g, '/'));
-      
+      const paddedPayload = payload + "===".slice((payload.length + 3) % 4);
+      const decoded = atob(paddedPayload.replace(/-/g, "+").replace(/_/g, "/"));
+
       return JSON.parse(decoded);
     } catch (error) {
-      console.error('JWT decode error:', error);
+      console.error("JWT decode error:", error);
       return null;
     }
   };
@@ -47,16 +51,16 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
   const handleLogin = async (values) => {
     setLoading(true);
     console.log("Login values:", values);
-    
+
     const requestData = {
-      identifier: values.email,
+      identifier: values.identifier,
       password: values.password,
     };
     console.log("Request data:", requestData);
     try {
       const response = await authService.login(requestData);
       console.log("Login response:", response);
-      
+
       // Decode the idToken to get user data
       let decodedToken = null;
       if (response.data.idToken) {
@@ -66,9 +70,9 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
       // Use decoded token data if available, otherwise use response data
       const userData = decodedToken || response.data;
       const userRole = userData.role || response.data.role;
-      
+
       console.log("User role:", userRole);
-      
+
       // Route based on role
       if (userRole === "Admin") {
         navigate(`${route.admin}/${route.dashboard}`);
@@ -80,7 +84,7 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
         toast.error("Tài khoản không có quyền truy cập");
         return;
       }
-      
+
       // Create user object from decoded token or response data
       const user = {
         id: userData.sub || userData.id || response.data.id,
@@ -93,15 +97,15 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
         birthdate: userData.birthdate,
         senderAvatar: userData.senderAvatar,
       };
-      
+
       console.log("Final user object:", user);
-      
+
       // Store tokens and user data
       Cookies.set("accessToken", response.data.accessToken);
       Cookies.set("idToken", response.data.idToken);
       Cookies.set("refreshToken", response.data.refreshToken);
       Cookies.set("user", JSON.stringify(user));
-      
+
       dispatch(login(user));
       toast.success("Đăng nhập thành công");
     } catch (error) {
@@ -113,14 +117,14 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="flex flex-col h-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
       {/* Header Section */}
-      <motion.div 
+      <motion.div
         className="pt-4 sm:pt-6 md:pt-8 pb-2 sm:pb-4 px-4 sm:px-6 md:px-8 text-center"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -135,7 +139,7 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
       </motion.div>
 
       {/* Form Section */}
-      <motion.div 
+      <motion.div
         className="flex-1 px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -156,25 +160,20 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
             <Form.Item
               label={
                 <span className="text-sm sm:text-base md:text-lg font-bold text-white drop-shadow">
-                  Email
+                  Email / Số điện thoại
                 </span>
               }
-              name="email"
+              name="identifier"
               rules={[
                 {
                   required: true,
-                  message: "Vui lòng nhập email",
-                },
-                {
-                  type: "email",
-                  message: "Vui lòng nhập email hợp lệ",
+                  message: "Vui lòng nhập email hoặc số điện thoại",
                 },
               ]}
             >
               <Input
                 prefix={<MailOutlined className="text-gray-500" />}
                 placeholder="email@example.com"
-                type="email"
                 className="rounded-lg py-2 sm:py-3 px-3 border-0 bg-white/80 backdrop-blur-sm text-sm sm:text-base transition-all duration-300 hover:bg-white/90 focus:bg-white/90"
               />
             </Form.Item>
@@ -212,24 +211,21 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
           </motion.div>
 
           {/* Login Button */}
-          <motion.div 
+          <motion.div
             className="text-center mt-2 sm:mt-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.0 }}
           >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 onClick={() => form.submit()}
                 loading={loading}
                 className="w-[70%] sm:w-[60%] rounded-full h-10 sm:h-12 font-medium border-0 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
                 style={{
-                  background: 'linear-gradient(to right, #FF914D, #FF3A50)',
-                  border: 'none',
-                  boxShadow: '0 4px 15px 0 rgba(255, 145, 77, 0.3)'
+                  background: "linear-gradient(to right, #FF914D, #FF3A50)",
+                  border: "none",
+                  boxShadow: "0 4px 15px 0 rgba(255, 145, 77, 0.3)",
                 }}
               >
                 Đăng nhập
@@ -238,7 +234,7 @@ const LoginForm = ({ title = "GymRadar", subtitle = "Đăng Nhập", onToggleFor
           </motion.div>
 
           {/* Toggle to Register */}
-          <motion.div 
+          <motion.div
             className="text-center mt-3 sm:mt-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

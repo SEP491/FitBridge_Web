@@ -5,7 +5,7 @@ import Cookies from "js-cookie";
 const request = async (method, url, data = null, headers = {}, params = {}) => {
   try {
     const accessToken = Cookies.get("accessToken");
-
+    console.log(accessToken);
     const authHeaders = accessToken
       ? { Authorization: `Bearer ${accessToken}` }
       : {};

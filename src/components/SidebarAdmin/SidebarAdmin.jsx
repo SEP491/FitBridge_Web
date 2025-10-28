@@ -63,6 +63,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           `${route.admin}/${route.managePT}`,
           <GiTeacher className="text-lg" />
         ),
+
         // getItem(
         //   "Quản Lý Gói Tập",
         //   `${route.admin}/${route.managePackages}`,
@@ -106,6 +107,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         //   `${route.gym}/${route.manageinformationGym}`,
         //   <FaDumbbell className="text-lg" />
         // ),
+        getItem(
+          "Quản Lý Khách Hàng",
+          `/gym/manage-customers`,
+          <LiaFileContractSolid className="text-lg" />
+        ),
         getItem(
           "Quản Lý PT",
           `${route.gym}/${route.managePTGym}`,

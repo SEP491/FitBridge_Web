@@ -1,4 +1,3 @@
-
 import "./index.css";
 import {
   createBrowserRouter,
@@ -33,86 +32,92 @@ import ManagePackageFPT from "./pages/FreelancePT-Pages/ManagePackageFPT/ManageP
 import DashboardFPT from "./pages/FreelancePT-Pages/DashboardFPT/DashboardFPT";
 import CustomerVoucherPage from "./pages/CustomerVoucherPage/CustomerVoucherPage";
 import ManageWithdrawalPage from "./pages/AdminPages/ManageWithdrawalPage/ManageWithdrawalPage";
+import ManageGymCustomers from "./pages/GymPages/ManageCustomer/ManageCustomer";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
   try {
     if (!token) return null;
-    
-    const parts = token.split('.');
+
+    const parts = token.split(".");
     if (parts.length !== 3) {
-      throw new Error('Invalid JWT token');
+      throw new Error("Invalid JWT token");
     }
 
     const payload = parts[1];
-    const paddedPayload = payload + '==='.slice((payload.length + 3) % 4);
-    const decoded = atob(paddedPayload.replace(/-/g, '+').replace(/_/g, '/'));
-    
+    const paddedPayload = payload + "===".slice((payload.length + 3) % 4);
+    const decoded = atob(paddedPayload.replace(/-/g, "+").replace(/_/g, "/"));
+
     const parsedPayload = JSON.parse(decoded);
-    
+
     // Check if token is expired
     if (parsedPayload.exp) {
       const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
       if (parsedPayload.exp < currentTime) {
-        console.log('Token expired:', new Date(parsedPayload.exp * 1000));
+        console.log("Token expired:", new Date(parsedPayload.exp * 1000));
         return null; // Token is expired
       }
     }
-    
+
     return parsedPayload;
   } catch (error) {
-    console.error('JWT decode error:', error);
+    console.error("JWT decode error:", error);
     return null;
   }
 };
 
 // Get user role from tokens (with expiration check)
 const getUserRole = () => {
-  const accessToken = Cookies.get('accessToken');
-  const refreshToken = Cookies.get('refreshToken');
-  
+  const accessToken = Cookies.get("accessToken");
+  const refreshToken = Cookies.get("refreshToken");
+
   // Try access token first
   if (accessToken) {
     const decoded = decodeJWT(accessToken);
     if (decoded) {
       // Check different possible role claim formats
-      const role = decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 
-                   decoded.role || 
-                   decoded['role'];
+      const role =
+        decoded[
+          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+        ] ||
+        decoded.role ||
+        decoded["role"];
       return role;
     } else {
       // Access token is expired or invalid, remove it
-      Cookies.remove('accessToken');
+      Cookies.remove("accessToken");
     }
   }
-  
+
   // Fallback to refresh token
   if (refreshToken) {
     const decoded = decodeJWT(refreshToken);
     console.log("Decoded Refresh Token:", decoded);
     if (decoded) {
-      const role = decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 
-                   decoded.role || 
-                   decoded['role'];
+      const role =
+        decoded[
+          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+        ] ||
+        decoded.role ||
+        decoded["role"];
       return role;
     } else {
       // Refresh token is expired or invalid, remove all tokens
-      Cookies.remove('refreshToken');
-      Cookies.remove('accessToken');
-      Cookies.remove('idToken');
-      Cookies.remove('user');
+      Cookies.remove("refreshToken");
+      Cookies.remove("accessToken");
+      Cookies.remove("idToken");
+      Cookies.remove("user");
     }
   }
-  
+
   return null;
 };
-
 
 // Check if user is authenticated (with expiration validation)
 const isAuthenticated = () => {
   // const accessToken = Cookies.get('accessToken');
-  const refreshToken = Cookies.get('refreshToken');
-  
+  const refreshToken = Cookies.get("refreshToken");
+
   // // Check access token first
   // if (accessToken) {
   //   const decoded = decodeJWT(accessToken);
@@ -123,7 +128,7 @@ const isAuthenticated = () => {
   //     Cookies.remove('accessToken');
   //   }
   // }
-  
+
   // Check refresh token as fallback
   if (refreshToken) {
     const decoded = decodeJWT(refreshToken);
@@ -131,27 +136,27 @@ const isAuthenticated = () => {
       return true; // Refresh token is valid and not expired
     } else {
       // Refresh token is expired or invalid, remove all tokens
-      Cookies.remove('refreshToken');
-      Cookies.remove('accessToken');
-      Cookies.remove('idToken');
-      Cookies.remove('user');
+      Cookies.remove("refreshToken");
+      Cookies.remove("accessToken");
+      Cookies.remove("idToken");
+      Cookies.remove("user");
       return false;
     }
   }
-  
+
   return false;
 };
 
 // Get dashboard route based on user role
 const getDashboardRoute = (role) => {
   switch (role) {
-    case 'Admin':
-      return route.admin + '/' + route.dashboard;
-    case 'GymOwner':
-    case 'GYM':
-      return route.gym + '/' + route.dashboardGym;
-    case 'FreelancePT':
-      return route.freelancePt + '/' + route.dashboardPT;
+    case "Admin":
+      return route.admin + "/" + route.dashboard;
+    case "GymOwner":
+    case "GYM":
+      return route.gym + "/" + route.dashboardGym;
+    case "FreelancePT":
+      return route.freelancePt + "/" + route.dashboardPT;
     default:
       return route.welcomeLogin;
   }
@@ -161,19 +166,19 @@ const getDashboardRoute = (role) => {
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const userRole = getUserRole();
   const authenticated = isAuthenticated();
-  
-  console.log('ProtectedRoute - User Role:', userRole);
-  console.log('ProtectedRoute - Authenticated:', authenticated);
-  console.log('ProtectedRoute - Allowed Roles:', allowedRoles);
-  
+
+  console.log("ProtectedRoute - User Role:", userRole);
+  console.log("ProtectedRoute - Authenticated:", authenticated);
+  console.log("ProtectedRoute - Allowed Roles:", allowedRoles);
+
   if (!authenticated) {
     return <Navigate to={route.welcomeLogin} replace />;
   }
-  
+
   if (allowedRoles && !allowedRoles.includes(userRole)) {
     return <Navigate to={route.welcomeLogin} replace />;
   }
-  
+
   return children;
 };
 
@@ -186,12 +191,12 @@ function App() {
   const LoginRedirect = () => {
     const userRole = getUserRole();
     const authenticated = isAuthenticated();
-    
+
     if (authenticated && userRole) {
       const dashboardRoute = getDashboardRoute(userRole);
       return <Navigate to={dashboardRoute} replace />;
     }
-    
+
     return <LoginPages />;
   };
 
@@ -217,7 +222,7 @@ function App() {
     {
       path: route.admin,
       element: (
-        <ProtectedRoute allowedRoles={['Admin']}>
+        <ProtectedRoute allowedRoles={["Admin"]}>
           <AdminLayout />
         </ProtectedRoute>
       ),
@@ -225,7 +230,7 @@ function App() {
         {
           path: route.dashboard,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <DashboardPage />
             </ProtectedRoute>
           ),
@@ -233,7 +238,7 @@ function App() {
         {
           path: route.manageGym,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManageGymPage />
             </ProtectedRoute>
           ),
@@ -241,7 +246,7 @@ function App() {
         {
           path: route.managePT,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManagePTPage />
             </ProtectedRoute>
           ),
@@ -249,7 +254,7 @@ function App() {
         {
           path: route.manageNotification,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManageNotificationPage />
             </ProtectedRoute>
           ),
@@ -257,7 +262,7 @@ function App() {
         {
           path: route.managePackages,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManagePackagesPage />
             </ProtectedRoute>
           ),
@@ -265,7 +270,7 @@ function App() {
         {
           path: route.manageUser,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManageUserPage />
             </ProtectedRoute>
           ),
@@ -273,7 +278,7 @@ function App() {
         {
           path: route.manageTransaction,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManageTransactionPage />
             </ProtectedRoute>
           ),
@@ -281,7 +286,7 @@ function App() {
         {
           path: `manage-premium`,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManagePremiumPage />
             </ProtectedRoute>
           ),
@@ -289,7 +294,7 @@ function App() {
         {
           path: route.manageVoucher,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManageVoucher />
             </ProtectedRoute>
           ),
@@ -297,7 +302,7 @@ function App() {
         {
           path: route.manageWithdrawal,
           element: (
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <ManageWithdrawalPage />
             </ProtectedRoute>
           ),
@@ -309,7 +314,7 @@ function App() {
     {
       path: route.gym,
       element: (
-        <ProtectedRoute allowedRoles={['GymOwner', 'GYM']}>
+        <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
           <AdminLayout />
         </ProtectedRoute>
       ),
@@ -317,7 +322,7 @@ function App() {
         {
           path: route.dashboardGym,
           element: (
-            <ProtectedRoute allowedRoles={['GymOwner', 'GYM']}>
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
               <DashboardGym />
             </ProtectedRoute>
           ),
@@ -325,7 +330,7 @@ function App() {
         {
           path: route.manageinformationGym,
           element: (
-            <ProtectedRoute allowedRoles={['GymOwner', 'GYM']}>
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
               <ManageGymInformation />
             </ProtectedRoute>
           ),
@@ -333,7 +338,7 @@ function App() {
         {
           path: route.managePTGym,
           element: (
-            <ProtectedRoute allowedRoles={['GymOwner', 'GYM']}>
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
               <ManagePTGym />
             </ProtectedRoute>
           ),
@@ -341,7 +346,7 @@ function App() {
         {
           path: route.managePackagesGym,
           element: (
-            <ProtectedRoute allowedRoles={['GymOwner', 'GYM']}>
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
               <ManageGymPackages />
             </ProtectedRoute>
           ),
@@ -349,7 +354,7 @@ function App() {
         {
           path: route.manageTransactionGym,
           element: (
-            <ProtectedRoute allowedRoles={['GymOwner', 'GYM']}>
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
               <ManageGymTransaction />
             </ProtectedRoute>
           ),
@@ -357,15 +362,23 @@ function App() {
         {
           path: route.manageSlotGym,
           element: (
-            <ProtectedRoute allowedRoles={['GymOwner', 'GYM']}>
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
               <ManageSlotGym />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "manage-customers",
+          element: (
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+              <ManageGymCustomers />
             </ProtectedRoute>
           ),
         },
         {
           path: route.billandcontract,
           element: (
-            <ProtectedRoute allowedRoles={['GymOwner', 'GYM']}>
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
               <GymBillandContract />
             </ProtectedRoute>
           ),
@@ -377,7 +390,7 @@ function App() {
     {
       path: route.freelancePt,
       element: (
-        <ProtectedRoute allowedRoles={['FreelancePT']}>
+        <ProtectedRoute allowedRoles={["FreelancePT"]}>
           <AdminLayout />
         </ProtectedRoute>
       ),
@@ -385,7 +398,7 @@ function App() {
         {
           path: route.dashboardPT,
           element: (
-            <ProtectedRoute allowedRoles={['FreelancePT']}>
+            <ProtectedRoute allowedRoles={["FreelancePT"]}>
               <DashboardFPT />
             </ProtectedRoute>
           ),
@@ -394,7 +407,7 @@ function App() {
         {
           path: route.manageVoucherPT,
           element: (
-            <ProtectedRoute allowedRoles={['FreelancePT']}>
+            <ProtectedRoute allowedRoles={["FreelancePT"]}>
               <ManageVoucherPT />
             </ProtectedRoute>
           ),
@@ -402,7 +415,7 @@ function App() {
         {
           path: route.managePackageFPT,
           element: (
-            <ProtectedRoute allowedRoles={['FreelancePT']}>
+            <ProtectedRoute allowedRoles={["FreelancePT"]}>
               <ManagePackageFPT />
             </ProtectedRoute>
           ),
