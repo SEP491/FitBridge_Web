@@ -32,6 +32,7 @@ import ManageVoucher from "./pages/AdminPages/ManageVoucher/ManageVoucher";
 import ManagePackageFPT from "./pages/FreelancePT-Pages/ManagePackageFPT/ManagePackageFPT";
 import DashboardFPT from "./pages/FreelancePT-Pages/DashboardFPT/DashboardFPT";
 import CustomerVoucherPage from "./pages/CustomerVoucherPage/CustomerVoucherPage";
+import ManageWithdrawalPage from "./pages/AdminPages/ManageWithdrawalPage/ManageWithdrawalPage";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -290,6 +291,14 @@ function App() {
           element: (
             <ProtectedRoute allowedRoles={['Admin']}>
               <ManageVoucher />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: route.manageWithdrawal,
+          element: (
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <ManageWithdrawalPage />
             </ProtectedRoute>
           ),
         },

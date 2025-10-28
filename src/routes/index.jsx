@@ -11,6 +11,7 @@ export const route = {
   manageNotification: "manage-notification",
   manageTransaction: "manage-transaction",
   manageVoucher: "manage-voucher",
+  manageWithdrawal: "manage-withdrawal",
 
   gym: "/gym",
   dashboardGym: "dashboard-gym",

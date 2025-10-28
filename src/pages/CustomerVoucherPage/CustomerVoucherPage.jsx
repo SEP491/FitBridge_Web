@@ -4,7 +4,6 @@ import { Card, Button, Spin, Alert, Typography } from "antd";
 import { ArrowLeftOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import VoucherCard from "../../components/VoucherCard/VoucherCard";
 import logoColor from "../../assets/LogoColor.png";
-import { couponService } from "../../services/couponService";
 
 const { Title, Text } = Typography;
 
@@ -45,7 +44,7 @@ const CustomerVoucherPage = () => {
 //     }
 //   };
 
-const fetchVoucherData = async (voucherId) => {
+const fetchVoucherData = async () => {
     try {
       setLoading(true);
         // Simulate API call delay

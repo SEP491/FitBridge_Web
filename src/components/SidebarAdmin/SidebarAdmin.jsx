@@ -22,6 +22,7 @@ import { FaRegCalendarCheck } from "react-icons/fa";
 import { GrTransaction } from "react-icons/gr";
 import { LiaFileContractSolid } from "react-icons/lia";
 import { GiGymBag } from "react-icons/gi";
+import { MdOutlineAccountBalanceWallet } from "react-icons/md";
 
 // eslint-disable-next-line no-unused-vars
 export default function SidebarAdmin({ collapsed, onCollapse }) {
@@ -71,6 +72,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Quản Lý Giao Dịch",
           `${route.admin}/${route.manageTransaction}`,
           <GrTransaction className="text-lg" />
+        ),
+        getItem(
+          "Yêu Cầu Rút Tiền",
+          `${route.admin}/${route.manageWithdrawal}`,
+          <MdOutlineAccountBalanceWallet className="text-lg" />
         ),
         getItem(
           "Gói Premium",
