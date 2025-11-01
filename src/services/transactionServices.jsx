@@ -1,11 +1,14 @@
 import { request } from "./request";
 
 const transactionService = {
-  getGymTransaction: (params) =>
-    request("GET", "v1/transaction/gym", null, {}, params),
+  getTransactions: (params) =>
+    request("GET", "/v1/transactions/current-user", null, {}, params),
 
+  getTransactionsDetails: (transactionId) =>
+    request("GET", `/v1/transactions/${transactionId}`, null),
+  
   getAdminTransaction: (params) =>
-    request("GET", "v1/admin/transaction", null, {}, params),
+    request("GET", "/v1/admin/transaction", null, {}, params),
 };
 
 export default transactionService;
