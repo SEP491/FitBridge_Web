@@ -3,20 +3,24 @@ import {
   Card,
   ConfigProvider,
   Input,
-  Modal,
   Select,
   Spin,
   Table,
   Tag,
   Tooltip,
+  Descriptions,
+  Row,
+  Col,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { LoadingOutlined, SearchOutlined } from "@ant-design/icons";
-import { FaEye, FaMoneyBillWave, FaFilter } from "react-icons/fa";
+import { LoadingOutlined, SearchOutlined, EyeOutlined } from "@ant-design/icons";
+import { FaMoneyBillWave, FaFilter, FaUserCircle, FaInfoCircle, FaReceipt } from "react-icons/fa";
 import { MdPayment } from "react-icons/md";
 import { ImStatsBars } from "react-icons/im";
 import transactionService from "../../../services/transactionServices";
+import FitBridgeModal from "../../../components/FitBridgeModal";
+import defaultAvatar from "../../../assets/LogoColor.png";
 
 export default function ManageGymTransaction() {
   const [transactions, setTransactions] = useState([]);
@@ -37,22 +41,25 @@ export default function ManageGymTransaction() {
   const fetchTransactions = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await transactionService.getTransactions({
+      const response = await transactionService.getGymOwnerTransaction({
         page,
         size: pageSize,
       });
       const { items, total, page: currentPage, totalPages } = response.data;
-      setTransactions(items);
-      console.log("Transactions:", items);
+      setTransactions(items || []);
       setPagination({
         current: currentPage,
         pageSize,
-        total,
+        total: total || 0,
         totalPages,
       });
     } catch (error) {
       console.error("Error fetching transactions:", error);
-      toast.error("Lỗi tải danh sách giao dịch");
+      toast.error(
+        error?.response?.data?.message ||
+          "Lỗi tải danh sách giao dịch, vui lòng thử lại sau."
+      );
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
@@ -62,55 +69,24 @@ export default function ManageGymTransaction() {
     fetchTransactions();
   }, []);
 
-  const handleTableChange = (pagination) => {
-    fetchTransactions(pagination.current, pagination.pageSize);
+  const handleTableChange = (newPagination) => {
+    fetchTransactions(newPagination.current, newPagination.pageSize);
   };
 
   const fetchTransactionDetail = async (transactionId) => {
     setLoadingDetail(true);
     try {
-      const response = await transactionService.getTransactionsDetails(transactionId);
+      const response = await transactionService.getGymOwnerTransactionDetails(transactionId);
       setSelectedTransaction(response.data);
       setIsModalTransactionDetailOpen(true);
     } catch (error) {
       console.error("Error fetching transaction detail:", error);
-      toast.error("Lỗi tải chi tiết giao dịch");
+      toast.error(
+        error?.response?.data?.message ||
+          "Lỗi tải chi tiết giao dịch, vui lòng thử lại sau."
+      );
     } finally {
       setLoadingDetail(false);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    const normalizedStatus = status?.toUpperCase();
-    switch (normalizedStatus) {
-      case "COMPLETED":
-      case "SUCCESS":
-        return "green";
-      case "PENDING":
-        return "orange";
-      case "FAILED":
-        return "red";
-      case "CANCELLED":
-        return "default";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusText = (status) => {
-    const normalizedStatus = status?.toUpperCase();
-    switch (normalizedStatus) {
-      case "COMPLETED":
-      case "SUCCESS":
-        return "Thành công";
-      case "PENDING":
-        return "Đang xử lý";
-      case "FAILED":
-        return "Thất bại";
-      case "CANCELLED":
-        return "Đã hủy";
-      default:
-        return status;
     }
   };
 
@@ -148,54 +124,37 @@ export default function ManageGymTransaction() {
     }
   };
 
-  const handleUpdateTransactionStatus = async (transactionId, newStatus) => {
-    Modal.confirm({
-      title: `Bạn có chắc chắn muốn ${
-        newStatus?.toUpperCase() === "SUCCESS" ? "xác nhận" : "hủy"
-      } giao dịch này không?`,
-      onOk: async () => {
-        try {
-          await transactionService.updateTransactionStatus(
-            transactionId,
-            newStatus
-          );
-          fetchTransactions(pagination.current, pagination.pageSize);
-          toast.success(
-            `${
-              newStatus?.toUpperCase() === "SUCCESS" ? "Xác nhận" : "Hủy"
-            } giao dịch thành công`
-          );
-        } catch (error) {
-          console.error("Error updating transaction:", error);
-          toast.error(
-            error.response?.data?.message || "Lỗi cập nhật trạng thái giao dịch"
-          );
-        }
-      },
-    });
-  };
-
   const columns = [
-    {
-      title: "Mã Giao Dịch",
-      dataIndex: "id",
-      key: "id",
-      align: "center",
-      width: 150,
-      render: (id) => (
-        <Tooltip title={id}>
-          <span className="font-mono text-xs">{id?.substring(0, 8)}...</span>
-        </Tooltip>
-      ),
-    },
     {
       title: "Mã Đơn Hàng",
       dataIndex: "orderCode",
       key: "orderCode",
-      align: "center",
+      align: "left",
       width: 120,
       render: (orderCode) => (
-        <span className="font-mono text-sm">{orderCode || "N/A"}</span>
+        <span className="font-mono text-sm font-semibold text-blue-600">
+          {orderCode || "N/A"}
+        </span>
+      ),
+    },
+    {
+      title: "Khách Hàng",
+      key: "customer",
+      align: "center",
+      width: 200,
+      render: (record) => (
+        <div className="flex items-center gap-2 justify-start">
+          <img
+            src={record.customerAvatarUrl || defaultAvatar}
+            alt={record.customerName}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+          <div className="text-left">
+            <div className="font-medium">
+              {record.customerName || "Chưa có thông tin"}
+            </div>
+          </div>
+        </div>
       ),
     },
     {
@@ -211,99 +170,66 @@ export default function ManageGymTransaction() {
       ),
     },
     {
-      title: "Số Tiền",
-      dataIndex: "amount",
-      key: "amount",
-      align: "center",
-      width: 130,
-      render: (value) =>
-        value?.toLocaleString("vi", {
-          style: "currency",
-          currency: "VND",
-        }) || "0 VNĐ",
-      sorter: (a, b) => (a.amount || 0) - (b.amount || 0),
-    },
-    {
-      title: "Trạng Thái",
-      dataIndex: "status",
-      key: "status",
-      align: "center",
-      width: 120,
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
-      ),
-      filters: [
-        { text: "Thành công", value: "Success" },
-        { text: "Đang xử lý", value: "Pending" },
-        { text: "Thất bại", value: "Failed" },
-      ],
-      onFilter: (value, record) => 
-        record.status?.toUpperCase() === value.toUpperCase(),
-    },
-    {
-      title: "Ngày Tạo",
-      dataIndex: "createdAt",
-      key: "createdAt",
+      title: "Số Tiền Thanh Toán",
+      dataIndex: "totalPaidAmount",
+      key: "totalPaidAmount",
       align: "center",
       width: 150,
-      render: (date) =>
-        date ? new Date(date).toLocaleDateString("vi-VN") : "N/A",
-      sorter: (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      sorter: (a, b) => (a.totalPaidAmount || 0) - (b.totalPaidAmount || 0),
+      render: (value) => (
+        <span className="font-bold text-green-600">
+          {value !== null && value !== undefined
+            ? value.toLocaleString("vi", {
+                style: "currency",
+                currency: "VND",
+              })
+            : "N/A"}
+        </span>
+      ),
     },
     {
-      title: "Hành Động",
-      key: "action",
+      title: "Lợi Nhuận",
+      dataIndex: "profitAmount",
+      key: "profitAmount",
       align: "center",
-      width: 200,
-      fixed: "right",
-      render: (text, record) => (
-        <div className="flex justify-center items-center gap-2">
-          <Tooltip title="Xem chi tiết">
-            <FaEye
-              onClick={() => fetchTransactionDetail(record.id)}
-              size={20}
-              className="cursor-pointer text-blue-500 hover:text-blue-700"
-            />
-          </Tooltip>
-
-          {record.status?.toUpperCase() === "PENDING" && (
-            <>
-              <Tooltip title="Xác nhận giao dịch">
-                <Button
-                  size="small"
-                  type="primary"
-                  onClick={() =>
-                    handleUpdateTransactionStatus(record.id, "Success")
-                  }
-                  className="bg-green-500 hover:bg-green-600 border-0"
-                >
-                  Xác nhận
-                </Button>
-              </Tooltip>
-
-              <Tooltip title="Hủy giao dịch">
-                <Button
-                  size="small"
-                  danger
-                  onClick={() =>
-                    handleUpdateTransactionStatus(record.id, "Failed")
-                  }
-                >
-                  Hủy
-                </Button>
-              </Tooltip>
-            </>
-          )}
-        </div>
+      width: 130,
+      sorter: (a, b) => (a.profitAmount || 0) - (b.profitAmount || 0),
+      render: (value) => (
+        <span className="font-bold text-orange-600">
+          {value !== null && value !== undefined
+            ? value.toLocaleString("vi", {
+                style: "currency",
+                currency: "VND",
+              })
+            : "N/A"}
+        </span>
+      ),
+    },
+    {
+      title: "Số Tiền Rút",
+      dataIndex: "withdrawalAmount",
+      key: "withdrawalAmount",
+      align: "center",
+      width: 130,
+      sorter: (a, b) => (a.withdrawalAmount || 0) - (b.withdrawalAmount || 0),
+      render: (value) => (
+        <span className="font-bold text-purple-600">
+          {value !== null && value !== undefined
+            ? value.toLocaleString("vi", {
+                style: "currency",
+                currency: "VND",
+              })
+            : "N/A"}
+        </span>
       ),
     },
   ];
 
   const filteredData = transactions.filter((item) => {
     const matchesSearch = searchText
-      ? (item.id?.toLowerCase() || "").includes(searchText.toLowerCase()) ||
+      ? (item.transactionId?.toLowerCase() || "").includes(searchText.toLowerCase()) ||
         (item.orderCode?.toString() || "").includes(searchText) ||
+        (item.customerName?.toLowerCase() || "").includes(searchText.toLowerCase()) ||
         (item.transactionType?.toLowerCase() || "").includes(
           searchText.toLowerCase()
         ) ||
@@ -314,7 +240,7 @@ export default function ManageGymTransaction() {
 
     const matchesStatus =
       statusFilter === "all" || 
-      item.status?.toUpperCase() === statusFilter.toUpperCase();
+      item.transactionType?.toUpperCase() === statusFilter.toUpperCase();
 
     return matchesSearch && matchesStatus;
   });
@@ -322,23 +248,14 @@ export default function ManageGymTransaction() {
   // Calculate statistics
   const stats = {
     total: transactions.length,
-    completed: transactions.filter((t) => 
-      t.status?.toUpperCase() === "SUCCESS" || t.status?.toUpperCase() === "COMPLETED"
-    ).length,
-    pending: transactions.filter((t) => 
-      t.status?.toUpperCase() === "PENDING"
-    ).length,
-    failed: transactions.filter((t) => 
-      t.status?.toUpperCase() === "FAILED"
-    ).length,
-    totalRevenue: transactions
-      .filter((t) => 
-        t.status?.toUpperCase() === "SUCCESS" || t.status?.toUpperCase() === "COMPLETED"
-      )
-      .reduce((sum, t) => sum + (t.amount || 0), 0),
+    totalRevenue: transactions.reduce((sum, t) => sum + (t.totalPaidAmount || 0), 0),
+    totalProfit: transactions.reduce((sum, t) => sum + (t.profitAmount || 0), 0),
+    totalWithdrawal: transactions.reduce((sum, t) => sum + (t.withdrawalAmount || 0), 0),
+    productOrders: transactions.filter((t) => t.transactionType === "ProductOrder").length,
+    extendCourse: transactions.filter((t) => t.transactionType === "ExtendCourse").length,
   };
 
-  if (loading) {
+  if (loading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Spin
@@ -369,31 +286,37 @@ export default function ManageGymTransaction() {
             <div className="text-gray-600">Tổng giao dịch</div>
           </Card>
           <Card className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {stats.completed}
-            </div>
-            <div className="text-gray-600">Thành công</div>
-          </Card>
-          <Card className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {stats.pending}
-            </div>
-            <div className="text-gray-600">Đang xử lý</div>
-          </Card>
-          <Card className="text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {stats.failed}
-            </div>
-            <div className="text-gray-600">Thất bại</div>
-          </Card>
-          <Card className="text-center">
             <div className="text-2xl font-bold text-[#ED2A46]">
               {stats.totalRevenue.toLocaleString("vi", {
                 style: "currency",
                 currency: "VND",
               })}
             </div>
-            <div className="text-gray-600">Doanh thu</div>
+            <div className="text-gray-600">Tổng thanh toán</div>
+          </Card>
+          <Card className="text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {stats.totalProfit.toLocaleString("vi", {
+                style: "currency",
+                currency: "VND",
+              })}
+            </div>
+            <div className="text-gray-600">Tổng lợi nhuận</div>
+          </Card>
+          <Card className="text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              {stats.totalWithdrawal.toLocaleString("vi", {
+                style: "currency",
+                currency: "VND",
+              })}
+            </div>
+            <div className="text-gray-600">Tổng rút tiền</div>
+          </Card>
+          <Card className="text-center">
+            <div className="text-2xl font-bold text-orange-600">
+              {stats.productOrders}
+            </div>
+            <div className="text-gray-600">Đơn hàng</div>
           </Card>
         </div>
       </div>
@@ -402,40 +325,52 @@ export default function ManageGymTransaction() {
         theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
       >
         {/* Filters */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <Input
-              placeholder="Tìm kiếm theo mã GD, mã đơn hàng, loại giao dịch..."
-              prefix={<SearchOutlined />}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 350 }}
-              allowClear
-            />
+        <Card
+          style={{marginBottom: 20}}
+          title={
+            <span className="flex items-center gap-2">
+              <FaFilter /> Bộ lọc
+            </span>
+          }
+        >
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+              <Input
+                placeholder="Tìm kiếm theo mã GD, khách hàng, loại giao dịch..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 350 }}
+                allowClear
+              />
 
-            <Select
-              placeholder="Lọc theo trạng thái"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 150 }}
+              <Select
+                placeholder="Lọc theo loại giao dịch"
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: 200 }}
+              >
+                <Select.Option value="all">Tất cả loại</Select.Option>
+                <Select.Option value="ProductOrder">Đơn hàng</Select.Option>
+                <Select.Option value="ExtendCourse">Gia hạn khóa học</Select.Option>
+                <Select.Option value="GymCourse">Gói tập Gym</Select.Option>
+                <Select.Option value="Withdraw">Rút tiền</Select.Option>
+                <Select.Option value="DistributeProfit">Phân phối lợi nhuận</Select.Option>
+              </Select>
+            </div>
+
+            <Button
+              icon={<ImStatsBars />}
+              className="bg-[#FF914D] text-white border-0 hover:bg-[#e8823d]"
             >
-              <Select.Option value="all">Tất cả</Select.Option>
-              <Select.Option value="Success">Thành công</Select.Option>
-              <Select.Option value="Pending">Đang xử lý</Select.Option>
-              <Select.Option value="Failed">Thất bại</Select.Option>
-            </Select>
+              Xuất báo cáo
+            </Button>
           </div>
-
-          <Button
-            icon={<ImStatsBars />}
-            className="!bg-[#FF914D] !text-white !border-0 hover:!bg-[#e8823d]"
-          >
-            Xuất báo cáo
-          </Button>
-        </div>
+        </Card>
 
         <Table
           dataSource={filteredData}
           columns={columns}
+          loading={loading}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -447,26 +382,30 @@ export default function ManageGymTransaction() {
               `${range[0]}-${range[1]} của ${total} giao dịch`,
           }}
           onChange={handleTableChange}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 800 }}
           size="middle"
+          rowKey="transactionId"
+          onRow={(record) => ({
+            onClick: () => {
+              fetchTransactionDetail(record.transactionId);
+            },
+            style: { cursor: "pointer" },
+          })}
         />
       </ConfigProvider>
 
-      {/* Transaction Detail Modal */}
-      <Modal
+      {/* Transaction Detail Modal - Enhanced UI */}
+      <FitBridgeModal
         open={isModalTransactionDetailOpen}
         onCancel={() => {
           setIsModalTransactionDetailOpen(false);
           setSelectedTransaction(null);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <FaMoneyBillWave />
-            Chi Tiết Giao Dịch
-          </p>
-        }
-        footer={null}
-        width={800}
+        title="Chi Tiết Giao Dịch"
+        titleIcon={<EyeOutlined />}
+        width={950}
+        logoSize="medium"
+        bodyStyle={{ padding: "0", maxHeight: "75vh", overflowY: "auto" }}
       >
         {loadingDetail ? (
           <div className="flex justify-center items-center py-12">
@@ -481,167 +420,186 @@ export default function ManageGymTransaction() {
             />
           </div>
         ) : selectedTransaction ? (
-          <div className="space-y-4">
-            <Card title="Thông tin giao dịch" size="small">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <strong>Mã giao dịch:</strong>
-                  <div className="font-mono text-sm bg-gray-100 p-2 rounded mt-1">
-                    {selectedTransaction.id}
+          <div className="flex flex-col">
+            {/* Header Section with Key Info */}
+            <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
+              <Row gutter={[24, 16]}>
+                <Col xs={24} md={12}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <FaReceipt className="text-[#FF914D]" />
+                      <span>Mã Đơn Hàng</span>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedTransaction.orderCode || "N/A"}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <strong>Mã đơn hàng:</strong>
-                  <div className="font-mono text-sm bg-gray-100 p-2 rounded mt-1">
-                    {selectedTransaction.orderCode || "N/A"}
+                </Col>
+                <Col xs={24} md={12}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <FaMoneyBillWave className="text-[#FF914D]" />
+                      <span>Số Tiền Thanh Toán</span>
+                    </div>
+                    <div className="text-2xl font-bold text-[#ED2A46]">
+                      {selectedTransaction.totalPaidAmount !== null && selectedTransaction.totalPaidAmount !== undefined
+                        ? selectedTransaction.totalPaidAmount.toLocaleString("vi", {
+                            style: "currency",
+                            currency: "VND",
+                          })
+                        : "N/A"}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <strong>Phương thức thanh toán:</strong>
-                  <div className="mt-1">
-                    <Tag color="blue">
-                      {selectedTransaction.paymentMethod || "N/A"}
-                    </Tag>
-                  </div>
-                </div>
-                <div>
-                  <strong>Loại giao dịch:</strong>
-                  <div className="mt-1">
-                    <Tag color={getTransactionTypeColor(selectedTransaction.transactionType)}>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Main Content */}
+            <div className="p-6 flex flex-col gap-5 space-y-6">
+              {/* Transaction Info Card */}
+              <Card 
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaInfoCircle />
+                    Thông Tin Giao Dịch
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+                  <Descriptions.Item label="Mã Giao Dịch" span={2}>
+                    <div className="font-mono text-xs bg-gray-50 p-2 rounded inline-block">
+                      {selectedTransaction.transactionId}
+                    </div>
+                  </Descriptions.Item>
+
+                  {selectedTransaction.orderItemId && (
+                    <Descriptions.Item label="Mã Mục Đơn Hàng" span={2}>
+                      <div className="font-mono text-xs bg-blue-50 p-2 rounded inline-block">
+                        {selectedTransaction.orderItemId}
+                      </div>
+                    </Descriptions.Item>
+                  )}
+                  
+                  <Descriptions.Item label="Loại Giao Dịch">
+                    <Tag 
+                      color={getTransactionTypeColor(selectedTransaction.transactionType)}
+                      className="text-sm px-3 py-1"
+                    >
                       {getTransactionTypeText(selectedTransaction.transactionType)}
                     </Tag>
-                  </div>
-                </div>
-                <div>
-                  <strong>Trạng thái:</strong>
-                  <div className="mt-1">
-                    <Tag color={getStatusColor(selectedTransaction.status)}>
-                      {getStatusText(selectedTransaction.status)}
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Phương Thức">
+                    <Tag color="cyan" icon={<MdPayment />} className="text-sm px-3 py-1">
+                      {selectedTransaction.paymentMethod || "N/A"}
                     </Tag>
-                  </div>
-                </div>
-                <div>
-                  <strong>Số tiền:</strong>
-                  <div className="text-lg font-bold text-[#ED2A46] mt-1">
-                    {selectedTransaction.amount?.toLocaleString("vi", {
-                      style: "currency",
-                      currency: "VND",
-                    }) || "0 VNĐ"}
-                  </div>
-                </div>
-                {selectedTransaction.profitAmount !== null && selectedTransaction.profitAmount !== undefined && (
-                  <div>
-                    <strong>Lợi nhuận:</strong>
-                    <div className="text-lg font-bold text-green-600 mt-1">
-                      {selectedTransaction.profitAmount?.toLocaleString("vi", {
-                        style: "currency",
-                        currency: "VND",
-                      }) || "0 VNĐ"}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <strong>Ngày tạo:</strong>
-                  <div className="mt-1">
-                    {selectedTransaction.createdAt
-                      ? new Date(selectedTransaction.createdAt).toLocaleString(
-                          "vi-VN"
-                        )
-                      : "N/A"}
-                  </div>
-                </div>
-                {selectedTransaction.description && (
-                  <div className="col-span-2">
-                    <strong>Mô tả:</strong>
-                    <div className="bg-gray-50 p-3 rounded mt-1 text-gray-700">
-                      {selectedTransaction.description}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Số Tiền Thanh Toán">
+                    <span className="text-lg font-bold text-[#ED2A46]">
+                      {selectedTransaction.totalPaidAmount !== null && selectedTransaction.totalPaidAmount !== undefined
+                        ? selectedTransaction.totalPaidAmount.toLocaleString("vi", {
+                            style: "currency",
+                            currency: "VND",
+                          })
+                        : "N/A"}
+                    </span>
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Lợi Nhuận">
+                    <span className="text-lg font-bold text-green-600">
+                      {selectedTransaction.profitAmount !== null && selectedTransaction.profitAmount !== undefined
+                        ? selectedTransaction.profitAmount.toLocaleString("vi", {
+                            style: "currency",
+                            currency: "VND",
+                          })
+                        : "N/A"}
+                    </span>
+                  </Descriptions.Item>
 
-            {selectedTransaction.withdrawalRequest && (
-              <Card title="Thông tin yêu cầu rút tiền" size="small" className="border-orange-200">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <strong>Mã yêu cầu:</strong>
-                    <div className="font-mono text-sm bg-gray-100 p-2 rounded mt-1">
-                      {selectedTransaction.withdrawalRequest.id || "N/A"}
-                    </div>
-                  </div>
-                  <div>
-                    <strong>Trạng thái yêu cầu:</strong>
-                    <div className="mt-1">
-                      <Tag color={getStatusColor(selectedTransaction.withdrawalRequest.status)}>
-                        {getStatusText(selectedTransaction.withdrawalRequest.status)}
-                      </Tag>
-                    </div>
-                  </div>
-                  {selectedTransaction.withdrawalRequest.bankName && (
-                    <>
-                      <div>
-                        <strong>Ngân hàng:</strong>
-                        <div className="mt-1">{selectedTransaction.withdrawalRequest.bankName}</div>
-                      </div>
-                      <div>
-                        <strong>Số tài khoản:</strong>
-                        <div className="font-mono mt-1">{selectedTransaction.withdrawalRequest.accountNumber || "N/A"}</div>
-                      </div>
-                      <div className="col-span-2">
-                        <strong>Tên tài khoản:</strong>
-                        <div className="mt-1">{selectedTransaction.withdrawalRequest.accountName || "N/A"}</div>
-                      </div>
-                    </>
+                  {selectedTransaction.withdrawalAmount !== null && selectedTransaction.withdrawalAmount !== undefined && (
+                    <Descriptions.Item label="Số Tiền Rút" span={2}>
+                      <span className="text-lg font-bold text-purple-600">
+                        {selectedTransaction.withdrawalAmount.toLocaleString("vi", {
+                          style: "currency",
+                          currency: "VND",
+                        })}
+                      </span>
+                    </Descriptions.Item>
                   )}
-                  {selectedTransaction.withdrawalRequest.reason && (
-                    <div className="col-span-2">
-                      <strong>Lý do:</strong>
-                      <div className="bg-gray-50 p-3 rounded mt-1 text-gray-700">
-                        {selectedTransaction.withdrawalRequest.reason}
-                      </div>
+                  
+                  <Descriptions.Item label="Ngày Tạo" span={2}>
+                    <div className="flex flex-col">
+                      <span className="font-semibold">
+                        {selectedTransaction.createdAt
+                          ? new Date(selectedTransaction.createdAt).toLocaleDateString("vi-VN", {
+                              weekday: "long",
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })
+                          : "N/A"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {selectedTransaction.createdAt
+                          ? new Date(selectedTransaction.createdAt).toLocaleTimeString("vi-VN")
+                          : ""}
+                      </span>
                     </div>
-                  )}
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Mô Tả" span={2}>
+                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                      {selectedTransaction.description || "Không có mô tả"}
+                    </div>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              {/* Customer Info Card */}
+              <Card 
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaUserCircle />
+                    Thông Tin Khách Hàng
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                  <img
+                    src={selectedTransaction.customerAvatarUrl || defaultAvatar}
+                    alt={selectedTransaction.customerName}
+                    className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500 mb-1">Họ Tên Khách Hàng</div>
+                    <div className="text-xl font-bold text-gray-800">
+                      {selectedTransaction.customerName || "Chưa có thông tin"}
+                    </div>
+                    {selectedTransaction.customerId && (
+                      <div className="text-xs text-gray-500 font-mono mt-1">
+                        ID: {selectedTransaction.customerId}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Card>
-            )}
-
-            {selectedTransaction.status?.toUpperCase() === "PENDING" && (
-              <div className="flex justify-center gap-4 pt-4">
-                <Button
-                  type="primary"
-                  className="bg-green-500 hover:bg-green-600 border-0"
-                  onClick={() => {
-                    handleUpdateTransactionStatus(
-                      selectedTransaction.id,
-                      "Success"
-                    );
-                    setIsModalTransactionDetailOpen(false);
-                  }}
-                >
-                  Xác nhận giao dịch
-                </Button>
-                <Button
-                  danger
-                  onClick={() => {
-                    handleUpdateTransactionStatus(
-                      selectedTransaction.id,
-                      "Failed"
-                    );
-                    setIsModalTransactionDetailOpen(false);
-                  }}
-                >
-                  Hủy giao dịch
-                </Button>
-              </div>
-            )}
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
             Không có dữ liệu
           </div>
         )}
-      </Modal>
+      </FitBridgeModal>
     </div>
   );
 }

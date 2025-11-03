@@ -9,6 +9,11 @@ const transactionService = {
   
   getAdminTransaction: (params) =>
     request("GET", "/v1/admin/transaction", null, {}, params),
+
+  getGymOwnerTransaction: (params) =>
+    request("GET", "/v1/transactions/gym-owner", null, {}, params),
+  getGymOwnerTransactionDetails: (transactionId) =>
+    request("GET", `/v1/transactions/gym-owner/${transactionId}`, null),
 };
 
 export default transactionService;
