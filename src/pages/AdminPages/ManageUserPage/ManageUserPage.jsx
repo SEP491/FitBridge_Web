@@ -33,14 +33,104 @@ import {
   LoadingOutlined,
   PlusOutlined,
   StopOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import adminService from "../../../services/adminServices";
 import toast from "react-hot-toast";
+import {
+  APIProvider,
+  Map,
+  AdvancedMarker,
+  Pin,
+} from "@vis.gl/react-google-maps";
+import usePlacesAutocomplete, {
+  getGeocode,
+  getLatLng,
+} from "use-places-autocomplete";
 
 const { Search } = Input;
 const { Option } = Select;
 const { Title, Text } = Typography;
+
+// Custom Places Autocomplete Component
+function PlacesAutocomplete({ onSelect, formInstance }) {
+  const {
+    ready,
+    value,
+    suggestions: { status, data },
+    setValue,
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: {
+      componentRestrictions: { country: "vn" }, // Restrict to Vietnam
+    },
+    debounce: 300,
+    initOnMount: true,
+  });
+
+  const handleSelect = async (address) => {
+    setValue(address, false);
+    clearSuggestions();
+
+    try {
+      const results = await getGeocode({ address });
+      const { lat, lng } = await getLatLng(results[0]);
+
+      onSelect({
+        address: address,
+        lat: lat,
+        lng: lng,
+      });
+
+      formInstance.setFieldsValue({
+        address: address,
+        latitude: lat,
+        longitude: lng,
+      });
+
+      toast.success("Đã chọn địa chỉ và tọa độ thành công!");
+    } catch (error) {
+      console.error("Error: ", error);
+      toast.error("Không thể lấy tọa độ cho địa chỉ này");
+    }
+  };
+
+  const options = data.map(({ place_id, description }) => ({
+    value: description,
+    label: description,
+    key: place_id,
+  }));
+
+  return (
+    <Select
+      showSearch
+      value={value || undefined}
+      placeholder={
+        ready ? "Nhập địa chỉ để tìm kiếm..." : "Đang tải Google Maps..."
+      }
+      size="large"
+      style={{ width: "100%" }}
+      defaultActiveFirstOption={false}
+      suffixIcon={<EnvironmentOutlined />}
+      filterOption={false}
+      onSearch={(val) => setValue(val)}
+      onSelect={handleSelect}
+      notFoundContent={
+        !ready ? (
+          <div style={{ padding: "8px", color: "#999" }}>Đang tải...</div>
+        ) : status === "OK" && data.length === 0 ? (
+          <div style={{ padding: "8px", color: "#999" }}>
+            Không tìm thấy địa chỉ
+          </div>
+        ) : null
+      }
+      disabled={!ready}
+      options={options}
+      loading={!ready}
+    />
+  );
+}
 
 export default function ManageUserPage() {
   const [users, setUsers] = useState([]);
@@ -61,6 +151,14 @@ export default function ManageUserPage() {
     femaleUsers: 0,
     activeUsers: 0,
   });
+  const [position, setPosition] = useState(null);
+
+  const center = {
+    lat: 10.762622,
+    lng: 106.660172,
+  };
+
+  const [mapCenter, setMapCenter] = useState(center);
 
   // Fetch users data
   const fetchUsers = async (page = 1, size = 10, search = "") => {
@@ -75,7 +173,7 @@ export default function ManageUserPage() {
         params.search = search;
       }
 
-      const response = await adminService.getAllUsers(params);
+      const response = await adminService.getAllCustomers(params);
 
       if (response.status === "200") {
         const {
@@ -95,15 +193,14 @@ export default function ManageUserPage() {
         });
 
         // Update statistics
-        const maleCount = items.filter((user) => user.gender === "Male").length;
-        const femaleCount = items.filter(
-          (user) => user.gender === "Female"
+        const maleCount = items.filter((user) => 
+          user.isMale !== undefined ? user.isMale : user.gender === "Male"
+        ).length;
+        const femaleCount = items.filter((user) => 
+          user.isMale !== undefined ? user.isMale === false : user.gender === "Female"
         ).length;
         const activeCount = items.filter(
-          (user) =>
-            user.gender !== "Unknown" &&
-            user.fullName &&
-            user.fullName.trim() !== ""
+          (user) => user.isActive === true
         ).length;
 
         setStatistics({
@@ -138,6 +235,18 @@ export default function ManageUserPage() {
     setModalVisible(true);
 
     if (user && type === "view") {
+      const gender = user.gender || (user.isMale !== undefined ? (user.isMale ? "Male" : "Female") : undefined);
+      
+      // Set map position if coordinates exist
+      if (user.latitude && user.longitude) {
+        const userPosition = { lat: user.latitude, lng: user.longitude };
+        setPosition(userPosition);
+        setMapCenter(userPosition);
+      } else {
+        setPosition(null);
+        setMapCenter(center);
+      }
+      
       form.setFieldsValue({
         fullName: user.fullName,
         email: user.email,
@@ -145,12 +254,24 @@ export default function ManageUserPage() {
         dob: user.dob ? dayjs(user.dob) : null,
         weight: user.weight || 0,
         height: user.height || 0,
-        gender: user.gender === "Unknown" ? undefined : user.gender,
+        gender: gender === "Unknown" ? undefined : gender,
         address: user.address === "Unknown" ? "" : user.address,
+        isActive: user.isActive ? "Hoạt động" : "Không hoạt động",
+        createdAt: user.createdAt ? dayjs(user.createdAt).format("DD/MM/YYYY HH:mm") : "N/A",
+        latitude: user.latitude || null,
+        longitude: user.longitude || null,
       });
     } else {
       form.resetFields();
+      setPosition(null);
+      setMapCenter(center);
     }
+  };
+
+  // Handle place selection from autocomplete
+  const handlePlaceSelect = (location) => {
+    setPosition({ lat: location.lat, lng: location.lng });
+    setMapCenter({ lat: location.lat, lng: location.lng });
   };
 
   // Handle modal submission
@@ -247,46 +368,55 @@ export default function ManageUserPage() {
       dataIndex: "fullName",
       key: "fullName",
       width: 300,
-      render: (text, record) => (
-        <div className="flex items-center gap-3">
-          <Avatar
-            size={50}
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor:
-                record.gender === "Male"
-                  ? "#1890ff"
-                  : record.gender === "Female"
-                  ? "#eb2f96"
-                  : "#666",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {record.gender === "Male" ? (
-              <ManOutlined />
-            ) : record.gender === "Female" ? (
-              <WomanOutlined />
-            ) : (
-              <UserOutlined />
-            )}
-          </Avatar>
-          <div>
-            <div className="font-semibold text-gray-900 text-base mb-1">
-              {text}
-            </div>
-            <div className="flex items-center text-sm text-gray-500 mb-1">
-              <MailOutlined className="mr-1" />
-              {record.email || "N/A"}
-            </div>
-            <div className="flex items-center text-sm text-gray-500">
-              <PhoneOutlined className="mr-1" />
-              {record.phone || "N/A"}
+      render: (text, record) => {
+        const isMale = record.isMale !== undefined ? record.isMale : (record.gender === "Male");
+        const isFemale = record.isMale !== undefined ? !record.isMale : (record.gender === "Female");
+        
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar
+              size={50}
+              src={record.avatarUrl}
+              icon={<UserOutlined />}
+              style={{
+                backgroundColor: record.avatarUrl ? undefined : (
+                  isMale
+                    ? "#1890ff"
+                    : isFemale
+                    ? "#eb2f96"
+                    : "#666"
+                ),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {!record.avatarUrl && (
+                isMale ? (
+                  <ManOutlined />
+                ) : isFemale ? (
+                  <WomanOutlined />
+                ) : (
+                  <UserOutlined />
+                )
+              )}
+            </Avatar>
+            <div>
+              <div className="font-semibold text-gray-900 text-base mb-1">
+                {text || "N/A"}
+              </div>
+              <div className="flex items-center text-sm text-gray-500 mb-1">
+                <MailOutlined className="mr-1" />
+                {record.email || "N/A"}
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <PhoneOutlined className="mr-1" />
+                {record.phone || "N/A"}
+              </div>
             </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Thông Tin Cá Nhân",
@@ -315,43 +445,59 @@ export default function ManageUserPage() {
     },
     {
       title: "Giới Tính",
-      dataIndex: "gender",
+      dataIndex: "isMale",
       key: "gender",
       width: 120,
-      render: (gender) => (
-        <Tag
-          color={
-            gender === "Male" ? "blue" : gender === "Female" ? "pink" : "gray"
-          }
-          icon={
-            gender === "Male" ? (
-              <ManOutlined />
-            ) : gender === "Female" ? (
-              <WomanOutlined />
-            ) : (
-              <UserOutlined />
-            )
-          }
-        >
-          {gender === "Male"
-            ? "Nam"
-            : gender === "Female"
-            ? "Nữ"
-            : "Chưa cập nhật"}
+      render: (isMale, record) => {
+        const gender = record.gender || (isMale !== undefined ? (isMale ? "Male" : "Female") : null);
+        const isMaleValue = isMale !== undefined ? isMale : (gender === "Male");
+        const isFemaleValue = isMale !== undefined ? !isMale : (gender === "Female");
+        
+        return (
+          <Tag
+            color={
+              isMaleValue ? "blue" : isFemaleValue ? "pink" : "gray"
+            }
+            icon={
+              isMaleValue ? (
+                <ManOutlined />
+              ) : isFemaleValue ? (
+                <WomanOutlined />
+              ) : (
+                <UserOutlined />
+              )
+            }
+          >
+            {isMaleValue
+              ? "Nam"
+              : isFemaleValue
+              ? "Nữ"
+              : "Chưa cập nhật"}
+          </Tag>
+        );
+      },
+    },
+    
+    {
+      title: "Trạng Thái",
+      dataIndex: "isActive",
+      key: "isActive",
+      width: 120,
+      render: (isActive) => (
+        <Tag color={isActive ? "success" : "error"}>
+          {isActive ? "Hoạt động" : "Không hoạt động"}
         </Tag>
       ),
     },
     {
-      title: "Địa Chỉ",
-      dataIndex: "address",
-      key: "address",
-      width: 200,
-      render: (address) => (
-        <Tooltip title={address === "Unknown" ? "Chưa cập nhật" : address}>
-          <span className="max-w-xs truncate block">
-            {address === "Unknown" ? "N/A" : address}
-          </span>
-        </Tooltip>
+      title: "Ngày Tạo",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 150,
+      render: (createdAt) => (
+        <span className="text-sm text-gray-700">
+          {createdAt ? dayjs(createdAt).format("DD/MM/YYYY HH:mm") : "N/A"}
+        </span>
       ),
     },
     {
@@ -374,6 +520,7 @@ export default function ManageUserPage() {
               icon={<StopOutlined />}
               onClick={() => handleBan(record.id)}
               className="text-red-600 hover:text-red-800"
+              disabled={!record.isActive}
             />
           </Tooltip>
         </Space>
@@ -382,21 +529,22 @@ export default function ManageUserPage() {
   ];
 
   return (
-    <div className="">
+    <APIProvider apiKey={import.meta.env.VITE_API_KEY_GOOGLE}>
       <div className="">
-        {/* Header */}
         <div className="">
-          <Title
-            level={2}
-            className="text-gray-900 mb-2 flex items-center gap-3"
-          >
-            <UserOutlined className="text-orange-500" />
-            Quản Lý Người Dùng
-          </Title>
-          <Text className="text-gray-600 text-base">
-            Quản lý và theo dõi tất cả người dùng trong hệ thống
-          </Text>
-        </div>
+          {/* Header */}
+          <div className="">
+            <Title
+              level={2}
+              className="text-gray-900 mb-2 flex items-center gap-3"
+            >
+              <UserOutlined className="text-orange-500" />
+              Quản Lý Người Dùng
+            </Title>
+            <Text className="text-gray-600 text-base">
+              Quản lý và theo dõi tất cả người dùng trong hệ thống
+            </Text>
+          </div>
 
         {/* Statistics Cards */}
         <Row gutter={[20, 20]} className="mb-8">
@@ -557,19 +705,27 @@ export default function ManageUserPage() {
           }
           open={modalVisible}
           onOk={modalType === "add" ? handleModalSubmit : undefined}
-          onCancel={() => setModalVisible(false)}
+          onCancel={() => {
+            setModalVisible(false);
+            setPosition(null);
+            setMapCenter(center);
+          }}
           okText={modalType === "add" ? "Thêm Người Dùng" : undefined}
           cancelText="Hủy"
           footer={
             modalType === "view"
               ? [
-                  <Button key="close" onClick={() => setModalVisible(false)}>
+                  <Button key="close" onClick={() => {
+                    setModalVisible(false);
+                    setPosition(null);
+                    setMapCenter(center);
+                  }}>
                     Đóng
                   </Button>,
                 ]
               : undefined
           }
-          width={600}
+          width={800}
         >
           <Form
             form={form}
@@ -655,13 +811,95 @@ export default function ManageUserPage() {
               </Col>
               <Col span={24}>
                 <Form.Item name="address" label="Địa Chỉ">
-                  <Input.TextArea placeholder="Nhập địa chỉ" rows={3} />
+                  {modalType === "add" ? (
+                    <PlacesAutocomplete
+                      onSelect={handlePlaceSelect}
+                      formInstance={form}
+                    />
+                  ) : (
+                    <Input.TextArea placeholder="Nhập địa chỉ" rows={3} disabled />
+                  )}
                 </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name="latitude" label="Vĩ Độ">
+                  <Input
+                    placeholder={modalType === "add" ? "Sẽ tự động điền khi chọn địa chỉ" : "Chưa có dữ liệu"}
+                    type="number"
+                    step="any"
+                    disabled
+                    style={{ backgroundColor: "#f5f5f5" }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name="longitude" label="Kinh Độ">
+                  <Input
+                    placeholder={modalType === "add" ? "Sẽ tự động điền khi chọn địa chỉ" : "Chưa có dữ liệu"}
+                    type="number"
+                    step="any"
+                    disabled
+                    style={{ backgroundColor: "#f5f5f5" }}
+                  />
+                </Form.Item>
+              </Col>
+              {modalType === "view" && (
+                <>
+                  <Col span={12}>
+                    <Form.Item name="isActive" label="Trạng Thái Tài Khoản">
+                      <Input disabled />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item name="createdAt" label="Ngày Tạo Tài Khoản">
+                      <Input disabled />
+                    </Form.Item>
+                  </Col>
+                </>
+              )}
+              <Col span={24}>
+                <div className="mb-4">
+                  <Text className="font-semibold text-gray-700 block mb-2">
+                    Xem vị trí trên bản đồ
+                  </Text>
+                  <div
+                    className="border rounded-lg overflow-hidden shadow-sm"
+                    style={{ height: "300px" }}
+                  >
+                    <Map
+                      defaultCenter={center}
+                      center={mapCenter}
+                      defaultZoom={13}
+                      zoom={position ? 15 : 13}
+                      gestureHandling={"greedy"}
+                      disableDefaultUI={false}
+                      mapId="user-location-map"
+                    >
+                      {position && (
+                        <AdvancedMarker position={position}>
+                          <Pin
+                            background={"#FF914D"}
+                            borderColor={"#FF6B35"}
+                            glyphColor={"#FFFFFF"}
+                          />
+                        </AdvancedMarker>
+                      )}
+                    </Map>
+                  </div>
+                  <Text className="text-gray-500 text-sm mt-2">
+                    {modalType === "add" 
+                      ? "Vị trí sẽ tự động hiển thị khi bạn chọn địa chỉ" 
+                      : position 
+                        ? "Vị trí hiện tại của người dùng"
+                        : "Người dùng chưa có thông tin vị trí"}
+                  </Text>
+                </div>
               </Col>
             </Row>
           </Form>
         </Modal>
+        </div>
       </div>
-    </div>
+    </APIProvider>
   );
 }

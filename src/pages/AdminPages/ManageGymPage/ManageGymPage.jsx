@@ -167,7 +167,7 @@ export default function ManageGymPage() {
   const fetchGym = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await adminService.getAllGym({ page, size: pageSize });
+      const response = await adminService.getAllGymOwners({ page, size: pageSize });
       const { items, total, page: currentPage } = response.data;
 
       setGym(items);
@@ -282,7 +282,7 @@ export default function ManageGymPage() {
           </div>
           <div className="flex items-center text-gray-700">
             <UserOutlined className="mr-2 text-green-500" />
-            <span className="font-medium">{record.representName}</span>
+            <span className="font-medium">{record.fullName}</span>
           </div>
         </div>
       ),
