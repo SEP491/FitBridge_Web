@@ -15,6 +15,11 @@ const adminService = {
   getAllCustomers: (params) =>
     request("GET", "/v1/accounts/admin/customers", null, {}, params),
 
+  getAllGymPTs: (params) =>
+    request("GET", "/v1/accounts/admin/gym-pts", null, {}, params),
+  getAllFreelancePTs: (params) =>
+    request("GET", "/v1/accounts/freelance-pts", null, {}, params),
+  
   getAllGymOwners: (params) =>
     request("GET", "/v1/accounts/admin/gym-owners", null, {}, params),
   
