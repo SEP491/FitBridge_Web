@@ -432,6 +432,40 @@ export default function ManageGymPage() {
     setMapCenter({ lat: location.lat, lng: location.lng });
   };
 
+  // Get address from latitude and longitude (Reverse Geocoding)
+  const getAddressFromLatLng = async (lat, lng) => {
+    try {
+      const results = await getGeocode({ 
+        location: { lat, lng } 
+      });
+      
+      if (results && results.length > 0) {
+        const address = results[0].formatted_address;
+        
+        // Update form with the address
+        formAdd.setFieldsValue({
+          address: address,
+          latitude: lat,
+          longitude: lng,
+        });
+
+        // Update map position
+        setPosition({ lat, lng });
+        setMapCenter({ lat, lng });
+
+        toast.success("Đã lấy địa chỉ từ tọa độ thành công!");
+        return address;
+      } else {
+        toast.error("Không tìm thấy địa chỉ cho tọa độ này");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error getting address from coordinates:", error);
+      toast.error("Không thể lấy địa chỉ từ tọa độ");
+      return null;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen ">
@@ -811,12 +845,10 @@ export default function ManageGymPage() {
                   ]}
                 >
                   <Input
-                    placeholder="Sẽ tự động điền khi chọn địa chỉ"
+                    placeholder="Nhập kinh độ hoặc chọn địa chỉ"
                     type="number"
                     step="any"
                     size="large"
-                    disabled
-                    style={{ backgroundColor: "#f5f5f5" }}
                   />
                 </Form.Item>
               </Col>
@@ -834,14 +866,31 @@ export default function ManageGymPage() {
                   ]}
                 >
                   <Input
-                    placeholder="Sẽ tự động điền khi chọn địa chỉ"
+                    placeholder="Nhập vĩ độ hoặc chọn địa chỉ"
                     type="number"
                     step="any"
                     size="large"
-                    disabled
-                    style={{ backgroundColor: "#f5f5f5" }}
                   />
                 </Form.Item>
+              </Col>
+              <Col span={24}>
+                <Button
+                  type="dashed"
+                  icon={<EnvironmentOutlined />}
+                  onClick={async () => {
+                    const lat = formAdd.getFieldValue("latitude");
+                    const lng = formAdd.getFieldValue("longitude");
+                    if (lat && lng) {
+                      await getAddressFromLatLng(lat, lng);
+                    } else {
+                      toast.error("Vui lòng nhập cả vĩ độ và kinh độ");
+                    }
+                  }}
+                  className="w-full mb-4"
+                  size="large"
+                >
+                  Lấy địa chỉ từ tọa độ
+                </Button>
               </Col>
             </Row>
 
@@ -861,6 +910,12 @@ export default function ManageGymPage() {
                   gestureHandling={"greedy"}
                   disableDefaultUI={false}
                   mapId="gym-location-map"
+                  onClick={async (e) => {
+                    if (e.detail.latLng) {
+                      const { lat, lng } = e.detail.latLng;
+                      await getAddressFromLatLng(lat, lng);
+                    }
+                  }}
                 >
                   {position && (
                     <AdvancedMarker position={position}>
@@ -874,7 +929,7 @@ export default function ManageGymPage() {
                 </Map>
               </div>
               <Text className="text-gray-500 text-sm mt-2">
-                Vị trí sẽ tự động hiển thị khi bạn chọn địa chỉ
+                💡 Click vào bản đồ để chọn vị trí và lấy địa chỉ tự động, hoặc nhập tọa độ rồi click nút "Lấy địa chỉ từ tọa độ"
               </Text>
             </div>
 

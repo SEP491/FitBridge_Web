@@ -172,7 +172,7 @@ export default function ManagePTPage() {
       dataIndex: "fullName",
       key: "fullName",
       align: "left",
-      width: 250,
+      width: 210,
       render: (text, record) => (
         <div className="flex items-center gap-3">
           <Avatar
@@ -610,7 +610,7 @@ export default function ManagePTPage() {
               }}
               onChange={handleTableChange}
               className="rounded-lg overflow-hidden"
-              scroll={{ x: 1200 }}
+              scroll={{ x: 900 }}
               size="middle"
               rowKey="id"
               onRow={(record) => ({
