@@ -21,7 +21,7 @@ import {
   Upload,
   Select,
 } from "antd";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import adminService from "../../../services/adminServices";
 import toast from "react-hot-toast";
 import {

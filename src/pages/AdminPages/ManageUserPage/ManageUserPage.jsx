@@ -35,6 +35,7 @@ import {
   CalendarOutlined,
   IdcardOutlined,
   CheckCircleOutlined,
+  LockOutlined,
 } from "@ant-design/icons";
 import { FaUserCircle, FaInfoCircle, FaMapMarkerAlt } from "react-icons/fa";
 import FitBridgeModal from "../../../components/FitBridgeModal";
@@ -384,58 +385,71 @@ export default function ManageUserPage() {
   const handleModalSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const formData = {
-        ...values,
-        dob: values.dob ? values.dob.format("YYYY-MM-DD") : null,
-      };
 
       if (modalType === "add") {
-        // Add user API call - using adminService
+        // Map form fields to API structure
+        const apiData = {
+          email: values.email,
+          phoneNumber: values.phone,
+          password: values.password,
+          fullName: values.fullName,
+          isTestAccount: values.isTestAccount || false,
+          longitude: parseFloat(values.longitude) || 0,
+          latitude: parseFloat(values.latitude) || 0,
+        };
+
         try {
-          const response = await adminService.createUser(formData);
-          if (response.status === "200" || response.status === "201") {
+          const response = await adminService.createUserAccount(apiData);
+          if (response.status === "200" || response.status === 200 || response.status === "201" || response.status === 201) {
             toast.success("Thêm người dùng thành công");
+            setModalVisible(false);
+            form.resetFields();
+            setPosition(null);
+            setMapCenter(center);
             fetchUsers(pagination.current, pagination.pageSize, searchText);
           } else {
             toast.error("Không thể thêm người dùng");
           }
         } catch (error) {
           console.error("Error adding user:", error);
-          toast.error("Đã xảy ra lỗi khi thêm người dùng");
+          toast.error(error.response?.data?.message || "Đã xảy ra lỗi khi thêm người dùng");
         }
       }
-
-      setModalVisible(false);
     } catch (error) {
       console.error("Form validation error:", error);
     }
   };
 
-  // Handle user deletion
-  // Handle user ban
-  const handleBan = async (userId) => {
+  // Handle user ban/unban
+  const handleBanUnban = async (userId, currentStatus) => {
+    const isBanning = currentStatus; // If user is active, we want to ban them
+    
     Modal.confirm({
-      title: "Xác nhận cấm người dùng",
-      content:
-        "Bạn có chắc chắn muốn cấm người dùng này? Người dùng sẽ không thể truy cập hệ thống.",
-      okText: "Cấm",
+      title: isBanning ? "Xác nhận cấm người dùng" : "Xác nhận mở cấm người dùng",
+      content: isBanning
+        ? "Bạn có chắc chắn muốn cấm người dùng này? Người dùng sẽ không thể truy cập hệ thống."
+        : "Bạn có chắc chắn muốn mở cấm cho người dùng này? Người dùng sẽ có thể truy cập lại hệ thống.",
+      okText: isBanning ? "Cấm" : "Mở cấm",
       cancelText: "Hủy",
-      okType: "danger",
+      okType: isBanning ? "danger" : "primary",
       centered: true,
-      icon: <StopOutlined style={{ color: "#ff4d4f" }} />,
+      icon: <StopOutlined style={{ color: isBanning ? "#ff4d4f" : "#52c41a" }} />,
       onOk: async () => {
         try {
-          const response = await adminService.banUser(userId);
+          const response = await adminService.banUnbanUser({
+            userIdBanUnbanList: [userId],
+            isBan: isBanning
+          });
 
-          if (response.status === "200") {
-            toast.success("Cấm người dùng thành công");
+          if (response.status === "200" || response.status === 200) {
+            toast.success(isBanning ? "Cấm người dùng thành công" : "Mở cấm người dùng thành công");
             fetchUsers(pagination.current, pagination.pageSize, searchText);
           } else {
-            toast.error("Không thể cấm người dùng");
+            toast.error(isBanning ? "Không thể cấm người dùng" : "Không thể mở cấm người dùng");
           }
         } catch (error) {
-          console.error("Error banning user:", error);
-          toast.error("Đã xảy ra lỗi khi cấm người dùng");
+          console.error("Error ban/unban user:", error);
+          toast.error(isBanning ? "Đã xảy ra lỗi khi cấm người dùng" : "Đã xảy ra lỗi khi mở cấm người dùng");
         }
       },
     });
@@ -601,6 +615,26 @@ export default function ManageUserPage() {
         <span className="text-sm text-gray-700">
           {createdAt ? dayjs(createdAt).format("DD/MM/YYYY HH:mm") : "N/A"}
         </span>
+      ),
+    },
+    {
+      title: "Hành Động",
+      key: "actions",
+      width: 120,
+      fixed: "right",
+      render: (_, record) => (
+        <Button
+          type={record.isActive ? "default" : "primary"}
+          danger={record.isActive}
+          icon={record.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent row click event
+            handleBanUnban(record.id, record.isActive);
+          }}
+          size="small"
+        >
+          {record.isActive ? "Cấm" : "Mở cấm"}
+        </Button>
       ),
     },
   ];
@@ -1098,187 +1132,407 @@ export default function ManageUserPage() {
           )}
         </FitBridgeModal>
       ) : (
-        <Modal
-          title="Thêm Người Dùng Mới"
+        <FitBridgeModal
           open={modalVisible}
-          onOk={handleModalSubmit}
           onCancel={() => {
             setModalVisible(false);
+            form.resetFields();
             setPosition(null);
             setMapCenter(center);
           }}
-          okText="Thêm Người Dùng"
-          cancelText="Hủy"
-          width={800}
+          title="Thêm Người Dùng Mới"
+          titleIcon={<PlusOutlined />}
+          width={950}
+          logoSize="medium"
+          footer={
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+              <Button
+                size="large"
+                onClick={() => {
+                  setModalVisible(false);
+                  form.resetFields();
+                  setPosition(null);
+                  setMapCenter(center);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                icon={<PlusOutlined />}
+                onClick={handleModalSubmit}
+                className="bg-[#FF914D] border-0 hover:bg-[#e8823d]"
+              >
+                Thêm Người Dùng
+              </Button>
+            </div>
+          }
+          bodyStyle={{ padding: "0", maxHeight: "70vh", overflowY: "auto" }}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            className="mt-4"
-          >
-            <Row gutter={16}>
-              <Col span={24}>
-                <Form.Item
-                  name="fullName"
-                  label="Họ và Tên"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập họ và tên" },
-                  ]}
-                >
-                  <Input placeholder="Nhập họ và tên" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="email"
-                  label="Email"
-                  rules={[
-                    { type: "email", message: "Email không hợp lệ" },
-                    { required: true, message: "Vui lòng nhập email" },
-                  ]}
-                >
-                  <Input placeholder="Nhập email" prefix={<MailOutlined />} />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="phone"
-                  label="Số Điện Thoại"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập số điện thoại" },
-                  ]}
-                >
-                  <Input
-                    placeholder="Nhập số điện thoại"
-                    prefix={<PhoneOutlined />}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="dob" label="Ngày Sinh">
-                  <DatePicker
-                    placeholder="Chọn ngày sinh"
-                    className="w-full"
-                    format="DD/MM/YYYY"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="gender" label="Giới Tính">
-                  <Select placeholder="Chọn giới tính">
-                    <Option value="Male">Nam</Option>
-                    <Option value="Female">Nữ</Option>
-                    <Option value="Other">Khác</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="weight" label="Cân Nặng (kg)">
-                  <InputNumber
-                    placeholder="Nhập cân nặng"
-                    min={0}
-                    max={500}
-                    className="w-full"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="height" label="Chiều Cao (cm)">
-                  <InputNumber
-                    placeholder="Nhập chiều cao"
-                    min={0}
-                    max={300}
-                    className="w-full"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={24}>
-                <Form.Item name="address" label="Địa Chỉ">
-                  <PlacesAutocomplete
-                    onSelect={handlePlaceSelect}
-                    formInstance={form}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="latitude" label="Vĩ Độ">
-                  <Input
-                    placeholder="Nhập vĩ độ hoặc chọn địa chỉ"
-                    type="number"
-                    step="any"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="longitude" label="Kinh Độ">
-                  <Input
-                    placeholder="Nhập kinh độ hoặc chọn địa chỉ"
-                    type="number"
-                    step="any"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={24}>
-                <Button
-                  type="dashed"
-                  icon={<EnvironmentOutlined />}
-                  onClick={async () => {
-                    const lat = form.getFieldValue("latitude");
-                    const lng = form.getFieldValue("longitude");
-                    if (lat && lng) {
-                      await getAddressFromLatLng(lat, lng);
-                    } else {
-                      toast.error("Vui lòng nhập cả vĩ độ và kinh độ");
-                    }
-                  }}
-                  className="w-full mb-4"
-                >
-                  Lấy địa chỉ từ tọa độ
-                </Button>
-              </Col>
-              <Col span={24}>
-                <div className="mb-4">
-                  <div className="font-semibold text-gray-700 block mb-2">
-                    Xem vị trí trên bản đồ
-                  </div>
-                  <div
-                    className="border rounded-lg overflow-hidden shadow-sm"
-                    style={{ height: "300px" }}
-                  >
-                    <Map
-                      defaultCenter={center}
-                      center={mapCenter}
-                      defaultZoom={13}
-                      zoom={position ? 15 : 13}
-                      gestureHandling={"greedy"}
-                      disableDefaultUI={false}
-                      mapId="user-location-map"
-                      onClick={async (e) => {
-                        if (e.detail.latLng) {
-                          const { lat, lng } = e.detail.latLng;
+          <Form form={form} layout="vertical">
+            <div className="p-6 space-y-6">
+              {/* Account Information Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <LockOutlined />
+                    Thông Tin Tài Khoản
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Row gutter={16}>
+                  <Col span={24}>
+                    <Form.Item
+                      name="fullName"
+                      label={
+                        <span className="font-semibold">
+                          <UserOutlined /> Họ và Tên
+                        </span>
+                      }
+                      rules={[
+                        { required: true, message: "Vui lòng nhập họ và tên" },
+                      ]}
+                    >
+                      <Input
+                        size="large"
+                        placeholder="Nhập họ và tên đầy đủ"
+                        prefix={<UserOutlined className="text-gray-400" />}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="email"
+                      label={
+                        <span className="font-semibold">
+                          <MailOutlined /> Email
+                        </span>
+                      }
+                      rules={[
+                        { type: "email", message: "Email không hợp lệ" },
+                        { required: true, message: "Vui lòng nhập email" },
+                      ]}
+                    >
+                      <Input
+                        size="large"
+                        placeholder="example@email.com"
+                        prefix={<MailOutlined className="text-gray-400" />}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="phone"
+                      label={
+                        <span className="font-semibold">
+                          <PhoneOutlined /> Số Điện Thoại
+                        </span>
+                      }
+                      rules={[
+                        {
+                          required: true,
+                          message: "Vui lòng nhập số điện thoại",
+                        },
+                      ]}
+                    >
+                      <Input
+                        size="large"
+                        placeholder="0912345678"
+                        prefix={<PhoneOutlined className="text-gray-400" />}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="password"
+                      label={
+                        <span className="font-semibold">
+                          <LockOutlined /> Mật Khẩu
+                        </span>
+                      }
+                      rules={[
+                        { required: true, message: "Vui lòng nhập mật khẩu" },
+                        {
+                          min: 6,
+                          message: "Mật khẩu phải có ít nhất 6 ký tự",
+                        },
+                      ]}
+                    >
+                      <Input.Password
+                        size="large"
+                        placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                        prefix={<LockOutlined className="text-gray-400" />}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="isTestAccount"
+                      label={
+                        <span className="font-semibold">
+                          <IdcardOutlined /> Loại Tài Khoản
+                        </span>
+                      }
+                      initialValue={false}
+                    >
+                      <Select size="large" placeholder="Chọn loại tài khoản">
+                        <Option value={false}>
+                          <span className="flex items-center gap-2">
+                            <CheckCircleOutlined className="text-green-500" />
+                            Tài khoản Thật
+                          </span>
+                        </Option>
+                        <Option value={true}>
+                          <span className="flex items-center gap-2">
+                            <IdcardOutlined className="text-orange-500" />
+                            Tài khoản Test
+                          </span>
+                        </Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Personal Information Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaUserCircle />
+                    Thông Tin Cá Nhân
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="dob"
+                      label={
+                        <span className="font-semibold">
+                          <CalendarOutlined /> Ngày Sinh
+                        </span>
+                      }
+                    >
+                      <DatePicker
+                        size="large"
+                        placeholder="Chọn ngày sinh"
+                        className="w-full"
+                        format="DD/MM/YYYY"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="gender"
+                      label={
+                        <span className="font-semibold">
+                          <UserOutlined /> Giới Tính
+                        </span>
+                      }
+                    >
+                      <Select size="large" placeholder="Chọn giới tính">
+                        <Option value="Male">
+                          <span className="flex items-center gap-2">
+                            <ManOutlined className="text-blue-500" />
+                            Nam
+                          </span>
+                        </Option>
+                        <Option value="Female">
+                          <span className="flex items-center gap-2">
+                            <WomanOutlined className="text-pink-500" />
+                            Nữ
+                          </span>
+                        </Option>
+                        <Option value="Other">
+                          <span className="flex items-center gap-2">
+                            <UserOutlined className="text-gray-500" />
+                            Khác
+                          </span>
+                        </Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="weight"
+                      label={
+                        <span className="font-semibold">
+                          ⚖️ Cân Nặng (kg)
+                        </span>
+                      }
+                    >
+                      <InputNumber
+                        size="large"
+                        placeholder="Nhập cân nặng"
+                        min={0}
+                        max={500}
+                        className="w-full"
+                        addonAfter="kg"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="height"
+                      label={
+                        <span className="font-semibold">
+                          📏 Chiều Cao (cm)
+                        </span>
+                      }
+                    >
+                      <InputNumber
+                        size="large"
+                        placeholder="Nhập chiều cao"
+                        min={0}
+                        max={300}
+                        className="w-full"
+                        addonAfter="cm"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Location Information Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaMapMarkerAlt />
+                    Thông Tin Vị Trí
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Row gutter={16}>
+                  <Col span={24}>
+                    <Form.Item
+                      name="address"
+                      label={
+                        <span className="font-semibold">
+                          <EnvironmentOutlined /> Địa Chỉ
+                        </span>
+                      }
+                    >
+                      <PlacesAutocomplete
+                        onSelect={handlePlaceSelect}
+                        formInstance={form}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="latitude"
+                      label={
+                        <span className="font-semibold">📍 Vĩ Độ (Latitude)</span>
+                      }
+                    >
+                      <Input
+                        size="large"
+                        placeholder="VD: 10.762622"
+                        type="number"
+                        step="any"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="longitude"
+                      label={
+                        <span className="font-semibold">
+                          📍 Kinh Độ (Longitude)
+                        </span>
+                      }
+                    >
+                      <Input
+                        size="large"
+                        placeholder="VD: 106.660172"
+                        type="number"
+                        step="any"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={24}>
+                    <Button
+                      type="dashed"
+                      size="large"
+                      icon={<EnvironmentOutlined />}
+                      onClick={async () => {
+                        const lat = form.getFieldValue("latitude");
+                        const lng = form.getFieldValue("longitude");
+                        if (lat && lng) {
                           await getAddressFromLatLng(lat, lng);
+                        } else {
+                          toast.error("Vui lòng nhập cả vĩ độ và kinh độ");
                         }
                       }}
+                      className="w-full mb-4 border-[#FF914D] text-[#FF914D] hover:bg-[#FFF5F0]"
                     >
-                      {position && (
-                        <AdvancedMarker position={position}>
-                          <Pin
-                            background={"#FF914D"}
-                            borderColor={"#FF6B35"}
-                            glyphColor={"#FFFFFF"}
-                          />
-                        </AdvancedMarker>
-                      )}
-                    </Map>
-                  </div>
-                  <div className="text-gray-500 text-sm mt-2">
-                    💡 Click vào bản đồ để chọn vị trí và lấy địa chỉ tự động, hoặc nhập tọa độ rồi click nút "Lấy địa chỉ từ tọa độ"
-                  </div>
-                </div>
-              </Col>
-            </Row>
+                      🔄 Lấy Địa Chỉ từ Tọa Độ
+                    </Button>
+                  </Col>
+                  <Col span={24}>
+                    <div className="mb-2">
+                      <div className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <span className="text-lg">🗺️</span>
+                        Xem Vị Trí Trên Bản Đồ
+                      </div>
+                      <div
+                        className="border-2 border-[#FFE5E9] rounded-lg overflow-hidden shadow-md"
+                        style={{ height: "350px" }}
+                      >
+                        <Map
+                          defaultCenter={center}
+                          // center={mapCenter}
+                          
+                          defaultZoom={13}
+                          gestureHandling={"greedy"}
+                          disableDefaultUI={true}
+                          mapId="user-location-map"
+                          onClick={async (e) => {
+                            if (e.detail.latLng) {
+                              const { lat, lng } = e.detail.latLng;
+                              await getAddressFromLatLng(lat, lng);
+                            }
+                          }}
+                        >
+                          {position && (
+                            <AdvancedMarker position={position}>
+                              <Pin
+                                background={"#FF914D"}
+                                borderColor={"#FF6B35"}
+                                glyphColor={"#FFFFFF"}
+                              />
+                            </AdvancedMarker>
+                          )}
+                        </Map>
+                      </div>
+                      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 mt-3 rounded">
+                        <p className="text-sm text-blue-700 flex items-start gap-2">
+                          <span className="text-lg">💡</span>
+                          <span>
+                            <strong>Hướng dẫn:</strong> Click vào bản đồ để chọn vị trí và tự động lấy địa chỉ, hoặc nhập tọa độ thủ công rồi nhấn nút "Lấy Địa Chỉ từ Tọa Độ"
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+            </div>
           </Form>
-        </Modal>
+        </FitBridgeModal>
       )}
     </APIProvider>
   );

@@ -33,6 +33,7 @@ import DashboardFPT from "./pages/FreelancePT-Pages/DashboardFPT/DashboardFPT";
 import CustomerVoucherPage from "./pages/CustomerVoucherPage/CustomerVoucherPage";
 import ManageWithdrawalPage from "./pages/AdminPages/ManageWithdrawalPage/ManageWithdrawalPage";
 import ManageGymCustomers from "./pages/GymPages/ManageCustomer/ManageCustomer";
+import ManageReportPage from "./pages/AdminPages/ManageReportPage/ManageReportPage";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -304,6 +305,14 @@ function App() {
           element: (
             <ProtectedRoute allowedRoles={["Admin"]}>
               <ManageWithdrawalPage />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: route.manageReport,
+          element: (
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <ManageReportPage />
             </ProtectedRoute>
           ),
         },

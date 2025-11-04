@@ -22,7 +22,7 @@ import { FaRegCalendarCheck } from "react-icons/fa";
 import { GrTransaction } from "react-icons/gr";
 import { LiaFileContractSolid } from "react-icons/lia";
 import { GiGymBag } from "react-icons/gi";
-import { MdOutlineAccountBalanceWallet } from "react-icons/md";
+import { MdOutlineAccountBalanceWallet, MdReport } from "react-icons/md";
 
 // eslint-disable-next-line no-unused-vars
 export default function SidebarAdmin({ collapsed, onCollapse }) {
@@ -88,6 +88,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Quản Lý Voucher",
           `${route.admin}/${route.manageVoucher}`,
           <GiGymBag className="text-lg" />
+        ),
+        getItem(
+          "Quản Lý Báo Cáo",
+          `${route.admin}/${route.manageReport}`,
+          <MdReport className="text-lg" />
         ),
         getItem(
           "Thông Báo",
