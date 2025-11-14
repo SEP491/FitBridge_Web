@@ -23,6 +23,7 @@ import { GrTransaction } from "react-icons/gr";
 import { LiaFileContractSolid } from "react-icons/lia";
 import { GiGymBag } from "react-icons/gi";
 import { MdOutlineAccountBalanceWallet, MdReport } from "react-icons/md";
+import { AiOutlineShoppingCart } from "react-icons/ai";
 
 // eslint-disable-next-line no-unused-vars
 export default function SidebarAdmin({ collapsed, onCollapse }) {
@@ -93,6 +94,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Quản Lý Báo Cáo",
           `${route.admin}/${route.manageReport}`,
           <MdReport className="text-lg" />
+        ),
+        getItem(
+          "Quản Lý Sản Phẩm",
+          `${route.admin}/${route.manageProduct}`,
+          <AiOutlineShoppingCart className="text-lg" />
         ),
         getItem(
           "Thông Báo",
@@ -212,7 +218,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         <div className="px-4 py-3 border-b border-gray-700">
           <div className="bg-[#ed2a46] rounded-full px-3 py-1 text-center">
             <span className="text-white text-sm font-medium">
-              {user?.role === "ADMIN" ? "Quản Trị Viên" : "Quản Lý Phòng Tập"}
+              {user?.role === "Admin" ? "Quản Trị Viên" : "Quản Lý Phòng Tập"}
             </span>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import create from "@ant-design/icons/lib/components/IconFont";
 import { request } from "./request";
 
 const adminService = {
@@ -35,6 +36,18 @@ const adminService = {
     request("GET", "/v1/reports", null, {}, params),
   updateReportStatus: (reportId,data) => 
     request("PUT", `/v1/reports/${reportId}/status`, data),
+
+  getAllProducts: (params) =>
+    request("GET", "/v1/products/admin", null, {}, params),
+  viewProductsDetails: (productId) =>
+    request("GET", `/v1/products/admin/${productId}`),
+  createProduct: (data) =>
+    request("POST", "/v1/products", data),
+
+  getAllBrands: (params) =>
+    request("GET", "/v1/brands", null, {}, params),
+  getAllCategories : (params) =>
+    request("GET", "/v1/categories", null, {}, params),
 };
 
 export default adminService;
