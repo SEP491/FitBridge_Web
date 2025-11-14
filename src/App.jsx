@@ -377,6 +377,14 @@ function App() {
           ),
         },
         {
+          path: route.manageVoucherGym,
+          element: (
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+              <ManageVoucherPT />
+            </ProtectedRoute>
+          ),
+        },
+        {
           path: "manage-customers",
           element: (
             <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>

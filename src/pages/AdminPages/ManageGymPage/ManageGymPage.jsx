@@ -20,6 +20,7 @@ import {
   Spin,
   Upload,
   Select,
+  Descriptions,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import adminService from "../../../services/adminServices";
@@ -39,9 +40,14 @@ import {
   QrcodeOutlined,
   BankOutlined,
   GlobalOutlined,
+  StopOutlined,
+  CheckCircleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
-import { FaDumbbell } from "react-icons/fa";
+import { FaDumbbell, FaInfoCircle, FaBuilding, FaUserCircle } from "react-icons/fa";
 import { IoBarbell, IoLocationSharp } from "react-icons/io5";
+import FitBridgeModal from "../../../components/FitBridgeModal";
+import defaultAvatar from "../../../assets/LogoColor.png";
 import {
   APIProvider,
   Map,
@@ -140,6 +146,8 @@ export default function ManageGymPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [isModalAddGymOpen, setIsModalAddGymOpen] = useState(false);
+  const [isModalGymDetailOpen, setIsModalGymDetailOpen] = useState(false);
+  const [selectedGym, setSelectedGym] = useState(null);
   const [formAdd] = Form.useForm();
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [pagination, setPagination] = useState({
@@ -230,81 +238,106 @@ export default function ManageGymPage() {
     });
   };
 
+  const handleBanUnban = async (gymOwnerId, currentStatus) => {
+    const isBanning = currentStatus; // If gym owner is active, we want to ban them
+    
+    Modal.confirm({
+      title: isBanning ? "Xác nhận cấm chủ gym" : "Xác nhận mở cấm chủ gym",
+      content: isBanning
+        ? "Bạn có chắc chắn muốn cấm chủ gym này? Chủ gym sẽ không thể truy cập hệ thống."
+        : "Bạn có chắc chắn muốn mở cấm cho chủ gym này? Chủ gym sẽ có thể truy cập lại hệ thống.",
+      okText: isBanning ? "Cấm" : "Mở cấm",
+      cancelText: "Hủy",
+      okType: isBanning ? "danger" : "primary",
+      centered: true,
+      icon: <StopOutlined style={{ color: isBanning ? "#ff4d4f" : "#52c41a" }} />,
+      onOk: async () => {
+        try {
+          const response = await adminService.banUnbanUser({
+            userIdBanUnbanList: [gymOwnerId],
+            isBan: isBanning
+          });
+
+          if (response.status === "200" || response.status === 200) {
+            toast.success(isBanning ? "Cấm chủ gym thành công" : "Mở cấm chủ gym thành công");
+            fetchGym(pagination.current, pagination.pageSize);
+          } else {
+            toast.error(isBanning ? "Không thể cấm chủ gym" : "Không thể mở cấm chủ gym");
+          }
+        } catch (error) {
+          console.error("Error ban/unban gym owner:", error);
+          toast.error(isBanning ? "Đã xảy ra lỗi khi cấm chủ gym" : "Đã xảy ra lỗi khi mở cấm chủ gym");
+        }
+      },
+    });
+  };
+
   const columns = [
     {
       title: "Thông Tin Phòng Gym",
       dataIndex: "gymName",
       key: "gymName",
-      width: 300,
+      width: 120,
       render: (text, record) => (
-        <div className="flex items-center gap-3">
-          <Avatar
-            size={50}
-            icon={<FaDumbbell />}
-            style={{
-              backgroundColor: record.hotResearch ? "#ff4d4f" : "#FF914D",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+        <div className="flex items-center gap-2">
+          <img
+            src={record.mainImage || defaultAvatar}
+            alt={text}
+            className="w-10 h-10 rounded-full object-cover"
           />
-          <div>
-            <div className="font-semibold text-gray-900 text-base mb-1">
+          <div className="text-left">
+            <div className="font-medium">
               {text}
               {record.hotResearch && (
-                <Tag color="red" className="ml-2" icon={<FireOutlined />}>
+                <Tag color="red" className="ml-1" icon={<FireOutlined />}>
                   HOT
                 </Tag>
               )}
             </div>
-            <div className="flex items-center text-sm text-gray-500 mb-1">
-              <EnvironmentOutlined className="mr-1" />
-              {record.address}
-            </div>
-            <div className="flex items-center text-sm text-gray-500">
-              <CalendarOutlined className="mr-1" />
-              Hoạt động từ {record.since || "N/A"}
-            </div>
           </div>
         </div>
       ),
     },
     {
-      title: "Liên Hệ",
-      dataIndex: "phone",
+      title: "Địa Chỉ",
+      dataIndex: "address",
+      key: "address",
+      width: 120,
+      render: (address) => (
+        <div className="flex items-center text-gray-700">
+          <EnvironmentOutlined className="mr-1 text-red-500" />
+          <span className="text-sm">{address || "N/A"}</span>
+        </div>
+      ),
+    },
+    {
+      title: "Người Đại Diện",
       key: "contact",
-      width: 200,
-      render: (phone, record) => (
-        <div className="space-y-2">
+      width: 70,
+      align: "center",
+      render: (_, record) => (
+        <div className="space-y-1">
           <div className="flex items-center text-gray-700">
-            <PhoneOutlined className="mr-2 text-blue-500" />
-            <span>{phone || record.address}</span>
+            <UserOutlined className="mr-1 text-green-500" />
+            <span className="font-medium text-sm">{record.fullName || "N/A"}</span>
           </div>
-          <div className="flex items-center text-gray-700">
-            <UserOutlined className="mr-2 text-green-500" />
-            <span className="font-medium">{record.fullName}</span>
+          <div className="flex items-center text-gray-500 text-xs">
+            <PhoneOutlined className="mr-1 text-blue-500" />
+            <span>{record.phone || "N/A"}</span>
           </div>
         </div>
       ),
     },
     {
-      title: "Vị Trí",
-      key: "location",
-      width: 150,
-      render: (_, record) => (
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-2">
-            <IoLocationSharp className="text-red-500 text-lg mr-1" />
-            <span className="font-medium text-gray-700">Tọa độ</span>
-          </div>
-          {record.latitude && record.longitude ? (
-            <div className="text-xs text-gray-500 space-y-1">
-              <div>Lat: {record.latitude}</div>
-              <div>Lng: {record.longitude}</div>
-            </div>
-          ) : (
-            <span className="text-gray-400">Chưa có</span>
-          )}
+      title: "Hoạt Động",
+      dataIndex: "since",
+      key: "since",
+      width: 40,
+      align: "center",
+      render: (since) => (
+        <div className="flex items-center justify-center">
+          <CalendarOutlined className="mr-1 text-orange-500" />
+          <span className="font-semibold">{since || "N/A"}</span>
         </div>
       ),
     },
@@ -312,30 +345,18 @@ export default function ManageGymPage() {
       title: "Trạng Thái",
       dataIndex: "hotResearch",
       key: "hotResearch",
-      width: 120,
+      width: 50,
       align: "center",
       render: (hotResearch) => (
-        <div className="flex flex-col items-center space-y-2">
-          <Switch
-            checked={hotResearch}
-            disabled
-            size="small"
-            style={{
-              backgroundColor: hotResearch ? "#ff4d4f" : undefined,
-            }}
-          />
-          <Badge
-            status={hotResearch ? "success" : "default"}
-            text={hotResearch ? "Hot Research" : "Bình thường"}
-            className="text-xs"
-          />
-        </div>
+        <Tag color={hotResearch ? "red" : "default"} icon={hotResearch ? <FireOutlined /> : null}>
+          {hotResearch ? "HOT" : "Thường"}
+        </Tag>
       ),
     },
     {
       title: "Hành Động",
       key: "action",
-      width: 120,
+      width: 180,
       align: "center",
       render: (text, record) => (
         <Space>
@@ -344,7 +365,10 @@ export default function ManageGymPage() {
               type="text"
               icon={<EditOutlined />}
               className="text-orange-500 hover:bg-orange-50"
-              onClick={() => console.log("Edit gym:", record)}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("Edit gym:", record);
+              }}
             />
           </Tooltip>
           <Tooltip title="Xóa">
@@ -353,8 +377,25 @@ export default function ManageGymPage() {
               icon={<DeleteOutlined />}
               danger
               className="hover:bg-red-50"
-              onClick={() => handleDelete(record.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(record.id);
+              }}
             />
+          </Tooltip>
+          <Tooltip title={record.isActive ? "Cấm chủ gym" : "Mở cấm chủ gym"}>
+            <Button
+              type={record.isActive ? "default" : "primary"}
+              danger={record.isActive}
+              icon={record.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleBanUnban(record.id, record.isActive);
+              }}
+              size="small"
+            >
+              {record.isActive ? "Cấm" : "Mở cấm"}
+            </Button>
           </Tooltip>
         </Space>
       ),
@@ -559,16 +600,7 @@ export default function ManageGymPage() {
           {/* Main Content */}
           <Card className="border-0 shadow-xl">
             <ConfigProvider
-              theme={{
-                components: {
-                  Table: {
-                    headerBg:
-                      "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
-                    headerColor: "#333",
-                    rowHoverBg: "#FFF9FA",
-                  },
-                },
-              }}
+              theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
             >
               {/* Controls */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -635,10 +667,234 @@ export default function ManageGymPage() {
                 className="rounded-lg overflow-hidden"
                 scroll={{ x: 1000 }}
                 size="middle"
+                onRow={(record) => ({
+                  onClick: () => {
+                    setSelectedGym(record);
+                    setIsModalGymDetailOpen(true);
+                  },
+                  style: { cursor: "pointer" },
+                })}
               />
             </ConfigProvider>
           </Card>
         </div>
+
+        {/* Gym Detail Modal */}
+        <FitBridgeModal
+          open={isModalGymDetailOpen}
+          onCancel={() => setIsModalGymDetailOpen(false)}
+          title="Chi Tiết Phòng Gym"
+          titleIcon={<EyeOutlined />}
+          width={950}
+          logoSize="medium"
+          bodyStyle={{ padding: "0", maxHeight: "75vh", overflowY: "auto" }}
+        >
+          {selectedGym && (
+            <div className="flex flex-col">
+              {/* Header Section with Key Info */}
+              <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
+                <Row gutter={[24, 16]}>
+                  <Col xs={24} md={12}>
+                    <div className="flex flex-col gap-2">
+                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <FaDumbbell className="text-[#FF914D]" />
+                        <span>Tên Phòng Gym</span>
+                      </div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {selectedGym.gymName || "N/A"}
+                        {selectedGym.hotResearch && (
+                          <Tag color="red" className="ml-2" icon={<FireOutlined />}>
+                            HOT
+                          </Tag>
+                        )}
+                      </div>
+                    </div>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <div className="flex flex-col gap-2">
+                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <CalendarOutlined className="text-[#FF914D]" />
+                        <span>Hoạt Động Từ</span>
+                      </div>
+                      <div className="text-2xl font-bold text-[#ED2A46]">
+                        Năm {selectedGym.since || "N/A"}
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+
+              {/* Main Content */}
+              <div className="p-6 flex flex-col gap-5 space-y-6">
+                {/* Gym Info Card */}
+                <Card 
+                  size="small"
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                  title={
+                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                      <FaInfoCircle />
+                      Thông Tin Phòng Gym
+                    </span>
+                  }
+                  bordered={true}
+                  style={{ borderColor: "#FFE5E9" }}
+                >
+                  <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+                    <Descriptions.Item label="Tên Phòng Gym" span={2}>
+                      <div className="font-semibold text-lg">
+                        {selectedGym.gymName || "N/A"}
+                      </div>
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Địa Chỉ" span={2}>
+                      <div className="flex items-center gap-2">
+                        <EnvironmentOutlined className="text-red-500" />
+                        <span>{selectedGym.address || "N/A"}</span>
+                      </div>
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Hoạt Động Từ">
+                      <div className="flex items-center gap-2">
+                        <CalendarOutlined className="text-orange-500" />
+                        <span className="font-semibold">Năm {selectedGym.since || "N/A"}</span>
+                      </div>
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Trạng Thái">
+                      <Tag 
+                        color={selectedGym.hotResearch ? "red" : "default"}
+                        icon={selectedGym.hotResearch ? <FireOutlined /> : null}
+                        className="text-sm px-3 py-1"
+                      >
+                        {selectedGym.hotResearch ? "Hot Research" : "Bình thường"}
+                      </Tag>
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Tọa Độ" span={2}>
+                      {selectedGym.latitude && selectedGym.longitude ? (
+                        <div className="flex gap-4">
+                          <div className="flex items-center gap-1">
+                            <IoLocationSharp className="text-red-500" />
+                            <span className="font-mono text-xs bg-gray-50 p-1 rounded">
+                              Lat: {selectedGym.latitude}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <IoLocationSharp className="text-red-500" />
+                            <span className="font-mono text-xs bg-gray-50 p-1 rounded">
+                              Lng: {selectedGym.longitude}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Chưa có tọa độ</span>
+                      )}
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Mã QR" span={2}>
+                      <div className="font-mono text-xs bg-blue-50 p-2 rounded inline-block">
+                        {selectedGym.qrcode || "N/A"}
+                      </div>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+
+                {/* Owner Info Card */}
+                <Card 
+                  size="small"
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                  title={
+                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                      <FaUserCircle />
+                      Thông Tin Chủ Sở Hữu
+                    </span>
+                  }
+                  bordered={true}
+                  style={{ borderColor: "#FFE5E9" }}
+                >
+                  <Descriptions column={1} bordered size="small">
+                    <Descriptions.Item label="Tên Người Đại Diện">
+                      <div className="flex items-center gap-2">
+                        <UserOutlined className="text-green-500" />
+                        <span className="font-medium text-base">
+                          {selectedGym.fullName || selectedGym.representName || "Chưa có thông tin"}
+                        </span>
+                      </div>
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Số Điện Thoại">
+                      <div className="flex items-center gap-2">
+                        <PhoneOutlined className="text-blue-500" />
+                        <span>{selectedGym.phone || "Chưa có thông tin"}</span>
+                      </div>
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Mã Số Thuế">
+                      <div className="font-mono text-xs bg-orange-50 p-2 rounded inline-block">
+                        {selectedGym.taxCode || "Chưa có thông tin"}
+                      </div>
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Trạng Thái Tài Khoản">
+                      <Tag 
+                        color={selectedGym.isActive ? "green" : "red"}
+                        icon={selectedGym.isActive ? <CheckCircleOutlined /> : <StopOutlined />}
+                        className="text-sm px-3 py-1"
+                      >
+                        {selectedGym.isActive ? "Đang Hoạt Động" : "Bị Cấm"}
+                      </Tag>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+
+                {/* Images Card */}
+                {(selectedGym.mainImage || (selectedGym.images && selectedGym.images.length > 0)) && (
+                  <Card 
+                    size="small"
+                    className="shadow-sm hover:shadow-md transition-shadow"
+                    title={
+                      <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                        <FaBuilding />
+                        Hình Ảnh Phòng Gym
+                      </span>
+                    }
+                    bordered={true}
+                    style={{ borderColor: "#FFE5E9" }}
+                  >
+                    <div className="space-y-4">
+                      {selectedGym.mainImage && (
+                        <div>
+                          <div className="text-sm text-gray-500 mb-2">Ảnh Đại Diện</div>
+                          <img 
+                            src={selectedGym.mainImage} 
+                            alt="Main gym"
+                            className="w-full h-64 object-cover rounded-lg shadow-md"
+                          />
+                        </div>
+                      )}
+                      
+                      {selectedGym.images && selectedGym.images.length > 0 && (
+                        <div>
+                          <div className="text-sm text-gray-500 mb-2">Ảnh Bổ Sung</div>
+                          <div className="grid grid-cols-3 gap-3">
+                            {selectedGym.images.map((img, index) => (
+                              <img 
+                                key={index}
+                                src={img} 
+                                alt={`Gym ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-lg shadow-md hover:scale-105 transition-transform"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                )}
+              </div>
+            </div>
+          )}
+        </FitBridgeModal>
 
         {/* Add Gym Modal */}
         <Modal

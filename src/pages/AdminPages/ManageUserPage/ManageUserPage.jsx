@@ -692,7 +692,7 @@ export default function ManageUserPage() {
         >
           {/* Filters */}
           <Card
-            className="mb-4"
+            style={{marginBottom: 20}}
             title={
               <span className="flex items-center gap-2">
                 <SearchOutlined /> Tìm kiếm

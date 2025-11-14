@@ -133,6 +133,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           <FaRegCalendarCheck className="text-lg" />
         ),
         getItem(
+          "Quản Lý Voucher",
+          `${route.gym}/${route.manageVoucherGym}`,
+          <GiGymBag className="text-lg" />
+        ),
+        getItem(
           "Lịch Sử Giao Dịch",
           `${route.gym}/${route.manageTransactionGym}`,
           <GrTransaction className="text-lg" />

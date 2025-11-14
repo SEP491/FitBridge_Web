@@ -17,10 +17,14 @@ import {
   Avatar,
   Tooltip,
   Progress,
+  DatePicker,
+  Badge,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import FitBridgeModal from "../../../components/FitBridgeModal";
+import dayjs from "dayjs";
+import { IoBarbell } from "react-icons/io5";
 import {
   LoadingOutlined,
   SearchOutlined,
@@ -35,6 +39,7 @@ import {
   DeleteOutlined,
   CheckCircleOutlined,
   StopOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import { couponService } from "../../../services/couponService";
 import DetailVoucher from "./DetailVoucher";
@@ -160,6 +165,8 @@ export default function ManageVoucherPT() {
       maxDiscount: values.maxDiscount,
       discountPercent: values.discountPercent,
       quantity: values.quantity,
+      startDate: values.startDate ? dayjs(values.startDate).format("YYYY-MM-DD") : undefined,
+      expirationDate: values.expirationDate ? dayjs(values.expirationDate).format("YYYY-MM-DD") : undefined,
     };
 
     try {
@@ -184,6 +191,8 @@ export default function ManageVoucherPT() {
       discountPercent: values.discountPercent,
       quantity: values.quantity,
       isActive: values.isActive ?? true,
+      startDate: values.startDate ? dayjs(values.startDate).format("YYYY-MM-DD") : undefined,
+      expirationDate: values.expirationDate ? dayjs(values.expirationDate).format("YYYY-MM-DD") : undefined,
     };
 
     try {
@@ -214,7 +223,7 @@ export default function ManageVoucherPT() {
             style={{ backgroundColor: "#FF914D" }}
           />
           <div>
-            <div className="font-medium text-gray-900 text-xs">
+            <div className="font-medium text-gray-900">
               {text}
             </div>
             <div className="text-xs text-gray-500">Voucher</div>
@@ -231,7 +240,6 @@ export default function ManageVoucherPT() {
         <div className="flex flex-col items-center">
           <PercentageOutlined style={{ fontSize: "16px", color: "#1890ff" }} />
           <span className="text-sm font-medium">{percent}%</span>
-          <span className="text-xs text-gray-500">giảm</span>
         </div>
       ),
     },
@@ -258,10 +266,34 @@ export default function ManageVoucherPT() {
       key: "quantity",
       align: "center",
       render: (quantity) => (
+        <Badge count={quantity || 0} showZero color="#722ed1" />
+      ),
+    },
+    {
+      title: "Ngày Bắt Đầu",
+      dataIndex: "startDate",
+      key: "startDate",
+      align: "center",
+      render: (date) => (
         <div className="flex flex-col items-center">
-          <NumberOutlined style={{ fontSize: "16px", color: "#722ed1" }} />
-          <span className="text-sm font-medium">{quantity}</span>
-          <span className="text-xs text-gray-500">coupon</span>
+          <CalendarOutlined style={{ fontSize: "14px", color: "#1890ff" }} />
+          <span className="text-xs text-gray-600">
+            {date ? dayjs(date).format("DD/MM/YYYY") : "N/A"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      title: "Ngày Hết Hạn",
+      dataIndex: "expirationDate",
+      key: "expirationDate",
+      align: "center",
+      render: (date) => (
+        <div className="flex flex-col items-center">
+          <CalendarOutlined style={{ fontSize: "14px", color: "#ff4d4f" }} />
+          <span className="text-xs text-gray-600">
+            {date ? dayjs(date).format("DD/MM/YYYY") : "N/A"}
+          </span>
         </div>
       ),
     },
@@ -304,7 +336,11 @@ export default function ManageVoucherPT() {
               className="text-orange-600 hover:bg-orange-50"
               onClick={() => {
                 setSelectedCoupon(record);
-                formEdit.setFieldsValue(record);
+                formEdit.setFieldsValue({
+                  ...record,
+                  startDate: record.startDate ? dayjs(record.startDate) : null,
+                  expirationDate: record.expirationDate ? dayjs(record.expirationDate) : null,
+                });
                 setIsModalEditOpen(true);
               }}
             />
@@ -336,7 +372,7 @@ export default function ManageVoucherPT() {
     <div className="">
       <div className="">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Quản Lý Coupon Voucher
           </h1>
@@ -347,7 +383,7 @@ export default function ManageVoucherPT() {
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} className="mb-8">
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Tổng Coupon"
@@ -361,7 +397,7 @@ export default function ManageVoucherPT() {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Đang Hoạt Động"
@@ -375,7 +411,7 @@ export default function ManageVoucherPT() {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Không Hoạt Động"
@@ -389,7 +425,7 @@ export default function ManageVoucherPT() {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={6}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Tổng Số Lượng"
@@ -398,35 +434,6 @@ export default function ManageVoucherPT() {
                 valueStyle={{
                   color: "#1890ff",
                   fontSize: "24px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <Statistic
-                title="% Giảm TB"
-                value={statistics.averageDiscountPercent}
-                suffix="%"
-                valueStyle={{
-                  color: "#722ed1",
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <Statistic
-                title="Tổng Giá Trị Tối Đa"
-                value={statistics.totalMaxDiscount}
-                formatter={(value) => `${value?.toLocaleString("vi")}₫`}
-                prefix={<DollarOutlined style={{ color: "#13c2c2" }} />}
-                valueStyle={{
-                  color: "#13c2c2",
-                  fontSize: "20px",
                   fontWeight: "bold",
                 }}
               />
@@ -452,7 +459,8 @@ export default function ManageVoucherPT() {
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => setIsModalAddCouponOpen(true)}
-              className="bg-orange-500 hover:bg-orange-600 border-orange-500 hover:border-orange-600 rounded-lg"
+              className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+              size="large"
             >
               Thêm Coupon
             </Button>
@@ -517,203 +525,388 @@ export default function ManageVoucherPT() {
       </div>
 
       {/* Add Coupon Modal */}
-      <FitBridgeModal
+      <Modal
         open={isModalAddCouponOpen}
         onCancel={() => {
           setIsModalAddCouponOpen(false);
           formAdd.resetFields();
         }}
-        title="Thêm Coupon Mới"
-        titleIcon={<GiftOutlined />}
-        width={600}
-        logoSize="medium"
+        title={
+          <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+            <div className="p-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg">
+              <GiftOutlined className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 m-0">
+                Thêm Coupon Mới
+              </h2>
+              <p className="text-sm text-gray-500 m-0">
+                Tạo coupon giảm giá cho khách hàng
+              </p>
+            </div>
+          </div>
+        }
+        footer={null}
+        width={800}
+        className="top-8"
       >
         <Form
           form={formAdd}
           layout="vertical"
           requiredMark={false}
           onFinish={handleAddCoupon}
-          className="max-h-[65vh] overflow-y-auto !py-5 !px-5"
+          className="max-h-[70vh] overflow-y-auto py-6"
         >
-          <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Mã Coupon</p>
-            }
-            name="couponCode"
-            rules={[{ required: true, message: "Vui lòng nhập mã coupon" }]}
-          >
-            <Input placeholder="Nhập mã coupon" className="!w-full rounded-lg" />
-          </Form.Item>
-          <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Phần trăm giảm giá (%)</p>
-            }
-            name="discountPercent"
-            rules={[
-              { required: true, message: "Vui lòng nhập phần trăm giảm giá" },
-              { type: "number", min: 1, max: 100, message: "Phần trăm phải từ 1-100" }
-            ]}
-          >
-            <InputNumber
-              min={1}
-              max={100}
-              placeholder="20"
-              className="!w-full rounded-lg"
-              addonAfter="%"
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Mã Coupon</span>
+                }
+                name="couponCode"
+                rules={[{ required: true, message: "Vui lòng nhập mã coupon" }]}
+              >
+                <Input placeholder="Nhập mã coupon" size="large" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Phần trăm giảm giá (%)</span>
+                }
+                name="discountPercent"
+                rules={[
+                  { required: true, message: "Vui lòng nhập phần trăm giảm giá" },
+                  { type: "number", min: 1, max: 100, message: "Phần trăm phải từ 1-100" }
+                ]}
+              >
+                <InputNumber
+                  min={1}
+                  max={100}
+                  placeholder="20"
+                  className="!w-full"
+                  size="large"
+                  addonAfter="%"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Số tiền giảm tối đa (VNĐ)</p>
-            }
-            name="maxDiscount"
-            rules={[{ required: true, message: "Vui lòng nhập số tiền giảm tối đa" }]}
-          >
-            <InputNumber
-              min={1000}
-              placeholder="10,000"
-              className="!w-full rounded-lg"
-              addonAfter="VNĐ"
-              formatter={(value) =>
-                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-              }
-              parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Số tiền giảm tối đa (VNĐ)</span>
+                }
+                name="maxDiscount"
+                rules={[{ required: true, message: "Vui lòng nhập số tiền giảm tối đa" }]}
+              >
+                <InputNumber
+                  min={1000}
+                  placeholder="10,000"
+                  className="!w-full"
+                  size="large"
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                  parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Số lượng coupon</span>
+                }
+                name="quantity"
+                rules={[{ required: true, message: "Vui lòng nhập số lượng coupon" }]}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="100"
+                  className="!w-full"
+                  size="large"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Số lượng coupon</p>
-            }
-            name="quantity"
-            rules={[{ required: true, message: "Vui lòng nhập số lượng coupon" }]}
-          >
-            <InputNumber
-              min={1}
-              placeholder="100"
-              className="!w-full rounded-lg"
-              addonAfter="coupon"
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Ngày Bắt Đầu</span>
+                }
+                name="startDate"
+                rules={[{ required: true, message: "Vui lòng chọn ngày bắt đầu" }]}
+              >
+                <DatePicker
+                  placeholder="Chọn ngày bắt đầu"
+                  className="w-full"
+                  format="DD/MM/YYYY"
+                  size="large"
+                  disabledDate={(current) => {
+                    return current && current < dayjs().startOf('day');
+                  }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Ngày Hết Hạn</span>
+                }
+                name="expirationDate"
+                rules={[
+                  { required: true, message: "Vui lòng chọn ngày hết hạn" },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const startDate = getFieldValue('startDate');
+                      if (!value || !startDate || dayjs(value).isAfter(dayjs(startDate))) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('Ngày hết hạn phải sau ngày bắt đầu'));
+                    },
+                  }),
+                ]}
+              >
+                <DatePicker
+                  placeholder="Chọn ngày hết hạn"
+                  className="w-full"
+                  format="DD/MM/YYYY"
+                  size="large"
+                  disabledDate={(current) => {
+                    const startDate = formAdd.getFieldValue('startDate');
+                    if (startDate) {
+                      return current && current <= dayjs(startDate);
+                    }
+                    return current && current < dayjs().startOf('day');
+                  }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <div className="text-center pt-4">
-            <Button
-              onClick={() => formAdd.submit()}
-              loading={loadingAdd}
-              className="!w-[60%] !h-12 !rounded-full !font-medium !border-0 shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #FF914D 0%, #ED2A46 100%)",
-                color: "white",
-              }}
-            >
-              Tạo Coupon
-            </Button>
+          <div className="text-center pt-6 border-t border-gray-200">
+            <Space size="middle">
+              <Button
+                size="large"
+                onClick={() => {
+                  setIsModalAddCouponOpen(false);
+                  formAdd.resetFields();
+                }}
+                className="px-8"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                loading={loadingAdd}
+                onClick={() => formAdd.submit()}
+                className="px-8 bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg"
+              >
+                {loadingAdd ? "Đang xử lý..." : "Thêm Coupon"}
+              </Button>
+            </Space>
           </div>
         </Form>
-      </FitBridgeModal>
+      </Modal>
 
       {/* Edit Coupon Modal */}
-      <FitBridgeModal
+      <Modal
         open={isModalEditOpen}
         onCancel={() => {
           setIsModalEditOpen(false);
           formEdit.resetFields();
           setSelectedCoupon(null);
         }}
-        title="Chỉnh Sửa Coupon"
-        titleIcon={<EditOutlined />}
-        width={600}
-        logoSize="medium"
+        title={
+          <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+            <div className="p-2 bg-gradient-to-r from-green-400 to-green-500 rounded-lg">
+              <EditOutlined className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 m-0">
+                Chỉnh Sửa Coupon
+              </h2>
+              <p className="text-sm text-gray-500 m-0">
+                Cập nhật thông tin coupon
+              </p>
+            </div>
+          </div>
+        }
+        footer={null}
+        width={800}
+        className="top-8"
       >
         <Form
           form={formEdit}
           layout="vertical"
           requiredMark={false}
           onFinish={handleEditCoupon}
-          className="max-h-[65vh] overflow-y-auto !py-5 !px-5"
+          className="max-h-[70vh] overflow-y-auto py-6"
         >
-          <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Phần trăm giảm giá (%)</p>
-            }
-            name="discountPercent"
-            rules={[
-              { required: true, message: "Vui lòng nhập phần trăm giảm giá" },
-              { type: "number", min: 1, max: 100, message: "Phần trăm phải từ 1-100" }
-            ]}
-          >
-            <InputNumber
-              min={1}
-              max={100}
-              placeholder="20"
-              className="!w-full rounded-lg"
-              addonAfter="%"
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Phần trăm giảm giá (%)</span>
+                }
+                name="discountPercent"
+                rules={[
+                  { required: true, message: "Vui lòng nhập phần trăm giảm giá" },
+                  { type: "number", min: 1, max: 100, message: "Phần trăm phải từ 1-100" }
+                ]}
+              >
+                <InputNumber
+                  min={1}
+                  max={100}
+                  placeholder="20"
+                  className="!w-full"
+                  size="large"
+                  addonAfter="%"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Số tiền giảm tối đa (VNĐ)</span>
+                }
+                name="maxDiscount"
+                rules={[{ required: true, message: "Vui lòng nhập số tiền giảm tối đa" }]}
+              >
+                <InputNumber
+                  min={1000}
+                  placeholder="10,000"
+                  className="!w-full"
+                  size="large"
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                  parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Số tiền giảm tối đa (VNĐ)</p>
-            }
-            name="maxDiscount"
-            rules={[{ required: true, message: "Vui lòng nhập số tiền giảm tối đa" }]}
-          >
-            <InputNumber
-              min={1000}
-              placeholder="10,000"
-              className="!w-full rounded-lg"
-              formatter={(value) =>
-                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-              }
-              parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Số lượng coupon</span>
+                }
+                name="quantity"
+                rules={[{ required: true, message: "Vui lòng nhập số lượng coupon" }]}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="100"
+                  className="!w-full"
+                  size="large"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Trạng thái</span>
+                }
+                name="isActive"
+                valuePropName="checked"
+              >
+                <Switch
+                  checkedChildren="Hoạt động"
+                  unCheckedChildren="Tạm dừng"
+                  className="bg-gray-300"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Số lượng coupon</p>
-            }
-            name="quantity"
-            rules={[{ required: true, message: "Vui lòng nhập số lượng coupon" }]}
-          >
-            <InputNumber
-              min={1}
-              placeholder="100"
-              className="!w-full rounded-lg"
-              addonAfter="coupon"
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Ngày Bắt Đầu</span>
+                }
+                name="startDate"
+                rules={[{ required: true, message: "Vui lòng chọn ngày bắt đầu" }]}
+              >
+                <DatePicker
+                  placeholder="Chọn ngày bắt đầu"
+                  className="w-full"
+                  format="DD/MM/YYYY"
+                  size="large"
+                  disabledDate={(current) => {
+                    return current && current < dayjs().startOf('day');
+                  }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="text-base font-semibold text-gray-700">Ngày Hết Hạn</span>
+                }
+                name="expirationDate"
+                rules={[
+                  { required: true, message: "Vui lòng chọn ngày hết hạn" },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const startDate = getFieldValue('startDate');
+                      if (!value || !startDate || dayjs(value).isAfter(dayjs(startDate))) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('Ngày hết hạn phải sau ngày bắt đầu'));
+                    },
+                  }),
+                ]}
+              >
+                <DatePicker
+                  placeholder="Chọn ngày hết hạn"
+                  className="w-full"
+                  format="DD/MM/YYYY"
+                  size="large"
+                  disabledDate={(current) => {
+                    const startDate = formEdit.getFieldValue('startDate');
+                    if (startDate) {
+                      return current && current <= dayjs(startDate);
+                    }
+                    return current && current < dayjs().startOf('day');
+                  }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Trạng thái</p>
-            }
-            name="isActive"
-            valuePropName="checked"
-          >
-            <Switch
-              checkedChildren="Hoạt động"
-              unCheckedChildren="Tạm dừng"
-              className="bg-gray-300"
-            />
-          </Form.Item>
-
-          <div className="text-center pt-4">
-            <Button
-              onClick={() => formEdit.submit()}
-              loading={loadingEdit}
-              className="!w-[60%] !h-12 !rounded-full !font-medium !border-0 shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
-                color: "white",
-              }}
-            >
-              Cập Nhật Coupon
-            </Button>
+          <div className="text-center pt-6 border-t border-gray-200">
+            <Space size="middle">
+              <Button
+                size="large"
+                onClick={() => {
+                  setIsModalEditOpen(false);
+                  formEdit.resetFields();
+                  setSelectedCoupon(null);
+                }}
+                className="px-8"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                loading={loadingEdit}
+                onClick={() => formEdit.submit()}
+                className="px-8 bg-gradient-to-r from-green-400 to-green-500 border-0 shadow-lg"
+              >
+                {loadingEdit ? "Đang xử lý..." : "Cập Nhật Coupon"}
+              </Button>
+            </Space>
           </div>
         </Form>
-      </FitBridgeModal>
+      </Modal>
 
       {/* Detail Modal */}
       <FitBridgeModal
