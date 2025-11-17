@@ -1,11 +1,22 @@
 import React from "react";
-import { Row, Col, Card, Tag, Image, Descriptions, Collapse } from "antd";
+import {
+  Row,
+  Col,
+  Card,
+  Tag,
+  Image,
+  Descriptions,
+  Collapse,
+  Tooltip,
+} from "antd";
 import {
   EyeOutlined,
   CheckCircleOutlined,
   StopOutlined,
   ShoppingOutlined,
   TagOutlined,
+  FormOutlined,
+  PlusCircleOutlined,
 } from "@ant-design/icons";
 import FitBridgeModal from "../../../components/FitBridgeModal";
 import defaultImage from "../../../assets/LogoColor.png";
@@ -14,7 +25,21 @@ export default function ProductDetailModal({
   isOpen,
   onClose,
   selectedProduct,
+  onUpdate,
+  onCreateDetail,
 }) {
+  const handleUpdateProduct = () => {
+    if (onUpdate) {
+      onUpdate();
+    }
+  };
+
+  const handleCreateDetail = () => {
+    if (onCreateDetail) {
+      onCreateDetail();
+    }
+  };
+
   return (
     <FitBridgeModal
       open={isOpen}
@@ -34,10 +59,20 @@ export default function ProductDetailModal({
               size="small"
               className="shadow-sm hover:shadow-md transition-shadow"
               title={
-                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                  <ShoppingOutlined />
-                  Thông Tin Sản Phẩm
-                </span>
+                <div className="flex flex-row justify-between">
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <ShoppingOutlined />
+                    Thông Tin Sản Phẩm
+                  </span>
+                  <Tooltip title="Chỉnh sửa sản phẩm">
+                    <span
+                      onClick={handleUpdateProduct}
+                      className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]"
+                    >
+                      <FormOutlined style={{ fontSize: 20 }} />
+                    </span>
+                  </Tooltip>
+                </div>
               }
               bordered={true}
               style={{ borderColor: "#FFE5E9" }}
@@ -54,7 +89,11 @@ export default function ProductDetailModal({
                   />
                 </div>
                 <div className="col-span-4 ">
-                  <Descriptions column={{ xs: 1, sm: 2 }} bordered size="middle">
+                  <Descriptions
+                    column={{ xs: 1, sm: 2 }}
+                    bordered
+                    size="middle"
+                  >
                     <Descriptions.Item label="Tên Sản Phẩm" span={2}>
                       <div className="font-semibold text-base">
                         {selectedProduct.name}
@@ -70,9 +109,10 @@ export default function ProductDetailModal({
                     </Descriptions.Item>
 
                     <Descriptions.Item label="Xuất Xứ">
-                      <Tag color="purple">{selectedProduct.countryOfOrigin || "N/A country"}</Tag>
+                      <Tag color="purple">
+                        {selectedProduct.countryOfOrigin || "N/A country"}
+                      </Tag>
                     </Descriptions.Item>
-                    
                   </Descriptions>
                 </div>
               </div>
@@ -83,20 +123,22 @@ export default function ProductDetailModal({
                     {selectedProduct.description || "Không có mô tả"}
                   </div>
                 </Descriptions.Item>
-                <Descriptions.Item label="Tổng Đã Bán" >
+                <Descriptions.Item label="Tổng Đã Bán">
                   <span className="font-bold text-orange-600">
                     {selectedProduct.totalSold || 0}
                   </span>
                 </Descriptions.Item>
-                
+
                 <Descriptions.Item label="Ngày Tạo">
                   {selectedProduct.createdAt
                     ? new Date(selectedProduct.createdAt).toLocaleDateString(
                         "vi-VN",
                         {
                           year: "numeric",
-                          month: "long",
-                          day: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         }
                       )
                     : "N/A"}
@@ -108,8 +150,10 @@ export default function ProductDetailModal({
                         "vi-VN",
                         {
                           year: "numeric",
-                          month: "long",
-                          day: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         }
                       )
                     : "N/A"}
@@ -118,28 +162,35 @@ export default function ProductDetailModal({
             </Card>
 
             {/* Product Details (Variants) */}
-            {selectedProduct.productDetails &&
-              selectedProduct.productDetails.length > 0 && (
-                <Card
-                  size="small"
-                  className="shadow-sm hover:shadow-md transition-shadow"
-                  title={
-                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                      <TagOutlined />
-                      Danh Sách Lô Hàng ({
-                        selectedProduct.productDetails.length
-                      }{" "}
-                      lô)
+            <Card
+              size="small"
+              className="shadow-sm hover:shadow-md transition-shadow"
+              title={
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <TagOutlined />
+                    Danh Sách Lô Hàng (
+                    {selectedProduct.productDetails?.length || 0} lô)
+                  </span>
+                  <Tooltip title="Thêm lô sản phẩm mới">
+                    <span
+                      onClick={handleCreateDetail}
+                      className="flex items-center gap-2 text-base font-semibold text-[#ED2A46] cursor-pointer hover:opacity-80"
+                    >
+                      <PlusCircleOutlined style={{ fontSize: 20 }} />
                     </span>
-                  }
-                  bordered={true}
-                  style={{ borderColor: "#FFE5E9" }}
-                >
-                  <Collapse
-                    accordion
-                    className="bg-transparent"
-                    items={selectedProduct.productDetails.map(
-                      (detail, index) => ({
+                  </Tooltip>
+                </div>
+              }
+              style={{ borderColor: "#FFE5E9" }}
+            >
+              {selectedProduct.productDetails &&
+              selectedProduct.productDetails.length > 0 ? (
+                <Collapse
+                  accordion
+                  className="bg-transparent"
+                  items={selectedProduct.productDetails.map(
+                    (detail, index) => ({
                         key: index.toString(),
                         label: (
                           <div className="flex items-center justify-between w-full">
@@ -191,14 +242,14 @@ export default function ProductDetailModal({
                                     src={detail.imageUrl}
                                     alt={`${selectedProduct.name} - ${detail.flavourName}`}
                                     className="rounded-lg object-cover border-2 border-gray-100"
-                                    style={{objectFit:'contain'}}
+                                    style={{ objectFit: "contain" }}
                                   />
                                 ) : (
                                   <div className="w-full h-[180px] bg-gray-200 rounded-lg flex items-center justify-center">
                                     <ShoppingOutlined className="text-4xl text-gray-400" />
                                   </div>
                                 )}
-                                
+
                                 {/* Price Section */}
                                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                                   <div className="text-sm font-semibold text-gray-700 mb-2">
@@ -242,24 +293,27 @@ export default function ProductDetailModal({
                                 </div>
 
                                 {/* {Day to Expire Section} */}
-                                <div className={`p-3 rounded-lg items-center border ${
-                                  detail.isNearExpired 
-                                    ? 'bg-red-50 border-red-200' 
-                                    : 'bg-green-50 border-green-200'
-                                }`}>
+                                <div
+                                  className={`p-3 rounded-lg items-center border ${
+                                    detail.isNearExpired
+                                      ? "bg-red-50 border-red-200"
+                                      : "bg-green-50 border-green-200"
+                                  }`}
+                                >
                                   <div className="text-sm flex items-center justify-center gap-2 font-semibold text-gray-700">
-                                    Hạn Sử Dụng Còn Lại: 
-                                     <p className={`font-bold text-sm ${
-                                    detail.isNearExpired 
-                                      ? 'text-red-600' 
-                                      : 'text-green-600'
-                                  }`}>
-                                    {detail.daysToExpire !== undefined
-                                      ? `${detail.daysToExpire} ngày`
-                                      : "N/A"}
-                                  </p>
+                                    Hạn Sử Dụng Còn Lại:
+                                    <p
+                                      className={`font-bold text-sm ${
+                                        detail.isNearExpired
+                                          ? "text-red-600"
+                                          : "text-green-600"
+                                      }`}
+                                    >
+                                      {detail.daysToExpire !== undefined
+                                        ? `${detail.daysToExpire} ngày`
+                                        : "N/A"}
+                                    </p>
                                   </div>
-                                 
                                 </div>
                               </div>
                             </Col>
@@ -267,10 +321,8 @@ export default function ProductDetailModal({
                             {/* Product Details */}
                             <Col xs={24} md={16}>
                               <div className="space-y-4">
-                                
-
                                 {/* Stock & Sales Section */}
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <div className="bg-blue-50 px-6 py-4 rounded-lg border border-blue-200">
                                   <div className="text-sm font-semibold text-gray-700 mb-2">
                                     Kho Hàng & Bán Hàng
                                   </div>
@@ -307,7 +359,7 @@ export default function ProductDetailModal({
                                 </div>
 
                                 {/* Serving Information Section */}
-                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                <div className="bg-purple-50 px-6 py-4 rounded-lg border border-purple-200">
                                   <div className="text-sm font-semibold text-gray-700 mb-2">
                                     Thông Tin Khẩu Phần
                                   </div>
@@ -333,7 +385,7 @@ export default function ProductDetailModal({
                                 </div>
 
                                 {/* Nutritional Info Section */}
-                                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                <div className="bg-green-50 px-6 py-4 rounded-lg border border-green-200">
                                   <div className="text-sm font-semibold text-gray-700 mb-2">
                                     Thông Tin Dinh Dưỡng (Mỗi Khẩu Phần)
                                   </div>
@@ -381,7 +433,7 @@ export default function ProductDetailModal({
                                 </div>
 
                                 {/* Additional Information Section */}
-                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div className="bg-gray-50 px-6 py-4 rounded-lg border border-gray-200">
                                   <div className="text-sm font-semibold text-gray-700 mb-2">
                                     Thông Tin Bổ Sung
                                   </div>
@@ -431,8 +483,31 @@ export default function ProductDetailModal({
                       })
                     )}
                   />
-                </Card>
-              )}
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 px-4">
+                    <div className="bg-gray-100 rounded-full p-6 mb-4">
+                      <TagOutlined
+                        style={{ fontSize: 48 }}
+                        className="text-gray-400"
+                      />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      Chưa có lô hàng nào
+                    </h3>
+                    <p className="text-gray-500 text-center mb-6 max-w-md">
+                      Sản phẩm này chưa có lô hàng nào. Hãy thêm lô hàng đầu
+                      tiên để bắt đầu bán sản phẩm.
+                    </p>
+                    <button
+                      onClick={handleCreateDetail}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
+                    >
+                      <PlusCircleOutlined style={{ fontSize: 18 }} />
+                      Thêm Lô Hàng Đầu Tiên
+                    </button>
+                  </div>
+                )}
+              </Card>
           </div>
         </div>
       )}

@@ -11,6 +11,9 @@ import {
   Tag,
   Select,
   Image,
+  Form,
+  Modal,
+  Switch,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -23,10 +26,14 @@ import {
   ShoppingOutlined,
   DollarOutlined,
   AppstoreOutlined,
+  FormOutlined,
+  TagOutlined,
 } from "@ant-design/icons";
 import adminService from "../../../services/adminServices";
 import defaultImage from "../../../assets/LogoColor.png";
 import ProductDetailModal from "./ProductDetailModal";
+import CreateProductDetailModal from "./CreateProductDetailModal";
+import CreateProductModal from "./CreateProductModal";
 
 const { Option } = Select;
 
@@ -36,10 +43,28 @@ export default function ManageProductPage() {
   const [searchText, setSearchText] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalDetailOpen, setIsModalDetailOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isCreateDetailModalOpen, setIsCreateDetailModalOpen] = useState(false);
+  const [isCreateProductModalOpen, setIsCreateProductModalOpen] =
+    useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [brandFilter, setBrandFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
+  const [brands, setBrands] = useState([]);
+  const [mainCategories, setMainCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [filteredSubCategories, setFilteredSubCategories] = useState([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [weights, setWeights] = useState([]);
+  const [flavours, setFlavours] = useState([]);
+  const [form] = Form.useForm();
+  const [detailForm] = Form.useForm();
+  const [createProductForm] = Form.useForm();
+  const [updating, setUpdating] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [setImageFile] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -58,13 +83,20 @@ export default function ManageProductPage() {
   const fetchProducts = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await adminService.getAllProducts({ page, size: pageSize });
+      const response = await adminService.getAllProducts({
+        page,
+        size: pageSize,
+      });
       const { items, total, page: currentPage } = response.data;
       setProducts(items);
 
       // Calculate statistics
-      const displayedProducts = items.filter((product) => product.isDisplayed).length;
-      const hiddenProducts = items.filter((product) => !product.isDisplayed).length;
+      const displayedProducts = items.filter(
+        (product) => product.isDisplayed
+      ).length;
+      const hiddenProducts = items.filter(
+        (product) => !product.isDisplayed
+      ).length;
 
       setStatistics({
         totalProducts: total,
@@ -94,6 +126,66 @@ export default function ManageProductPage() {
     fetchProducts(newPagination.current, newPagination.pageSize);
   };
 
+  const fetchBrandsAndCategories = async () => {
+    try {
+      const brandsRes = await adminService.getAllBrands({ page: 1, size: 100 });
+      setBrands(brandsRes.data || []);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+      toast.error("Lỗi khi tải thương hiệu");
+    }
+  };
+
+  const fetchMainCategories = async () => {
+    try {
+      const response = await adminService.getAllCategories({ page: 1, size: 100 });
+      const mainCats = response.data?.items || response.data || [];
+      setMainCategories(mainCats);
+      return mainCats;
+    } catch (error) {
+      console.error("Error fetching main categories:", error);
+      toast.error("Lỗi khi tải danh mục chính");
+      return [];
+    }
+  };
+
+  const fetchSubCategories = async () => {
+    try {
+      const response = await adminService.getAllSubCategories({ page: 1, size: 100 });
+      const subCats = response.data?.items || response.data || [];
+      setSubCategories(subCats);
+      return subCats;
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      toast.error("Lỗi khi tải danh mục phụ");
+      return [];
+    }
+  };
+
+  const fetchWeightsAndFlavours = async () => {
+    try {
+      const [weightsRes, flavoursRes] = await Promise.all([
+        adminService.getAllWeights({ page: 1, size: 100 }),
+        adminService.getAllFlavours({ page: 1, size: 100 }),
+      ]);
+      console.log("Weights Response:", weightsRes);
+      console.log("Flavours Response:", flavoursRes);
+
+      // Handle both paginated and non-paginated responses
+      const weightsData = weightsRes.data?.items || weightsRes.data || [];
+      const flavoursData = flavoursRes.data?.items || flavoursRes.data || [];
+
+      console.log("Weights Data:", weightsData);
+      console.log("Flavours Data:", flavoursData);
+
+      setWeights(weightsData);
+      setFlavours(flavoursData);
+    } catch (error) {
+      console.error("Error fetching weights/flavours:", error);
+      toast.error("Lỗi khi tải trọng lượng/hương vị");
+    }
+  };
+
   const handleViewDetails = async (productId) => {
     try {
       const response = await adminService.viewProductsDetails(productId);
@@ -102,6 +194,202 @@ export default function ManageProductPage() {
     } catch (error) {
       console.error("Error fetching product details:", error);
       toast.error("Lỗi khi tải chi tiết sản phẩm");
+    }
+  };
+
+  const handleOpenUpdateModal = async () => {
+    if (selectedProduct) {
+      await fetchBrandsAndCategories();
+      await fetchMainCategories();
+      const fetchedSubCategories = await fetchSubCategories();
+
+      // Find the subcategory and its parent category using fetched data
+      const subCat = fetchedSubCategories.find(sc => sc.id === selectedProduct.subCategoryId);
+      const categoryId = subCat?.categoryId;
+
+      if (categoryId) {
+        setSelectedCategoryId(categoryId);
+        const filtered = fetchedSubCategories.filter(sc => sc.categoryId === categoryId);
+        setFilteredSubCategories(filtered);
+      }
+
+      form.setFieldsValue({
+        name: selectedProduct.name,
+        description: selectedProduct.description,
+        brandId: selectedProduct.brandId,
+        categoryId: categoryId,
+        subCategoryId: selectedProduct.subCategoryId,
+        countryOfOrigin: selectedProduct.countryOfOrigin,
+        proteinSources: selectedProduct.proteinSources,
+        isDisplayed: selectedProduct.isDisplayed,
+      });
+      setIsUpdateModalOpen(true);
+    }
+  };
+
+  const handleUpdateProduct = async (values) => {
+    if (!selectedProduct) return;
+
+    setUpdating(true);
+    try {
+      // Prepare FormData for multipart/form-data
+      const formData = new FormData();
+      formData.append("id", selectedProduct.id);
+      formData.append("name", values.name);
+      formData.append("description", values.description || "");
+      formData.append("brandId", values.brandId);
+      formData.append("proteinSources", values.proteinSources || "");
+      formData.append("countryOfOrigin", values.countryOfOrigin || "");
+      formData.append("subCategoryId", values.subCategoryId);
+      formData.append("isDisplayed", values.isDisplayed ?? true);
+
+      await adminService.updateProduct(selectedProduct.id, formData);
+      toast.success("Cập nhật sản phẩm thành công");
+      setIsUpdateModalOpen(false);
+      form.resetFields();
+
+      // Refresh product details
+      const response = await adminService.viewProductsDetails(
+        selectedProduct.id
+      );
+      setSelectedProduct(response.data);
+
+      // Refresh product list
+      fetchProducts(pagination.current, pagination.pageSize);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi cập nhật sản phẩm");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleOpenCreateDetailModal = () => {
+    if (selectedProduct) {
+      fetchWeightsAndFlavours();
+      console.log("Opening Create Detail Modal for product:", selectedProduct);
+      setIsCreateDetailModalOpen(true);
+      detailForm.resetFields();
+      setImageFile(null);
+      setImageUrl("");
+    }
+  };
+
+  const handleImageUpload = (uploadedImageUrl) => {
+    setImageUrl(uploadedImageUrl);
+    toast.success("Upload ảnh thành công!");
+  };
+
+  const handleImageRemove = () => {
+    setImageFile(null);
+    setImageUrl("");
+    toast.success("Đã xóa ảnh");
+  };
+
+  const handleCreateProductDetail = async (values) => {
+    if (!selectedProduct) return;
+    if (!imageUrl) {
+      toast.error("Vui lòng upload ảnh sản phẩm");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const formData = new FormData();
+      formData.append("productId", selectedProduct.id);
+      formData.append("weightId", values.weightId);
+      formData.append("flavourId", values.flavourId);
+      formData.append("image", imageUrl);
+      formData.append("quantity", values.quantity);
+      formData.append("originalPrice", values.originalPrice);
+      formData.append("displayPrice", values.displayPrice);
+      formData.append("salePrice", values.salePrice || values.displayPrice);
+      formData.append(
+        "expirationDate",
+        values.expirationDate.format("YYYY-MM-DD")
+      );
+      formData.append(
+        "servingSizeInformation",
+        values.servingSizeInformation || ""
+      );
+      formData.append(
+        "servingsPerContainerInformation",
+        values.servingsPerContainerInformation || ""
+      );
+      formData.append(
+        "proteinPerServingGrams",
+        values.proteinPerServingGrams || 0
+      );
+      formData.append(
+        "caloriesPerServingKcal",
+        values.caloriesPerServingKcal || 0
+      );
+      formData.append("bcaaPerServingGrams", values.bcaaPerServingGrams || 0);
+      formData.append("isDisplayed", values.isDisplayed ?? true);
+
+      await adminService.createProductsDetails(formData);
+      toast.success("Tạo lô hàng thành công");
+      setIsCreateDetailModalOpen(false);
+      detailForm.resetFields();
+      setImageFile(null);
+      setImageUrl("");
+
+      // Refresh product details
+      const response = await adminService.viewProductsDetails(
+        selectedProduct.id
+      );
+      setSelectedProduct(response.data);
+    } catch (error) {
+      console.error("Error creating product detail:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi tạo lô hàng");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleOpenCreateProductModal = async () => {
+    createProductForm.resetFields();
+    setImageUrl("");
+    setSelectedCategoryId(null);
+    setFilteredSubCategories([]);
+    await fetchBrandsAndCategories();
+    await fetchMainCategories();
+    await fetchSubCategories();
+    setIsCreateProductModalOpen(true);
+  };
+
+  const handleCreateProduct = async (values) => {
+    setCreating(true);
+    try {
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("description", values.description || "");
+      formData.append("brandId", values.brandId);
+      formData.append("subCategoryId", values.subCategoryId);
+      formData.append("countryOfOrigin", values.countryOfOrigin || "");
+      formData.append("proteinSources", values.proteinSources || "");
+      formData.append("isDisplayed", values.isDisplayed ?? true);
+
+      // Add coverImage if uploaded
+      if (imageUrl) {
+        formData.append("coverImage", imageUrl);
+      }
+
+      await adminService.createProduct(formData);
+      toast.success("Tạo sản phẩm thành công");
+      setIsCreateProductModalOpen(false);
+      createProductForm.resetFields();
+      setImageUrl("");
+      setSelectedCategoryId(null);
+      setFilteredSubCategories([]);
+
+      // Refresh product list
+      fetchProducts(pagination.current, pagination.pageSize);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi tạo sản phẩm");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -159,9 +447,7 @@ export default function ManageProductPage() {
       key: "countryOfOrigin",
       align: "center",
       width: 100,
-      render: (text) => (
-        <Tag color="green">{text || "N/A"}</Tag>
-      ),
+      render: (text) => <Tag color="green">{text || "N/A"}</Tag>,
     },
     {
       title: "Nguồn Protein",
@@ -170,9 +456,7 @@ export default function ManageProductPage() {
       align: "center",
       width: 150,
       render: (text) => (
-        <div className="text-xs text-gray-700 font-bold">
-          {text || "N/A"}
-        </div>
+        <div className="text-xs text-gray-700 font-bold">{text || "N/A"}</div>
       ),
     },
     {
@@ -211,9 +495,15 @@ export default function ManageProductPage() {
   ];
 
   // Extract unique values for filters
-  const uniqueBrands = [...new Set(products.map(p => p.brandName).filter(Boolean))];
-  const uniqueCategories = [...new Set(products.map(p => p.subCategoryName).filter(Boolean))];
-  const uniqueCountries = [...new Set(products.map(p => p.countryOfOrigin).filter(Boolean))];
+  const uniqueBrands = [
+    ...new Set(products.map((p) => p.brandName).filter(Boolean)),
+  ];
+  const uniqueCategories = [
+    ...new Set(products.map((p) => p.subCategoryName).filter(Boolean)),
+  ];
+  const uniqueCountries = [
+    ...new Set(products.map((p) => p.countryOfOrigin).filter(Boolean)),
+  ];
 
   const filteredData = products.filter((item) => {
     const matchesSearch = searchText
@@ -226,11 +516,20 @@ export default function ManageProductPage() {
       (statusFilter === "displayed" && item.isDisplayed) ||
       (statusFilter === "hidden" && !item.isDisplayed);
 
-    const matchesBrand = brandFilter === "all" || item.brandName === brandFilter;
-    const matchesCategory = categoryFilter === "all" || item.subCategoryName === categoryFilter;
-    const matchesCountry = countryFilter === "all" || item.countryOfOrigin === countryFilter;
+    const matchesBrand =
+      brandFilter === "all" || item.brandName === brandFilter;
+    const matchesCategory =
+      categoryFilter === "all" || item.subCategoryName === categoryFilter;
+    const matchesCountry =
+      countryFilter === "all" || item.countryOfOrigin === countryFilter;
 
-    return matchesSearch && matchesStatus && matchesBrand && matchesCategory && matchesCountry;
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesBrand &&
+      matchesCategory &&
+      matchesCountry
+    );
   });
 
   if (loading && products.length === 0) {
@@ -338,7 +637,7 @@ export default function ManageProductPage() {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => console.log("Add product")}
+                onClick={handleOpenCreateProductModal}
                 className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                 size="large"
               >
@@ -367,8 +666,10 @@ export default function ManageProductPage() {
                 optionFilterProp="children"
               >
                 <Option value="all">Tất cả thương hiệu</Option>
-                {uniqueBrands.map(brand => (
-                  <Option key={brand} value={brand}>{brand}</Option>
+                {uniqueBrands.map((brand) => (
+                  <Option key={brand} value={brand}>
+                    {brand}
+                  </Option>
                 ))}
               </Select>
               <Select
@@ -381,8 +682,10 @@ export default function ManageProductPage() {
                 optionFilterProp="children"
               >
                 <Option value="all">Tất cả danh mục</Option>
-                {uniqueCategories.map(category => (
-                  <Option key={category} value={category}>{category}</Option>
+                {uniqueCategories.map((category) => (
+                  <Option key={category} value={category}>
+                    {category}
+                  </Option>
                 ))}
               </Select>
               <Select
@@ -395,8 +698,10 @@ export default function ManageProductPage() {
                 optionFilterProp="children"
               >
                 <Option value="all">Tất cả xuất xứ</Option>
-                {uniqueCountries.map(country => (
-                  <Option key={country} value={country}>{country}</Option>
+                {uniqueCountries.map((country) => (
+                  <Option key={country} value={country}>
+                    {country}
+                  </Option>
                 ))}
               </Select>
             </div>
@@ -473,6 +778,295 @@ export default function ManageProductPage() {
           setSelectedProduct(null);
         }}
         selectedProduct={selectedProduct}
+        onUpdate={handleOpenUpdateModal}
+        onCreateDetail={handleOpenCreateDetailModal}
+      />
+
+      {/* Update Product Modal */}
+      <Modal
+        open={isUpdateModalOpen}
+        onCancel={() => {
+          setIsUpdateModalOpen(false);
+          form.resetFields();
+        }}
+        title={
+          <div className="flex items-center gap-2 text-lg">
+            <FormOutlined className="text-orange-500" />
+            <span>Cập Nhật Sản Phẩm</span>
+          </div>
+        }
+        width={800}
+        footer={null}
+        className="update-product-modal"
+      >
+        <Form form={form} layout="vertical" onFinish={handleUpdateProduct}>
+          {/* Basic Info Section */}
+          <Card
+            size="small"
+            className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
+            title={
+              <span className="text-blue-700 font-semibold">
+                <ShoppingOutlined className="mr-2" />
+                Thông Tin Cơ Bản
+              </span>
+            }
+          >
+            <Form.Item
+              label={<span className="font-medium">Tên Sản Phẩm</span>}
+              name="name"
+              rules={[
+                { required: true, message: "Vui lòng nhập tên sản phẩm" },
+              ]}
+            >
+              <Input placeholder="Nhập tên sản phẩm" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              label={<span className="font-medium">Mô Tả</span>}
+              name="description"
+            >
+              <Input.TextArea
+                rows={4}
+                placeholder="Nhập mô tả sản phẩm"
+                className="text-base"
+              />
+            </Form.Item>
+          </Card>
+
+          {/* Category & Brand Section */}
+          <Card
+            size="small"
+            className="mb-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200"
+            title={
+              <span className="text-purple-700 font-semibold">
+                <AppstoreOutlined className="mr-2" />
+                Phân Loại
+              </span>
+            }
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="font-medium">Thương Hiệu</span>}
+                  name="brandId"
+                  rules={[
+                    { required: true, message: "Vui lòng chọn thương hiệu" },
+                  ]}
+                >
+                  <Select
+                    placeholder="Chọn thương hiệu"
+                    showSearch
+                    optionFilterProp="children"
+                    size="large"
+                    suffixIcon={
+                      <AppstoreOutlined className="text-purple-500" />
+                    }
+                  >
+                    {brands.map((brand) => (
+                      <Option key={brand.id} value={brand.id}>
+                        <span className="font-medium">{brand.name}</span>
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="font-medium">Danh Mục Chính</span>}
+                  name="categoryId"
+                  rules={[
+                    { required: true, message: "Vui lòng chọn danh mục chính" },
+                  ]}
+                >
+                  <Select
+                    placeholder="Chọn danh mục chính"
+                    showSearch
+                    optionFilterProp="children"
+                    size="large"
+                    suffixIcon={
+                      <AppstoreOutlined className="text-purple-500" />
+                    }
+                    onChange={(value) => {
+                      setSelectedCategoryId(value);
+                      const filtered = subCategories.filter(sc => sc.categoryId === value);
+                      setFilteredSubCategories(filtered);
+                      form.setFieldsValue({ subCategoryId: undefined });
+                    }}
+                  >
+                    {mainCategories.map((category) => (
+                      <Option key={category.id} value={category.id}>
+                        <span className="font-medium">{category.name}</span>
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item
+                  label={<span className="font-medium">Danh Mục Phụ</span>}
+                  name="subCategoryId"
+                  rules={[
+                    { required: true, message: "Vui lòng chọn danh mục phụ" },
+                  ]}
+                >
+                  <Select
+                    placeholder="Chọn danh mục phụ"
+                    showSearch
+                    optionFilterProp="children"
+                    size="large"
+                    suffixIcon={
+                      <AppstoreOutlined className="text-purple-500" />
+                    }
+                    disabled={!selectedCategoryId}
+                  >
+                    {filteredSubCategories.map((subCat) => (
+                      <Option key={subCat.id} value={subCat.id}>
+                        <span className="font-medium">{subCat.name}</span>
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Origin & Protein Section */}
+          <Card
+            size="small"
+            className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200"
+            title={
+              <span className="text-green-700 font-semibold">
+                <TagOutlined className="mr-2" />
+                Nguồn Gốc & Thành Phần
+              </span>
+            }
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="font-medium">Xuất Xứ</span>}
+                  name="countryOfOrigin"
+                >
+                  <Input placeholder="Nhập quốc gia xuất xứ" size="large" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="font-medium">Nguồn Protein</span>}
+                  name="proteinSources"
+                >
+                  <Input placeholder="VD: Whey, Casein" size="large" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Display Status Section */}
+          <Card
+            size="small"
+            className="mb-4 bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200"
+          >
+            <Form.Item
+              label={
+                <span className="font-medium text-base">
+                  Trạng Thái Hiển Thị
+                </span>
+              }
+              name="isDisplayed"
+              valuePropName="checked"
+            >
+              <Switch
+                checkedChildren={
+                  <span className="flex items-center gap-1">
+                    <CheckCircleOutlined /> Hiển thị
+                  </span>
+                }
+                unCheckedChildren={
+                  <span className="flex items-center gap-1">
+                    <StopOutlined /> Ẩn
+                  </span>
+                }
+                size="default"
+              />
+            </Form.Item>
+          </Card>
+
+          {/* Action Buttons */}
+          <Form.Item className="mb-0">
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button
+                size="large"
+                onClick={() => {
+                  setIsUpdateModalOpen(false);
+                  form.resetFields();
+                }}
+                className="px-6"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={updating}
+                size="large"
+                icon={<CheckCircleOutlined />}
+                className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 px-8 shadow-lg hover:shadow-xl"
+              >
+                Cập Nhật
+              </Button>
+            </div>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Create Product Detail Modal */}
+      <CreateProductDetailModal
+        isOpen={isCreateDetailModalOpen}
+        onClose={() => {
+          setIsCreateDetailModalOpen(false);
+          detailForm.resetFields();
+          setImageFile(null);
+          setImageUrl("");
+        }}
+        onSubmit={handleCreateProductDetail}
+        form={detailForm}
+        weights={weights}
+        flavours={flavours}
+        creating={creating}
+        imageUrl={imageUrl}
+        onImageUpload={handleImageUpload}
+        onImageRemove={handleImageRemove}
+      />
+
+      {/* Create Product Modal */}
+      <CreateProductModal
+        isOpen={isCreateProductModalOpen}
+        onClose={() => {
+          setIsCreateProductModalOpen(false);
+          createProductForm.resetFields();
+          setImageUrl("");
+          setSelectedCategoryId(null);
+          setFilteredSubCategories([]);
+        }}
+        onSubmit={handleCreateProduct}
+        form={createProductForm}
+        brands={brands}
+        mainCategories={mainCategories}
+        subCategories={subCategories}
+        filteredSubCategories={filteredSubCategories}
+        selectedCategoryId={selectedCategoryId}
+        onCategoryChange={(categoryId) => {
+          setSelectedCategoryId(categoryId);
+          const filtered = subCategories.filter(sc => sc.categoryId === categoryId);
+          setFilteredSubCategories(filtered);
+          createProductForm.setFieldsValue({ subCategoryId: undefined });
+        }}
+        creating={creating}
+        imageUrl={imageUrl}
+        onImageUpload={handleImageUpload}
+        onImageRemove={handleImageRemove}
       />
 
       <style jsx>{`
