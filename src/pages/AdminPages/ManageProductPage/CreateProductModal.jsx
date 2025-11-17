@@ -33,12 +33,11 @@ export default function CreateProductModal({
   form,
   brands,
   mainCategories,
-  subCategories,
   filteredSubCategories,
   selectedCategoryId,
   onCategoryChange,
   creating,
-  imageUrl,
+  imageFile,
   onImageUpload,
   onImageRemove,
 }) {
@@ -81,29 +80,18 @@ export default function CreateProductModal({
             <Col span={5}>
               <Form.Item
                 label={<span className="font-medium">Hình Ảnh Bìa</span>}
-                required
+                name="coverImage"
               >
                 <div className="flex flex-col items-center gap-2">
-                  {!imageUrl ? (
+                  {!imageFile ? (
                     <Upload
-                      action="https://api-fitbridge.srv840734.hstgr.cloud/api/v1/uploads"
                       listType="picture-card"
                       maxCount={1}
                       accept="image/*"
                       showUploadList={false}
-                      onChange={(info) => {
-                        if (info.file.status === 'uploading') {
-                          // Optional: Handle uploading state
-                          console.log('Uploading:', info.file);
-                        }
-                        if (info.file.status === 'done') {
-                          // Get the image URL from response
-                          const imageUrl = info.file.response?.data || info.file.response;
-                          onImageUpload(imageUrl);
-                        }
-                        if (info.file.status === 'error') {
-                          console.error('Upload error:', info.file.error);
-                        }
+                      beforeUpload={(file) => {
+                        onImageUpload(file);
+                        return false; // Prevent auto upload
                       }}
                     >
                       <div className="flex flex-col items-center">
@@ -112,7 +100,7 @@ export default function CreateProductModal({
                           className="text-blue-500"
                         />
                         <div style={{ marginTop: 8 }} className="text-sm">
-                          Tải ảnh lên
+                          Chọn ảnh
                         </div>
                       </div>
                     </Upload>
@@ -120,7 +108,7 @@ export default function CreateProductModal({
                     <div className="flex flex-col items-center gap-2">
                       <div className="border-2 border-blue-200 rounded-lg p-2 bg-white">
                         <Image
-                          src={imageUrl}
+                          src={URL.createObjectURL(imageFile)}
                           width={140}
                           height={140}
                           className="object-cover rounded"
@@ -128,7 +116,7 @@ export default function CreateProductModal({
                         />
                       </div>
                       <div className="text-xs text-center text-green-600">
-                        ✓ Đã tải lên
+                        ✓ Đã chọn: {imageFile.name}
                       </div>
                       <Button
                         type="text"

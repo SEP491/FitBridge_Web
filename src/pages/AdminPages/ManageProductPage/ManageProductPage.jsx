@@ -63,8 +63,7 @@ export default function ManageProductPage() {
   const [createProductForm] = Form.useForm();
   const [updating, setUpdating] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [setImageFile] = useState(null);
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState(null);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -271,25 +270,21 @@ export default function ManageProductPage() {
       setIsCreateDetailModalOpen(true);
       detailForm.resetFields();
       setImageFile(null);
-      setImageUrl("");
     }
   };
 
-  const handleImageUpload = (uploadedImageUrl) => {
-    setImageUrl(uploadedImageUrl);
-    toast.success("Upload ảnh thành công!");
+  const handleDetailImageUpload = (file) => {
+    setImageFile(file);
   };
 
-  const handleImageRemove = () => {
+  const handleDetailImageRemove = () => {
     setImageFile(null);
-    setImageUrl("");
-    toast.success("Đã xóa ảnh");
   };
 
   const handleCreateProductDetail = async (values) => {
     if (!selectedProduct) return;
-    if (!imageUrl) {
-      toast.error("Vui lòng upload ảnh sản phẩm");
+    if (!imageFile) {
+      toast.error("Vui lòng chọn ảnh sản phẩm");
       return;
     }
 
@@ -299,7 +294,7 @@ export default function ManageProductPage() {
       formData.append("productId", selectedProduct.id);
       formData.append("weightId", values.weightId);
       formData.append("flavourId", values.flavourId);
-      formData.append("image", imageUrl);
+      formData.append("image", imageFile);
       formData.append("quantity", values.quantity);
       formData.append("originalPrice", values.originalPrice);
       formData.append("displayPrice", values.displayPrice);
@@ -332,7 +327,6 @@ export default function ManageProductPage() {
       setIsCreateDetailModalOpen(false);
       detailForm.resetFields();
       setImageFile(null);
-      setImageUrl("");
 
       // Refresh product details
       const response = await adminService.viewProductsDetails(
@@ -349,13 +343,21 @@ export default function ManageProductPage() {
 
   const handleOpenCreateProductModal = async () => {
     createProductForm.resetFields();
-    setImageUrl("");
+    setImageFile(null);
     setSelectedCategoryId(null);
     setFilteredSubCategories([]);
     await fetchBrandsAndCategories();
     await fetchMainCategories();
     await fetchSubCategories();
     setIsCreateProductModalOpen(true);
+  };
+
+  const handleCreateProductImageUpload = (file) => {
+    setImageFile(file);
+  };
+
+  const handleCreateProductImageRemove = () => {
+    setImageFile(null);
   };
 
   const handleCreateProduct = async (values) => {
@@ -370,16 +372,16 @@ export default function ManageProductPage() {
       formData.append("proteinSources", values.proteinSources || "");
       formData.append("isDisplayed", values.isDisplayed ?? true);
 
-      // Add coverImage if uploaded
-      if (imageUrl) {
-        formData.append("coverImage", imageUrl);
+      // Add coverImage file if selected
+      if (imageFile) {
+        formData.append("coverImage", imageFile);
       }
 
       await adminService.createProduct(formData);
       toast.success("Tạo sản phẩm thành công");
       setIsCreateProductModalOpen(false);
       createProductForm.resetFields();
-      setImageUrl("");
+      setImageFile(null);
       setSelectedCategoryId(null);
       setFilteredSubCategories([]);
 
@@ -1028,16 +1030,15 @@ export default function ManageProductPage() {
           setIsCreateDetailModalOpen(false);
           detailForm.resetFields();
           setImageFile(null);
-          setImageUrl("");
         }}
         onSubmit={handleCreateProductDetail}
         form={detailForm}
         weights={weights}
         flavours={flavours}
         creating={creating}
-        imageUrl={imageUrl}
-        onImageUpload={handleImageUpload}
-        onImageRemove={handleImageRemove}
+        imageFile={imageFile}
+        onImageUpload={handleDetailImageUpload}
+        onImageRemove={handleDetailImageRemove}
       />
 
       {/* Create Product Modal */}
@@ -1046,7 +1047,7 @@ export default function ManageProductPage() {
         onClose={() => {
           setIsCreateProductModalOpen(false);
           createProductForm.resetFields();
-          setImageUrl("");
+          setImageFile(null);
           setSelectedCategoryId(null);
           setFilteredSubCategories([]);
         }}
@@ -1064,9 +1065,9 @@ export default function ManageProductPage() {
           createProductForm.setFieldsValue({ subCategoryId: undefined });
         }}
         creating={creating}
-        imageUrl={imageUrl}
-        onImageUpload={handleImageUpload}
-        onImageRemove={handleImageRemove}
+        imageFile={imageFile}
+        onImageUpload={handleCreateProductImageUpload}
+        onImageRemove={handleCreateProductImageRemove}
       />
 
       <style jsx>{`
