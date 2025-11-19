@@ -42,6 +42,7 @@ import orderService from "../../../services/orderServices";
 import OrderDetailModal from "./OrderDetailModal";
 import ShippingOrderModal from "./ShippingOrderModal";
 import StatusUpdateModal from "./StatusUpdateModal";
+import ShopAddressModal from "./ShopAddressModal";
 
 const { Option } = Select;
 
@@ -60,6 +61,7 @@ export default function ManageOrderPage() {
   const [isStatusUpdateModalOpen, setIsStatusUpdateModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [statusDescription, setStatusDescription] = useState("");
+  const [isShopAddressModalOpen, setIsShopAddressModalOpen] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -568,7 +570,8 @@ export default function ManageOrderPage() {
         {/* Main Content Card */}
         <Card className="border-0 shadow-lg">
           {/* Filters and Search */}
-          <div className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-row mb-6 justify-between">
+          <div className="flex flex-col gap-4 ">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
                 placeholder="Tìm kiếm theo mã đơn, tên khách hàng, số điện thoại..."
@@ -619,6 +622,16 @@ export default function ManageOrderPage() {
                 <Option value="Wallet">Ví Điện Tử</Option>
               </Select>
             </div>
+          </div>
+          <div>
+            <Button
+              type="primary"
+              className="bg-orange-500 hover:bg-orange-600 rounded-lg"
+              onClick={() => setIsShopAddressModalOpen(true)}
+            >
+              Thông Tin Cửa Hàng
+            </Button>
+          </div>
           </div>
 
           {/* Results Summary */}
@@ -728,6 +741,12 @@ export default function ManageOrderPage() {
         selectedOrder={selectedOrder}
         getStatusColor={getStatusColor}
         getStatusIcon={getStatusIcon}
+      />
+
+      {/* Shop Address Modal */}
+      <ShopAddressModal
+        isOpen={isShopAddressModalOpen}
+        onClose={() => setIsShopAddressModalOpen(false)}
       />
 
       <style jsx>{`
