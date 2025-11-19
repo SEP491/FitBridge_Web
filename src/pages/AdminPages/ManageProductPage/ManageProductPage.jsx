@@ -14,6 +14,7 @@ import {
   Form,
   Modal,
   Switch,
+  TreeSelect,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -49,7 +50,7 @@ export default function ManageProductPage() {
     useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [brandFilter, setBrandFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState(undefined);
   const [countryFilter, setCountryFilter] = useState("all");
   const [brands, setBrands] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
@@ -119,6 +120,8 @@ export default function ManageProductPage() {
 
   useEffect(() => {
     fetchProducts();
+    fetchMainCategories();
+    fetchSubCategories();
   }, []);
 
   const handleTableChange = (newPagination) => {
@@ -500,12 +503,25 @@ export default function ManageProductPage() {
   const uniqueBrands = [
     ...new Set(products.map((p) => p.brandName).filter(Boolean)),
   ];
-  const uniqueCategories = [
-    ...new Set(products.map((p) => p.subCategoryName).filter(Boolean)),
-  ];
   const uniqueCountries = [
     ...new Set(products.map((p) => p.countryOfOrigin).filter(Boolean)),
   ];
+
+  // Build TreeSelect data structure for categories
+  const categoryTreeData = mainCategories.map((mainCat) => ({
+    title: mainCat.name,
+    value: `main-${mainCat.id}`,
+    key: `main-${mainCat.id}`,
+    selectable: false,
+    children: subCategories
+      .filter((subCat) => subCat.categoryId === mainCat.id)
+      .map((subCat) => ({
+        title: subCat.name,
+        value: `${subCat.name}`,
+        key: `${subCat.name}`,
+        selectable: true,
+      })),
+  }));
 
   const filteredData = products.filter((item) => {
     const matchesSearch = searchText
@@ -520,8 +536,21 @@ export default function ManageProductPage() {
 
     const matchesBrand =
       brandFilter === "all" || item.brandName === brandFilter;
-    const matchesCategory =
-      categoryFilter === "all" || item.subCategoryName === categoryFilter;
+    
+    // Handle TreeSelect category filter
+    let matchesCategory = true;
+    if (categoryFilter) {
+      if (categoryFilter.startsWith("main-")) {
+        const mainCatId = parseInt(categoryFilter.replace("main-", ""));
+        const subCat = subCategories.find(sc => sc.id === item.subCategoryId);
+        matchesCategory = subCat?.categoryId === mainCatId;
+      } else {
+        const subCatName = categoryFilter ;
+        console.log("Filtering by sub-category ID:", categoryFilter);
+        matchesCategory = item.subCategoryName === subCatName;
+      }
+    }
+    
     const matchesCountry =
       countryFilter === "all" || item.countryOfOrigin === countryFilter;
 
@@ -674,22 +703,18 @@ export default function ManageProductPage() {
                   </Option>
                 ))}
               </Select>
-              <Select
+              <TreeSelect
                 value={categoryFilter}
                 onChange={setCategoryFilter}
-                style={{ width: 180 }}
+                style={{ width: 250 }}
                 className="rounded-lg"
-                placeholder="Danh mục"
+                placeholder="Chọn danh mục"
                 showSearch
-                optionFilterProp="children"
-              >
-                <Option value="all">Tất cả danh mục</Option>
-                {uniqueCategories.map((category) => (
-                  <Option key={category} value={category}>
-                    {category}
-                  </Option>
-                ))}
-              </Select>
+                treeDefaultExpandAll
+                allowClear
+                treeData={categoryTreeData}
+                suffixIcon={<AppstoreOutlined className="text-blue-500" />}
+              />
               <Select
                 value={countryFilter}
                 onChange={setCountryFilter}
