@@ -14,6 +14,7 @@ export const route = {
   manageWithdrawal: "manage-withdrawal",
   manageReport: "manage-report",
   manageProduct: "manage-product",
+  manageOrder: "manage-order",
 
   gym: "/gym",
   dashboardGym: "dashboard-gym",

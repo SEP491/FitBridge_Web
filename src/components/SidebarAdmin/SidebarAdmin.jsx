@@ -24,6 +24,7 @@ import { LiaFileContractSolid } from "react-icons/lia";
 import { GiGymBag } from "react-icons/gi";
 import { MdOutlineAccountBalanceWallet, MdReport } from "react-icons/md";
 import { AiOutlineShoppingCart } from "react-icons/ai";
+import { BsBox } from "react-icons/bs";
 
 // eslint-disable-next-line no-unused-vars
 export default function SidebarAdmin({ collapsed, onCollapse }) {
@@ -99,6 +100,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Quản Lý Sản Phẩm",
           `${route.admin}/${route.manageProduct}`,
           <AiOutlineShoppingCart className="text-lg" />
+        ),
+        getItem(
+          "Quản Lý Đơn Hàng",
+          `${route.admin}/${route.manageOrder}`,
+          <BsBox className="text-lg" />
         ),
         getItem(
           "Thông Báo",
