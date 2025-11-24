@@ -119,8 +119,8 @@ export default function ManageOrderPage() {
       orders?.filter((o) => o.currentStatus === "Shipping").length || 0,
     arrivedOrders:
       orders?.filter((o) => o.currentStatus === "Arrived").length || 0,
-    inReturningOrders:
-      orders?.filter((o) => o.currentStatus === "InReturning").length || 0,
+    inReturnOrders:
+      orders?.filter((o) => o.currentStatus === "InReturn").length || 0,
     returnedOrders:
       orders?.filter((o) => o.currentStatus === "Returned").length || 0,
     customerNotReceivedOrders:
@@ -144,7 +144,7 @@ export default function ManageOrderPage() {
       Accepted: "geekblue",
       Shipping: "cyan",
       Arrived: "magenta",
-      InReturning: "volcano",
+      InReturn: "volcano",
       Returned: "red",
       CustomerNotReceived: "red",
       Finished: "lime",
@@ -162,7 +162,7 @@ export default function ManageOrderPage() {
       Accepted: <CheckCircleOutlined />,
       Shipping: <CarOutlined />,
       Arrived: <EnvironmentOutlined />,
-      InReturning: <CarOutlined />,
+      InReturn: <CarOutlined />,
       Returned: <CloseCircleOutlined />,
       CustomerNotReceived: <CloseCircleOutlined />,
       Finished: <CheckCircleOutlined />,
@@ -399,7 +399,7 @@ export default function ManageOrderPage() {
           {status === "Accepted" && "Đã Chấp Nhận"}
           {status === "Shipping" && "Đang Giao Hàng"}
           {status === "Arrived" && "Đã Đến Nơi"}
-          {status === "InReturning" && "Đang Hoàn Trả"}
+          {status === "InReturn" && "Đang Hoàn Trả"}
           {status === "Returned" && "Đã Hoàn Trả"}
           {status === "CustomerNotReceived" && "Khách Không Nhận"}
           {status === "Finished" && "Hoàn Thành"}
@@ -621,13 +621,13 @@ export default function ManageOrderPage() {
             <Card
               className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => {
-                setStatusFilter("InReturning");
-                fetchOrders(1, pagination.pageSize, { status: "InReturning" });
+                setStatusFilter("InReturn");
+                fetchOrders(1, pagination.pageSize, { status: "InReturn" });
               }}
             >
               <Statistic
                 title="Đang Hoàn Trả"
-                value={statistics.inReturningOrders}
+                value={statistics.inReturnOrders}
                 prefix={<CarOutlined style={{ color: "#fa541c" }} />}
                 valueStyle={{
                   color: "#fa541c",
@@ -774,7 +774,7 @@ export default function ManageOrderPage() {
                 <Option value="Accepted">Đã Chấp Nhận</Option>
                 <Option value="Shipping">Đang Giao Hàng</Option>
                 <Option value="Arrived">Đã Đến Nơi</Option>
-                <Option value="InReturning">Đang Hoàn Trả</Option>
+                <Option value="InReturn">Đang Hoàn Trả</Option>
                 <Option value="Returned">Đã Hoàn Trả</Option>
                 <Option value="CustomerNotReceived">Khách Không Nhận</Option>
                 <Option value="Finished">Hoàn Thành</Option>
