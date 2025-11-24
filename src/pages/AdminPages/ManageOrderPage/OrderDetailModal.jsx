@@ -125,7 +125,12 @@ export default function OrderDetailModal({
               {selectedOrder.currentStatus === "Pending" && "Chờ Xử Lý"}
               {selectedOrder.currentStatus === "Processing" && "Đang Xử Lý"}
               {selectedOrder.currentStatus === "Assigning" && "Đang Phân Công"}
+              {selectedOrder.currentStatus === "Accepted" && "Đã Chấp Nhận"}
               {selectedOrder.currentStatus === "Shipping" && "Đang Giao Hàng"}
+              {selectedOrder.currentStatus === "Arrived" && "Đã Đến Nơi"}
+              {selectedOrder.currentStatus === "InReturning" && "Đang Hoàn Trả"}
+              {selectedOrder.currentStatus === "Returned" && "Đã Hoàn Trả"}
+              {selectedOrder.currentStatus === "CustomerNotReceived" && "Khách Không Nhận"}
               {selectedOrder.currentStatus === "Finished" && "Hoàn Thành"}
               {selectedOrder.currentStatus === "Cancelled" && "Đã Hủy"}
             </Tag>

@@ -15,6 +15,47 @@ export default function StatusUpdateModal({
   getStatusColor,
   getStatusIcon,
 }) {
+  // Get available status options based on current status
+  const getAvailableStatusOptions = () => {
+    if (!selectedOrder) return [];
+
+    const currentStatus = selectedOrder.currentStatus;
+    const hasCheckoutUrl = selectedOrder.checkoutUrl;
+
+    // Pending: Can go to Processing or Cancelled (only if has checkoutUrl)
+    if (currentStatus === "Pending") {
+      const options = [
+        { value: "Processing", label: "Đang Xử Lý" },
+        { value: "Finished", label: "Hoàn Thành" }
+      ];
+      if (hasCheckoutUrl) {
+        options.push({ value: "Cancelled", label: "Đã Hủy" });
+      }
+      return options;
+    }
+
+    // CustomerNotReceived: Can only go to Finished
+    if (currentStatus === "CustomerNotReceived") {
+      return [{ value: "Finished", label: "Hoàn Thành" }];
+    }
+
+    // For other statuses, return all options (default behavior)
+    return [
+      { value: "Processing", label: "Đang Xử Lý" },
+      { value: "Assigning", label: "Đang Phân Công" },
+      { value: "Accepted", label: "Đã Chấp Nhận" },
+      { value: "Shipping", label: "Đang Giao Hàng" },
+      { value: "Arrived", label: "Đã Đến Nơi" },
+      { value: "InReturning", label: "Đang Hoàn Trả" },
+      { value: "Returned", label: "Đã Hoàn Trả" },
+      { value: "CustomerNotReceived", label: "Khách Không Nhận" },
+      { value: "Finished", label: "Hoàn Thành" },
+      { value: "Cancelled", label: "Đã Hủy" },
+    ];
+  };
+
+  const availableOptions = getAvailableStatusOptions();
+
   return (
     <Modal
       title="Cập Nhật Trạng Thái Đơn Hàng"
@@ -24,6 +65,7 @@ export default function StatusUpdateModal({
       okText="Cập Nhật"
       cancelText="Hủy"
       okButtonProps={{ className: "bg-blue-500" }}
+      zIndex={1100}
     >
       <div className="py-4 space-y-4">
         <div>
@@ -37,11 +79,11 @@ export default function StatusUpdateModal({
             className="w-full"
             size="large"
           >
-            <Option value="Processing">Đang Xử Lý</Option>
-            <Option value="Assigning">Đang Phân Công</Option>
-            <Option value="Shipping">Đang Giao Hàng</Option>
-            <Option value="Finished">Hoàn Thành</Option>
-            <Option value="Cancelled">Đã Hủy</Option>
+            {availableOptions.map(option => (
+              <Option key={option.value} value={option.value}>
+                {option.label}
+              </Option>
+            ))}
           </Select>
         </div>
         <div>
@@ -72,7 +114,12 @@ export default function StatusUpdateModal({
                 {selectedOrder.currentStatus === "Pending" && "Chờ Xử Lý"}
                 {selectedOrder.currentStatus === "Processing" && "Đang Xử Lý"}
                 {selectedOrder.currentStatus === "Assigning" && "Đang Phân Công"}
+                {selectedOrder.currentStatus === "Accepted" && "Đã Chấp Nhận"}
                 {selectedOrder.currentStatus === "Shipping" && "Đang Giao Hàng"}
+                {selectedOrder.currentStatus === "Arrived" && "Đã Đến Nơi"}
+                {selectedOrder.currentStatus === "InReturning" && "Đang Hoàn Trả"}
+                {selectedOrder.currentStatus === "Returned" && "Đã Hoàn Trả"}
+                {selectedOrder.currentStatus === "CustomerNotReceived" && "Khách Không Nhận"}
                 {selectedOrder.currentStatus === "Finished" && "Hoàn Thành"}
                 {selectedOrder.currentStatus === "Cancelled" && "Đã Hủy"}
               </Tag>

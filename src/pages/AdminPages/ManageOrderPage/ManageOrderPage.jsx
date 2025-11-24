@@ -43,6 +43,7 @@ import OrderDetailModal from "./OrderDetailModal";
 import ShippingOrderModal from "./ShippingOrderModal";
 import StatusUpdateModal from "./StatusUpdateModal";
 import ShopAddressModal from "./ShopAddressModal";
+import CancelOrderModal from "./CancelOrderModal";
 
 const { Option } = Select;
 
@@ -62,6 +63,8 @@ export default function ManageOrderPage() {
   const [newStatus, setNewStatus] = useState("");
   const [statusDescription, setStatusDescription] = useState("");
   const [isShopAddressModalOpen, setIsShopAddressModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelComment, setCancelComment] = useState("");
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -74,6 +77,7 @@ export default function ManageOrderPage() {
     const params = {
       page: page,
       size: pageSize,
+      sortOrder: "dsc",
       ...filters,
     };
     try {
@@ -98,7 +102,7 @@ export default function ManageOrderPage() {
     fetchOrders();
   }, []);
 
-  // Statistics
+  // Statistics - Calculate from current page data for display, use pagination.total for overall count
   const statistics = {
     totalOrders: pagination.total || 0,
     createdOrders:
@@ -109,8 +113,18 @@ export default function ManageOrderPage() {
       orders?.filter((o) => o.currentStatus === "Processing").length || 0,
     assigningOrders:
       orders?.filter((o) => o.currentStatus === "Assigning").length || 0,
+    acceptedOrders:
+      orders?.filter((o) => o.currentStatus === "Accepted").length || 0,
     shippingOrders:
       orders?.filter((o) => o.currentStatus === "Shipping").length || 0,
+    arrivedOrders:
+      orders?.filter((o) => o.currentStatus === "Arrived").length || 0,
+    inReturningOrders:
+      orders?.filter((o) => o.currentStatus === "InReturning").length || 0,
+    returnedOrders:
+      orders?.filter((o) => o.currentStatus === "Returned").length || 0,
+    customerNotReceivedOrders:
+      orders?.filter((o) => o.currentStatus === "CustomerNotReceived").length || 0,
     finishedOrders:
       orders?.filter((o) => o.currentStatus === "Finished").length || 0,
     cancelledOrders:
@@ -127,7 +141,12 @@ export default function ManageOrderPage() {
       Pending: "orange",
       Processing: "blue",
       Assigning: "purple",
+      Accepted: "geekblue",
       Shipping: "cyan",
+      Arrived: "magenta",
+      InReturning: "volcano",
+      Returned: "red",
+      CustomerNotReceived: "red",
       Finished: "lime",
       Cancelled: "red",
     };
@@ -140,7 +159,12 @@ export default function ManageOrderPage() {
       Pending: <ClockCircleOutlined />,
       Processing: <SyncOutlined spin />,
       Assigning: <UserOutlined />,
+      Accepted: <CheckCircleOutlined />,
       Shipping: <CarOutlined />,
+      Arrived: <EnvironmentOutlined />,
+      InReturning: <CarOutlined />,
+      Returned: <CloseCircleOutlined />,
+      CustomerNotReceived: <CloseCircleOutlined />,
       Finished: <CheckCircleOutlined />,
       Cancelled: <CloseCircleOutlined />,
     };
@@ -208,13 +232,24 @@ export default function ManageOrderPage() {
     setIsStatusUpdateModalOpen(true);
   };
 
-  const handleCancelOrder = async (orderId) => {
+  const openCancelOrderModal = () => {
+    setIsCancelModalOpen(true);
+  };
+
+  const handleConfirmCancelOrder = async () => {
+    if (!selectedOrder) return;
+    
+    if (!cancelComment || cancelComment.trim() === "") {
+      toast.error("Vui lòng nhập lý do hủy đơn hàng!");
+      return;
+    }
+
     try {
-      await orderService.cancelOrder(orderId);
+      await orderService.cancelOrder(selectedOrder.id, { comment: cancelComment });
 
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
-          order.id === orderId
+          order.id === selectedOrder.id
             ? {
                 ...order,
                 currentStatus: "Cancelled",
@@ -226,16 +261,23 @@ export default function ManageOrderPage() {
       toast.success(`Hủy đơn hàng thành công!`);
 
       // Update selected order if it's open
-      if (selectedOrder?.id === orderId) {
-        setSelectedOrder((prev) => ({
-          ...prev,
-          currentStatus: "Cancelled",
-          updatedAt: new Date().toISOString(),
-        }));
-      }
+      setSelectedOrder((prev) => ({
+        ...prev,
+        currentStatus: "Cancelled",
+        updatedAt: new Date().toISOString(),
+      }));
+      
+      setIsCancelModalOpen(false);
+      setCancelComment("");
     } catch {
       toast.error("Hủy đơn hàng thất bại. Vui lòng thử lại.");
     }
+  };
+
+  const handleCancelOrder = () => {
+    // This function is now replaced by openCancelOrderModal and handleConfirmCancelOrder
+    // Kept for backward compatibility with OrderDetailModal
+    openCancelOrderModal();
   };
 
   const handleCreateShippingOrder = async () => {
@@ -354,7 +396,12 @@ export default function ManageOrderPage() {
           {status === "Pending" && "Chờ Xử Lý"}
           {status === "Processing" && "Đang Xử Lý"}
           {status === "Assigning" && "Đang Phân Công"}
+          {status === "Accepted" && "Đã Chấp Nhận"}
           {status === "Shipping" && "Đang Giao Hàng"}
+          {status === "Arrived" && "Đã Đến Nơi"}
+          {status === "InReturning" && "Đang Hoàn Trả"}
+          {status === "Returned" && "Đã Hoàn Trả"}
+          {status === "CustomerNotReceived" && "Khách Không Nhận"}
           {status === "Finished" && "Hoàn Thành"}
           {status === "Cancelled" && "Đã Hủy"}
         </Tag>
@@ -396,7 +443,7 @@ export default function ManageOrderPage() {
   }
 
   return (
-    <div className="">
+    <>
       <div className="">
         {/* Header */}
         <div className="mb-8">
@@ -424,6 +471,26 @@ export default function ManageOrderPage() {
                 prefix={<ShoppingCartOutlined style={{ color: "#FF914D" }} />}
                 valueStyle={{
                   color: "#FF914D",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => {
+                setStatusFilter("Created");
+                fetchOrders(1, pagination.pageSize, { status: "Created" });
+              }}
+            >
+              <Statistic
+                title="Đã Tạo"
+                value={statistics.createdOrders}
+                prefix={<ClockCircleOutlined style={{ color: "#8c8c8c" }} />}
+                valueStyle={{
+                  color: "#8c8c8c",
                   fontSize: "24px",
                   fontWeight: "bold",
                 }}
@@ -494,6 +561,26 @@ export default function ManageOrderPage() {
             <Card
               className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => {
+                setStatusFilter("Accepted");
+                fetchOrders(1, pagination.pageSize, { status: "Accepted" });
+              }}
+            >
+              <Statistic
+                title="Đã Chấp Nhận"
+                value={statistics.acceptedOrders}
+                prefix={<CheckCircleOutlined style={{ color: "#1677ff" }} />}
+                valueStyle={{
+                  color: "#1677ff",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => {
                 setStatusFilter("Shipping");
                 fetchOrders(1, pagination.pageSize, { status: "Shipping" });
               }}
@@ -504,6 +591,86 @@ export default function ManageOrderPage() {
                 prefix={<CarOutlined style={{ color: "#13c2c2" }} />}
                 valueStyle={{
                   color: "#13c2c2",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => {
+                setStatusFilter("Arrived");
+                fetchOrders(1, pagination.pageSize, { status: "Arrived" });
+              }}
+            >
+              <Statistic
+                title="Đã Đến Nơi"
+                value={statistics.arrivedOrders}
+                prefix={<EnvironmentOutlined style={{ color: "#eb2f96" }} />}
+                valueStyle={{
+                  color: "#eb2f96",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => {
+                setStatusFilter("InReturning");
+                fetchOrders(1, pagination.pageSize, { status: "InReturning" });
+              }}
+            >
+              <Statistic
+                title="Đang Hoàn Trả"
+                value={statistics.inReturningOrders}
+                prefix={<CarOutlined style={{ color: "#fa541c" }} />}
+                valueStyle={{
+                  color: "#fa541c",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => {
+                setStatusFilter("Returned");
+                fetchOrders(1, pagination.pageSize, { status: "Returned" });
+              }}
+            >
+              <Statistic
+                title="Đã Hoàn Trả"
+                value={statistics.returnedOrders}
+                prefix={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
+                valueStyle={{
+                  color: "#ff4d4f",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => {
+                setStatusFilter("CustomerNotReceived");
+                fetchOrders(1, pagination.pageSize, { status: "CustomerNotReceived" });
+              }}
+            >
+              <Statistic
+                title="Khách Không Nhận"
+                value={statistics.customerNotReceivedOrders}
+                prefix={<CloseCircleOutlined style={{ color: "#cf1322" }} />}
+                valueStyle={{
+                  color: "#cf1322",
                   fontSize: "24px",
                   fontWeight: "bold",
                 }}
@@ -604,7 +771,12 @@ export default function ManageOrderPage() {
                 <Option value="Pending">Chờ Xử Lý</Option>
                 <Option value="Processing">Đang Xử Lý</Option>
                 <Option value="Assigning">Đang Phân Công</Option>
+                <Option value="Accepted">Đã Chấp Nhận</Option>
                 <Option value="Shipping">Đang Giao Hàng</Option>
+                <Option value="Arrived">Đã Đến Nơi</Option>
+                <Option value="InReturning">Đang Hoàn Trả</Option>
+                <Option value="Returned">Đã Hoàn Trả</Option>
+                <Option value="CustomerNotReceived">Khách Không Nhận</Option>
                 <Option value="Finished">Hoàn Thành</Option>
                 <Option value="Cancelled">Đã Hủy</Option>
               </Select>
@@ -696,21 +868,6 @@ export default function ManageOrderPage() {
         </Card>
       </div>
 
-      {/* Order Detail Modal */}
-      <OrderDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => {
-          setIsDetailModalOpen(false);
-          setSelectedOrder(null);
-        }}
-        selectedOrder={selectedOrder}
-        getStatusColor={getStatusColor}
-        getStatusIcon={getStatusIcon}
-        getPaymentMethodDisplay={getPaymentMethodDisplay}
-        handleCancelOrder={handleCancelOrder}
-        openStatusUpdateModal={openStatusUpdateModal}
-        setIsShippingModalOpen={setIsShippingModalOpen}
-      />
 
       {/* Create Shipping Order Modal */}
       <ShippingOrderModal
@@ -749,6 +906,34 @@ export default function ManageOrderPage() {
         onClose={() => setIsShopAddressModalOpen(false)}
       />
 
+      {/* Cancel Order Modal */}
+      <CancelOrderModal
+        isOpen={isCancelModalOpen}
+        onClose={() => {
+          setIsCancelModalOpen(false);
+          setCancelComment("");
+        }}
+        onConfirm={handleConfirmCancelOrder}
+        cancelComment={cancelComment}
+        setCancelComment={setCancelComment}
+        selectedOrder={selectedOrder}
+      />
+         {/* Order Detail Modal */}
+      <OrderDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedOrder(null);
+        }}
+        selectedOrder={selectedOrder}
+        getStatusColor={getStatusColor}
+        getStatusIcon={getStatusIcon}
+        getPaymentMethodDisplay={getPaymentMethodDisplay}
+        handleCancelOrder={handleCancelOrder}
+        openStatusUpdateModal={openStatusUpdateModal}
+        setIsShippingModalOpen={setIsShippingModalOpen}
+      />
+
       <style jsx>{`
         .ant-descriptions-item-label {
           font-weight: 500;
@@ -768,6 +953,6 @@ export default function ManageOrderPage() {
           color: #ff914d;
         }
       `}</style>
-    </div>
+    </>
   );
 }

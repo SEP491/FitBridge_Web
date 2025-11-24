@@ -44,6 +44,7 @@ export default function ShopAddressModal({ isOpen, onClose }) {
     Modal.confirm({
       title: "Đặt địa chỉ mặc định",
       icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
+      zIndex: 1100,
       content: (
         <div className="space-y-2">
           <p>

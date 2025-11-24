@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Modal, Input } from "antd";
 
 export default function ShippingOrderModal({
@@ -9,6 +9,13 @@ export default function ShippingOrderModal({
   setShippingRemarks,
   selectedOrder,
 }) {
+  // Auto-fill shippingRemarks with order note when modal opens
+  useEffect(() => {
+    if (isOpen && selectedOrder?.shippingDetail?.note) {
+      setShippingRemarks(selectedOrder.shippingDetail.note);
+    }
+  }, [isOpen, selectedOrder, setShippingRemarks]);
+
   return (
     <Modal
       title="Tạo Đơn Giao Hàng"
@@ -18,6 +25,7 @@ export default function ShippingOrderModal({
       okText="Tạo Đơn"
       cancelText="Hủy"
       okButtonProps={{ className: "bg-purple-500" }}
+      zIndex={1100}
     >
       <div className="py-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">

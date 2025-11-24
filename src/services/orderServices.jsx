@@ -13,8 +13,8 @@ const orderService = {
     updateStatus: async (id, data) => {
         return await request("PUT", `/v1/orders/status/${id}`, data);
     },
-    cancelOrder: async (id) => {    
-        return await request("PUT", `/v1/orders/shipping/cancel/${id}`);
+    cancelOrder: async (id, data) => {    
+        return await request("PUT", `/v1/orders/shipping/cancel/${id}`, data);
     },
 
     shippingWebhook: async (data) => {
