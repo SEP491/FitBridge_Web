@@ -26,10 +26,10 @@ export default function StatusUpdateModal({
     if (currentStatus === "Pending") {
       const options = [
         { value: "Processing", label: "Đang Xử Lý" },
-        { value: "Finished", label: "Hoàn Thành" }
+        { value: "Finished", label: "Hoàn Thành" },
       ];
-      if (hasCheckoutUrl) {
-        options.push({ value: "Cancelled", label: "Đã Hủy" });
+      if (!hasCheckoutUrl) {
+        options.push({ value: "Cancelled", label: "Hủy Đơn" });
       }
       return options;
     }
@@ -46,7 +46,7 @@ export default function StatusUpdateModal({
       { value: "Accepted", label: "Đã Chấp Nhận" },
       { value: "Shipping", label: "Đang Giao Hàng" },
       { value: "Arrived", label: "Đã Đến Nơi" },
-      { value: "InReturning", label: "Đang Hoàn Trả" },
+      { value: "InReturn", label: "Đang Hoàn Trả" },
       { value: "Returned", label: "Đã Hoàn Trả" },
       { value: "CustomerNotReceived", label: "Khách Không Nhận" },
       { value: "Finished", label: "Hoàn Thành" },
@@ -117,7 +117,7 @@ export default function StatusUpdateModal({
                 {selectedOrder.currentStatus === "Accepted" && "Đã Chấp Nhận"}
                 {selectedOrder.currentStatus === "Shipping" && "Đang Giao Hàng"}
                 {selectedOrder.currentStatus === "Arrived" && "Đã Đến Nơi"}
-                {selectedOrder.currentStatus === "InReturning" && "Đang Hoàn Trả"}
+                {selectedOrder.currentStatus === "InReturn" && "Đang Hoàn Trả"}
                 {selectedOrder.currentStatus === "Returned" && "Đã Hoàn Trả"}
                 {selectedOrder.currentStatus === "CustomerNotReceived" && "Khách Không Nhận"}
                 {selectedOrder.currentStatus === "Finished" && "Hoàn Thành"}

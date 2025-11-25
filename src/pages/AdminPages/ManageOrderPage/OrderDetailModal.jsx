@@ -128,7 +128,7 @@ export default function OrderDetailModal({
               {selectedOrder.currentStatus === "Accepted" && "Đã Chấp Nhận"}
               {selectedOrder.currentStatus === "Shipping" && "Đang Giao Hàng"}
               {selectedOrder.currentStatus === "Arrived" && "Đã Đến Nơi"}
-              {selectedOrder.currentStatus === "InReturning" && "Đang Hoàn Trả"}
+              {selectedOrder.currentStatus === "InReturn" && "Đang Hoàn Trả"}
               {selectedOrder.currentStatus === "Returned" && "Đã Hoàn Trả"}
               {selectedOrder.currentStatus === "CustomerNotReceived" && "Khách Không Nhận"}
               {selectedOrder.currentStatus === "Finished" && "Hoàn Thành"}
@@ -164,9 +164,11 @@ export default function OrderDetailModal({
             <CalendarOutlined className="mr-2" />
             {new Date(selectedOrder.updatedAt).toLocaleString("vi-VN")}
           </Descriptions.Item>
-
+          
+          {selectedOrder.currentStatus === 'Pending' && (
+         
           <Descriptions.Item label="Link thanh toán" span={3}>
-            {selectedOrder.checkoutUrl ? (
+            {selectedOrder.checkoutUrl && selectedOrder.currentStatus === "Pending" ? (
               <a
                 href={selectedOrder.checkoutUrl}
                 target="_blank"
@@ -178,6 +180,7 @@ export default function OrderDetailModal({
               "N/A"
             )}
           </Descriptions.Item>
+          )}
         </Descriptions>
 
         {/* Shipping Details */}
