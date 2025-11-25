@@ -25,6 +25,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 
 const { Option } = Select;
 
@@ -51,20 +52,40 @@ export default function CreateProductDetailModal({
   };
 
   return (
-    <Modal
+    <FitBridgeModal
       open={isOpen}
       onCancel={handleCancel}
       title={
         <div className="flex items-center gap-2 text-lg">
-          <PlusOutlined className="text-orange-500" />
           <span>Tạo Lô Hàng Mới</span>
         </div>
       }
       width={900}
-      footer={null}
+      footer={
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button size="large" onClick={handleCancel} className="px-6">
+            Hủy
+          </Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={creating}
+            size="large"
+            icon={<CheckCircleOutlined />}
+            className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 px-8 shadow-lg hover:shadow-xl"
+          >
+            Tạo Lô Hàng
+          </Button>
+        </div>
+      }
       className="create-detail-modal"
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form
+        form={form}
+        style={{ overflowY: "scroll", maxHeight: "60vh" }}
+        layout="vertical"
+        onFinish={onSubmit}
+      >
         {/* Basic Info Section */}
         <Card
           size="small"
@@ -424,26 +445,7 @@ export default function CreateProductDetailModal({
             />
           </Form.Item>
         </Card>
-
-        {/* Action Buttons */}
-        <Form.Item className="mb-0">
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button size="large" onClick={handleCancel} className="px-6">
-              Hủy
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={creating}
-              size="large"
-              icon={<CheckCircleOutlined />}
-              className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 px-8 shadow-lg hover:shadow-xl"
-            >
-              Tạo Lô Hàng
-            </Button>
-          </div>
-        </Form.Item>
       </Form>
-    </Modal>
+    </FitBridgeModal>
   );
 }

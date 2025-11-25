@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Modal,
   Form,
@@ -11,6 +11,8 @@ import {
   Button,
   Upload,
   Image,
+  Divider,
+  Space,
 } from "antd";
 import {
   PlusOutlined,
@@ -22,6 +24,9 @@ import {
   UploadOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
+import toast from "react-hot-toast";
+import adminService from "../../../services/adminServices";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -40,27 +45,115 @@ export default function CreateProductModal({
   imageFile,
   onImageUpload,
   onImageRemove,
+  onRefreshCategories, 
+  onRefreshSubcategories,
 }) {
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newSubCategoryName, setNewSubCategoryName] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [addingSubCategory, setAddingSubCategory] = useState(false);
+
   const handleCancel = () => {
     form.resetFields();
+    setNewCategoryName("");
+    setNewSubCategoryName("");
     onClose();
   };
 
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) {
+      toast.error("Vui lòng nhập tên danh mục");
+      return;
+    }
+
+    setAddingCategory(true);
+    try {
+      const response = await adminService.createCategory({
+        name: newCategoryName.trim(),
+      });
+      
+      toast.success("Thêm danh mục thành công");
+      setNewCategoryName("");
+      
+      // Refresh categories list
+      if (onRefreshCategories) {
+        await onRefreshCategories();
+      }
+      
+      // Set the newly created category as selected
+      if (response.data?.id) {
+        form.setFieldsValue({ categoryId: response.data.id });
+        onCategoryChange(response.data.id);
+      }
+    } catch (error) {
+      console.error("Error creating category:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi tạo danh mục");
+    } finally {
+      setAddingCategory(false);
+    }
+  };
+
+  const handleAddSubCategory = async (e) => {
+  e.preventDefault();
+  if (!newSubCategoryName.trim()) {
+    toast.error("Vui lòng nhập tên danh mục phụ");
+    return;
+  }
+
+  if (!selectedCategoryId) {
+    toast.error("Vui lòng chọn danh mục chính trước");
+    return;
+  }
+
+  setAddingSubCategory(true);
+  try {
+    await adminService.createSubCategory({
+      name: newSubCategoryName.trim(),
+      categoryId: selectedCategoryId,
+    });
+    
+    toast.success("Thêm danh mục phụ thành công");
+    setNewSubCategoryName("");
+    onRefreshSubcategories(selectedCategoryId);
+
+  } catch (error) {
+    console.error("Error creating subcategory:", error);
+    toast.error(error.response?.data?.message || "Lỗi khi tạo danh mục phụ");
+  } finally {
+    setAddingSubCategory(false);
+  }
+};
   return (
-    <Modal
+    <FitBridgeModal
       open={isOpen}
       onCancel={handleCancel}
       title={
         <div className="flex items-center gap-2 text-lg">
-          <PlusOutlined className="text-orange-500" />
           <span>Tạo Sản Phẩm Mới</span>
         </div>
       }
       width={900}
-      footer={null}
-      className="create-product-modal"
+      footer={
+         <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button size="large" onClick={handleCancel} className="px-6">
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={creating}
+              size="large"
+              icon={<CheckCircleOutlined />}
+              className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 px-8 shadow-lg hover:shadow-xl"
+            >
+              Tạo Sản Phẩm
+            </Button>
+          </div>
+      }
+      className="create-product-modal "
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} style={{overflowY:'scroll', maxHeight:'60vh'}} layout="vertical" onFinish={onSubmit}>
         {/* Basic Info Section */}
         <Card
           size="small"
@@ -91,7 +184,7 @@ export default function CreateProductModal({
                       showUploadList={false}
                       beforeUpload={(file) => {
                         onImageUpload(file);
-                        return false; // Prevent auto upload
+                        return false;
                       }}
                     >
                       <div className="flex flex-col items-center">
@@ -210,6 +303,33 @@ export default function CreateProductModal({
                   size="large"
                   suffixIcon={<AppstoreOutlined className="text-purple-500" />}
                   onChange={onCategoryChange}
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: "8px 0" }} />
+                      <Space style={{ padding: "0 8px 4px" }}>
+                        <Input
+                          placeholder="Tên danh mục mới"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleAddCategory(e);
+                            }
+                          }}
+                        />
+                        <Button
+                          type="text"
+                          icon={<PlusOutlined />}
+                          onClick={handleAddCategory}
+                          loading={addingCategory}
+                          className="text-purple-600 hover:text-purple-700"
+                        >
+                          Thêm
+                        </Button>
+                      </Space>
+                    </>
+                  )}
                 >
                   {mainCategories.map((category) => (
                     <Option key={category.id} value={category.id}>
@@ -234,6 +354,35 @@ export default function CreateProductModal({
                   size="large"
                   suffixIcon={<AppstoreOutlined className="text-purple-500" />}
                   disabled={!selectedCategoryId}
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: "8px 0" }} />
+                      <Space style={{ padding: "0 8px 4px" }}>
+                        <Input
+                          placeholder="Tên danh mục phụ mới"
+                          value={newSubCategoryName}
+                          onChange={(e) => setNewSubCategoryName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleAddSubCategory(e);
+                            }
+                          }}
+                          disabled={!selectedCategoryId}
+                        />
+                        <Button
+                          type="text"
+                          icon={<PlusOutlined />}
+                          onClick={handleAddSubCategory}
+                          loading={addingSubCategory}
+                          disabled={!selectedCategoryId}
+                          className="text-purple-600 hover:text-purple-700"
+                        >
+                          Thêm
+                        </Button>
+                      </Space>
+                    </>
+                  )}
                 >
                   {filteredSubCategories.map((subCat) => (
                     <Option key={subCat.id} value={subCat.id}>
@@ -313,26 +462,7 @@ export default function CreateProductModal({
             />
           </Form.Item>
         </Card>
-
-        {/* Action Buttons */}
-        <Form.Item className="mb-0">
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button size="large" onClick={handleCancel} className="px-6">
-              Hủy
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={creating}
-              size="large"
-              icon={<CheckCircleOutlined />}
-              className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 px-8 shadow-lg hover:shadow-xl"
-            >
-              Tạo Sản Phẩm
-            </Button>
-          </div>
-        </Form.Item>
       </Form>
-    </Modal>
+    </FitBridgeModal>
   );
 }
