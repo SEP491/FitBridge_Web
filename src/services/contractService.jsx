@@ -17,6 +17,8 @@ const contractService = {
 
   confirmContract: (contractId) =>
     request("PUT", `/v1/contracts/confirm/${contractId}`),
+  getCustomersToCreateContract: () =>
+    request("GET", `/v1/accounts/admin/expired-contract-users`),
 };
 
 export default contractService;

@@ -182,17 +182,6 @@ const ContractSigningPage = () => {
     }
   };
 
-  const handleConfirmContract = async (contractId) => {
-    try {
-      await contractService.confirmContract(contractId);
-      message.success("Xác nhận hợp đồng thành công!");
-      fetchContracts();
-    } catch (error) {
-      message.error("Không thể xác nhận hợp đồng. Vui lòng thử lại!");
-      console.error(error);
-    }
-  };
-
   const getStatusTag = (status) => {
     const statusConfig = {
       Created: {
@@ -334,24 +323,6 @@ const ContractSigningPage = () => {
             >
               Ký hợp đồng
             </Button>
-          )}
-          {record.contractStatus === "BothSigned" && (
-            <Popconfirm
-              title="Xác nhận hợp đồng"
-              description="Bạn có chắc chắn muốn xác nhận hợp đồng này?"
-              onConfirm={() => handleConfirmContract(record.id)}
-              okText="Có"
-              cancelText="Không"
-            >
-              <Button
-                type="primary"
-                size="small"
-                icon={<CheckOutlined />}
-                style={{ backgroundColor: "#52c41a" }}
-              >
-                Xác nhận
-              </Button>
-            </Popconfirm>
           )}
         </Space>
       ),

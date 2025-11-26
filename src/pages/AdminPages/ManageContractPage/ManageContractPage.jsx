@@ -49,6 +49,9 @@ const ManageContractPage = () => {
   const [selectedContract, setSelectedContract] = useState(null);
   const [adminSignature, setAdminSignature] = useState(null);
   const [signing, setSigning] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [form] = Form.useForm();
   const contractRef = useRef();
 
@@ -69,9 +72,35 @@ const ManageContractPage = () => {
     }
   };
 
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await contractService.getCustomersToCreateContract();
+      setUsers(response.data?.items || []);
+    } catch (error) {
+      message.error("Không thể tải danh sách người dùng");
+      console.error(error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   const handleCreateContract = () => {
     form.resetFields();
+    setSelectedUser(null);
     setIsModalVisible(true);
+    fetchUsers();
+  };
+
+  const handleUserSelect = (userId) => {
+    const user = users.find((u) => u.id === userId);
+    setSelectedUser(user);
+    if (user) {
+      form.setFieldsValue({
+        customerId: user.id,
+        gymOwnerName: user.fullName,
+      });
+    }
   };
 
   const handleSubmit = async (values) => {
@@ -80,15 +109,7 @@ const ManageContractPage = () => {
         customerId: values.customerId,
         startDate: values.startDate.format("YYYY-MM-DD"),
         endDate: values.endDate.format("YYYY-MM-DD"),
-        fullName: values.gymOwnerName,
-        identityCardNumber: values.identityCardNumber || "",
-        identityCardDate: values.identityCardDate
-          ? values.identityCardDate.format("YYYY-MM-DD")
-          : values.startDate.format("YYYY-MM-DD"),
-        identityCardPlace: values.identityCardPlace || "",
-        permanentAddress: values.gymAddress,
-        phoneNumber: values.gymOwnerPhone,
-        taxCode: values.taxCode || "",
+        extraRules: values.extraRules || [],
       };
 
       await contractService.createContract(payload);
@@ -98,7 +119,7 @@ const ManageContractPage = () => {
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
-      message.error("Không thể tạo hợp đồng");
+      message.error(error.response?.data?.message || "Không thể tạo hợp đồng");
       console.error(error);
     }
   };
@@ -483,60 +504,49 @@ const ManageContractPage = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={() => form.submit()}
-        width={800}
+        width={700}
         okText="Tạo hợp đồng"
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             name="customerId"
-            label="Customer ID (Gym Owner ID)"
-            rules={[{ required: true, message: "Vui lòng nhập Customer ID" }]}
+            label="Chọn Gym Owner / Freelance PT"
+            rules={[{ required: true, message: "Vui lòng chọn người dùng" }]}
           >
-            <Input placeholder="Nhập Customer ID của Gym Owner" />
+            <Select
+              showSearch
+              placeholder="Tìm kiếm và chọn người dùng"
+              loading={loadingUsers}
+              onChange={handleUserSelect}
+              filterOption={(input, option) => {
+                const label = option?.label || "";
+                return label.toLowerCase().includes(input.toLowerCase());
+              }}
+              options={users.map((user) => ({
+                value: user.id,
+                label: `${user.fullName} - ${user.role}`,
+              }))}
+            />
           </Form.Item>
 
-          <Form.Item
-            name="gymOwnerName"
-            label="Tên chủ sở hữu (Full Name)"
-            rules={[
-              { required: true, message: "Vui lòng nhập tên chủ sở hữu" },
-            ]}
-          >
-            <Input placeholder="Nhập tên chủ sở hữu" />
-          </Form.Item>
-
-          <Form.Item name="identityCardNumber" label="Số CMND/CCCD">
-            <Input placeholder="Nhập số CMND/CCCD" />
-          </Form.Item>
-
-          <Form.Item name="identityCardDate" label="Ngày cấp CMND/CCCD">
-            <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-          </Form.Item>
-
-          <Form.Item name="identityCardPlace" label="Nơi cấp CMND/CCCD">
-            <Input placeholder="Nhập nơi cấp" />
-          </Form.Item>
-
-          <Form.Item
-            name="gymOwnerPhone"
-            label="Số điện thoại"
-            rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
-          >
-            <Input placeholder="Nhập số điện thoại" />
-          </Form.Item>
-
-          <Form.Item
-            name="gymAddress"
-            label="Địa chỉ thường trú (Permanent Address)"
-            rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
-          >
-            <TextArea rows={2} placeholder="Nhập địa chỉ thường trú" />
-          </Form.Item>
-
-          <Form.Item name="taxCode" label="Mã số thuế">
-            <Input placeholder="Nhập mã số thuế (nếu có)" />
-          </Form.Item>
+          {selectedUser && (
+            <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+              <p className="text-sm mb-1">
+                <strong>Họ tên:</strong> {selectedUser.fullName}
+              </p>
+              <p className="text-sm mb-1">
+                <strong>Vai trò:</strong>{" "}
+                <Tag
+                  color={selectedUser.role === "GymOwner" ? "blue" : "green"}
+                >
+                  {selectedUser.role === "GymOwner"
+                    ? "Chủ phòng gym"
+                    : "PT Freelance"}
+                </Tag>
+              </p>
+            </div>
+          )}
 
           <Form.Item
             name="startDate"
@@ -552,6 +562,19 @@ const ManageContractPage = () => {
             rules={[{ required: true, message: "Vui lòng chọn ngày kết thúc" }]}
           >
             <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+          </Form.Item>
+
+          <Form.Item
+            name="extraRules"
+            label="Điều khoản bổ sung (tùy chọn)"
+            tooltip="Thêm các điều khoản đặc biệt cho hợp đồng này"
+          >
+            <Select
+              mode="tags"
+              style={{ width: "100%" }}
+              placeholder="Nhập và nhấn Enter để thêm điều khoản"
+              tokenSeparators={[","]}
+            />
           </Form.Item>
         </Form>
       </Modal>
