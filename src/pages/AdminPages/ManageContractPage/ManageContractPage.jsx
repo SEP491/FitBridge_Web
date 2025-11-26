@@ -12,6 +12,10 @@ import {
   Tag,
   InputNumber,
   Popconfirm,
+  Card,
+  Row,
+  Col,
+  Statistic,
 } from "antd";
 import {
   PlusOutlined,
@@ -19,6 +23,11 @@ import {
   DeleteOutlined,
   FileTextOutlined,
   DownloadOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  FileDoneOutlined,
+  FileProtectOutlined,
+  CheckOutlined,
 } from "@ant-design/icons";
 import contractService from "../../../services/contractService";
 import ContractTemplate from "../../../components/ContractTemplate/ContractTemplate";
@@ -176,6 +185,17 @@ const ManageContractPage = () => {
     }
   };
 
+  const handleConfirmContract = async (contractId) => {
+    try {
+      await contractService.confirmContract(contractId);
+      message.success("Xác nhận hợp đồng thành công!");
+      fetchContracts();
+    } catch (error) {
+      message.error("Không thể xác nhận hợp đồng. Vui lòng thử lại!");
+      console.error(error);
+    }
+  };
+
   const handleDownloadPreviewPDF = async () => {
     if (!contractRef.current || !previewContract) return;
 
@@ -223,65 +243,125 @@ const ManageContractPage = () => {
 
   const getStatusTag = (status) => {
     const statusConfig = {
-      Created: { color: "blue", text: "Đã tạo" },
-      CompanySigned: { color: "orange", text: "Công ty đã ký" },
-      CustomerSigned: { color: "cyan", text: "Khách hàng đã ký" },
-      BothSigned: { color: "green", text: "Đã ký đầy đủ" },
-      Finished: { color: "purple", text: "Hoàn tất" },
+      Created: {
+        color: "default",
+        text: "Mới tạo",
+        icon: <FileTextOutlined />,
+      },
+      CompanySigned: {
+        color: "processing",
+        text: "Công ty đã ký",
+        icon: <ClockCircleOutlined />,
+      },
+      CustomerSigned: {
+        color: "warning",
+        text: "Khách hàng đã ký",
+        icon: <FileDoneOutlined />,
+      },
+      BothSigned: {
+        color: "success",
+        text: "Đã ký đầy đủ",
+        icon: <CheckCircleOutlined />,
+      },
+      Finished: {
+        color: "success",
+        text: "Hoàn thành",
+        icon: <FileProtectOutlined />,
+      },
     };
+
     const config = statusConfig[status] || { color: "default", text: status };
+    return (
+      <Tag color={config.color} icon={config.icon}>
+        {config.text}
+      </Tag>
+    );
+  };
+
+  const getContractTypeTag = (type) => {
+    const types = {
+      GymOwner: { color: "blue", text: "Chủ phòng gym" },
+      FreelancePT: { color: "green", text: "PT Freelance" },
+    };
+    const config = types[type] || { color: "default", text: type };
     return <Tag color={config.color}>{config.text}</Tag>;
+  };
+
+  // Statistics
+  const statistics = {
+    total: contracts.length,
+    created: contracts.filter((c) => c.contractStatus === "Created").length,
+    pending: contracts.filter((c) => c.contractStatus === "CompanySigned")
+      .length,
+    signed: contracts.filter(
+      (c) =>
+        c.contractStatus === "BothSigned" || c.contractStatus === "Finished"
+    ).length,
   };
 
   const columns = [
     {
-      title: "ID Hợp đồng",
+      title: "Mã hợp đồng",
       dataIndex: "id",
       key: "id",
-      render: (id) => id.substring(0, 15) + "...",
+      width: 100,
+      render: (id) => (
+        <span className="font-mono text-xs">{id.slice(0, 8)}...</span>
+      ),
     },
     {
-      title: "Họ tên",
-      dataIndex: "fullName",
-      key: "fullName",
+      title: "Thông tin",
+      key: "info",
+      width: 200,
+      render: (_, record) => (
+        <div>
+          <div className="font-semibold">{record.fullName}</div>
+          <div className="text-xs text-gray-500">{record.phoneNumber}</div>
+          <div className="text-xs text-gray-500">{record.permanentAddress}</div>
+        </div>
+      ),
     },
     {
       title: "Loại hợp đồng",
       dataIndex: "contractType",
       key: "contractType",
+      width: 120,
+      align: "center",
+      render: (type) => getContractTypeTag(type),
     },
     {
-      title: "Số điện thoại",
-      dataIndex: "phoneNumber",
-      key: "phoneNumber",
+      title: "Thời gian",
+      key: "duration",
+      width: 150,
+      render: (_, record) => (
+        <div className="text-xs">
+          <div>Từ: {dayjs(record.startDate).format("DD/MM/YYYY")}</div>
+          <div>Đến: {dayjs(record.endDate).format("DD/MM/YYYY")}</div>
+        </div>
+      ),
     },
     {
-      title: "Hoa hồng (%)",
+      title: "Hoa hồng",
       dataIndex: "commissionPercentage",
       key: "commissionPercentage",
-      render: (value) => `${value}%`,
-    },
-    {
-      title: "Ngày bắt đầu",
-      dataIndex: "startDate",
-      key: "startDate",
-      render: (date) => dayjs(date).format("DD/MM/YYYY"),
-    },
-    {
-      title: "Ngày kết thúc",
-      dataIndex: "endDate",
-      key: "endDate",
-      render: (date) => dayjs(date).format("DD/MM/YYYY"),
+      width: 100,
+      align: "center",
+      render: (commission) => (
+        <span className="font-semibold">{commission}%</span>
+      ),
     },
     {
       title: "Trạng thái",
       dataIndex: "contractStatus",
       key: "contractStatus",
+      width: 150,
+      align: "center",
       render: (status) => getStatusTag(status),
     },
     {
       title: "Thao tác",
       key: "action",
+      width: 250,
       fixed: "right",
       render: (_, record) => (
         <Space>
@@ -298,8 +378,26 @@ const ManageContractPage = () => {
               size="small"
               onClick={() => handleOpenSignatureModal(record)}
             >
-              Ký
+              Ký hợp đồng
             </Button>
+          )}
+          {record.contractStatus === "BothSigned" && (
+            <Popconfirm
+              title="Xác nhận hợp đồng"
+              description="Bạn có chắc chắn muốn xác nhận hợp đồng này?"
+              onConfirm={() => handleConfirmContract(record.id)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckOutlined />}
+                style={{ backgroundColor: "#52c41a" }}
+              >
+                Xác nhận
+              </Button>
+            </Popconfirm>
           )}
         </Space>
       ),
@@ -307,30 +405,78 @@ const ManageContractPage = () => {
   ];
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6 bg-white p-5 rounded-lg shadow-sm">
-        <h1 className="text-2xl font-semibold m-0">Quản lý hợp đồng</h1>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreateContract}
-        >
-          Tạo hợp đồng mới
-        </Button>
+    <div className="p-6 min-h-screen">
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold m-0 flex items-center gap-2">
+            <FileTextOutlined /> Quản lý hợp đồng
+          </h1>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreateContract}
+          >
+            Tạo hợp đồng mới
+          </Button>
+        </div>
+
+        <Row gutter={16} className="mb-6">
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Tổng hợp đồng"
+                value={statistics.total}
+                prefix={<FileTextOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Mới tạo"
+                value={statistics.created}
+                prefix={<FileProtectOutlined />}
+                valueStyle={{ color: "#8c8c8c" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Chờ khách ký"
+                value={statistics.pending}
+                prefix={<ClockCircleOutlined />}
+                valueStyle={{ color: "#1890ff" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Đã hoàn thành"
+                value={statistics.signed}
+                prefix={<CheckCircleOutlined />}
+                valueStyle={{ color: "#52c41a" }}
+              />
+            </Card>
+          </Col>
+        </Row>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={contracts}
-        loading={loading}
-        rowKey="id"
-        scroll={{ x: 1500 }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Tổng ${total} hợp đồng`,
-        }}
-      />
+      <Card>
+        <Table
+          columns={columns}
+          dataSource={contracts}
+          loading={loading}
+          rowKey="id"
+          scroll={{ x: 1200 }}
+          pagination={{
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total) => `Tổng ${total} hợp đồng`,
+          }}
+        />
+      </Card>
 
       <Modal
         title="Tạo hợp đồng mới"

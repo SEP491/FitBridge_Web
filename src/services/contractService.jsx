@@ -14,6 +14,9 @@ const contractService = {
     request("GET", "/v1/contracts", null, {}, { customerId }),
 
   updateContract: (formData) => request("PUT", "/v1/contracts", formData),
+
+  confirmContract: (contractId) =>
+    request("PUT", `/v1/contracts/confirm/${contractId}`),
 };
 
 export default contractService;

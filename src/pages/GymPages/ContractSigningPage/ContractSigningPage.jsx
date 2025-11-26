@@ -10,6 +10,7 @@ import {
   Row,
   Col,
   Statistic,
+  Popconfirm,
 } from "antd";
 import {
   FileTextOutlined,
@@ -19,6 +20,7 @@ import {
   FileDoneOutlined,
   FileProtectOutlined,
   DownloadOutlined,
+  CheckOutlined,
 } from "@ant-design/icons";
 import ContractTemplate from "../../../components/ContractTemplate/ContractTemplate";
 import SignaturePad from "../../../components/SignaturePad/SignaturePad";
@@ -180,6 +182,17 @@ const ContractSigningPage = () => {
     }
   };
 
+  const handleConfirmContract = async (contractId) => {
+    try {
+      await contractService.confirmContract(contractId);
+      message.success("Xác nhận hợp đồng thành công!");
+      fetchContracts();
+    } catch (error) {
+      message.error("Không thể xác nhận hợp đồng. Vui lòng thử lại!");
+      console.error(error);
+    }
+  };
+
   const getStatusTag = (status) => {
     const statusConfig = {
       Created: {
@@ -302,7 +315,7 @@ const ContractSigningPage = () => {
     {
       title: "Thao tác",
       key: "action",
-      width: 200,
+      width: 250,
       fixed: "right",
       render: (_, record) => (
         <Space>
@@ -322,13 +335,31 @@ const ContractSigningPage = () => {
               Ký hợp đồng
             </Button>
           )}
+          {record.contractStatus === "BothSigned" && (
+            <Popconfirm
+              title="Xác nhận hợp đồng"
+              description="Bạn có chắc chắn muốn xác nhận hợp đồng này?"
+              onConfirm={() => handleConfirmContract(record.id)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckOutlined />}
+                style={{ backgroundColor: "#52c41a" }}
+              >
+                Xác nhận
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 min-h-screen">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold mb-4 flex items-center gap-2">
           <FileTextOutlined /> Quản lý hợp đồng
