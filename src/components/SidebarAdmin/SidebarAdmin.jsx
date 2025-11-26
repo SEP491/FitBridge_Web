@@ -25,6 +25,7 @@ import { GiGymBag } from "react-icons/gi";
 import { MdOutlineAccountBalanceWallet, MdReport } from "react-icons/md";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 import { BsBox } from "react-icons/bs";
+import { HiDocumentText } from "react-icons/hi";
 
 // eslint-disable-next-line no-unused-vars
 export default function SidebarAdmin({ collapsed, onCollapse }) {
@@ -107,6 +108,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           <BsBox className="text-lg" />
         ),
         getItem(
+          "Quản Lý Hợp Đồng",
+          `${route.admin}/${route.manageContract}`,
+          <HiDocumentText className="text-lg" />
+        ),
+        getItem(
           "Thông Báo",
           `${route.admin}/${route.manageNotification}`,
           <NotificationOutlined className="text-lg" />
@@ -155,8 +161,8 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           <GrTransaction className="text-lg" />
         ),
         getItem(
-          "Hợp Đồng & Hóa Đơn",
-          `${route.gym}/${route.billandcontract}`,
+          "Ký Hợp Đồng",
+          `${route.gym}/${route.contractSigning}`,
           <LiaFileContractSolid className="text-lg" />
         ),
       ]);
@@ -218,17 +224,6 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           </div>
         )}
       </div>
-
-      {/* User Role Badge */}
-      {!internalCollapsed && (
-        <div className="px-4 py-3 border-b border-gray-700">
-          <div className="bg-[#ed2a46] rounded-full px-3 py-1 text-center">
-            <span className="text-white text-sm font-medium">
-              {user?.role === "Admin" ? "Quản Trị Viên" : "Quản Lý Phòng Tập"}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Menu Section */}
       <div className="flex-1 overflow-y-auto pb-16">
