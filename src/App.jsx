@@ -37,6 +37,7 @@ import ManageProductPage from "./pages/AdminPages/ManageProductPage/ManageProduc
 import ManageOrderPage from "./pages/AdminPages/ManageOrderPage/ManageOrderPage";
 import ManageContractPage from "./pages/AdminPages/ManageContractPage/ManageContractPage";
 import ContractSigningPage from "./pages/GymPages/ContractSigningPage/ContractSigningPage";
+import ProfilePage from "./pages/ProfilePage/ProfilePage";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -427,6 +428,14 @@ function App() {
             </ProtectedRoute>
           ),
         },
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+              <ProfilePage />
+            </ProtectedRoute>
+          ),
+        },
       ],
     },
 
@@ -461,6 +470,14 @@ function App() {
           element: (
             <ProtectedRoute allowedRoles={["FreelancePT"]}>
               <ManagePackageFPT />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute allowedRoles={["FreelancePT"]}>
+              <ProfilePage />
             </ProtectedRoute>
           ),
         },

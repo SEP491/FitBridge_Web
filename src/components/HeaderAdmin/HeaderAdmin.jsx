@@ -27,7 +27,7 @@ export default function HeaderAdmin() {
     dispatch(logout());
     navigate(route.welcomeLogin);
   };
-
+  console.log("User in HeaderAdmin:", user);
   // Dropdown menu items for user profile
   const userMenuItems = [
     {
@@ -55,6 +55,13 @@ export default function HeaderAdmin() {
   const handleMenuClick = ({ key }) => {
     if (key === "logout") {
       handleLogout();
+    } else if (key === "profile") {
+      // Navigate to profile page based on role
+      if (user?.role === "GymOwner") {
+        navigate(route.gym + "/profile");
+      } else if (user?.role === "FreelancePT") {
+        navigate(route.freelancePt + "/profile");
+      }
     }
     // Handle other menu items as needed
   };
