@@ -15,6 +15,7 @@ export const route = {
   manageReport: "manage-report",
   manageProduct: "manage-product",
   manageOrder: "manage-order",
+  manageContract: "manage-contract",
 
   gym: "/gym",
   dashboardGym: "dashboard-gym",
@@ -23,9 +24,9 @@ export const route = {
   managePTGym: "manage-pt-gym",
   managePackagesGym: "manage-packages-gym",
   manageTransactionGym: "manage-transaction-gym",
-  billandcontract: "bill-and-contract",
   manageSlotGym: "manage-slot-gym",
   manageVoucherGym: "manage-voucher-gym",
+  contractSigning: "contract-signing",
 
   orderProcess: "order-process",
 
@@ -34,6 +35,4 @@ export const route = {
   manageSchedulePT: "manage-schedule-pt",
   manageVoucherPT: "manage-voucher-pt",
   managePackageFPT: "manage-package-fpt",
-  
-
 };

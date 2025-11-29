@@ -14,7 +14,6 @@ import ManageNotificationPage from "./pages/AdminPages/ManageNotificationPage/Ma
 import ManagePackagesPage from "./pages/AdminPages/ManagePackagesPage/ManagePackagesPage";
 import ManageUserPage from "./pages/AdminPages/ManageUserPage/ManageUserPage";
 import ManagePTGym from "./pages/GymPages/ManagePTGym/ManagePTGym";
-import GymBillandContract from "./pages/GymPages/GymBillandContract/GymBillandContract";
 import ManageGymTransaction from "./pages/GymPages/ManageGymTransaction/ManageGymTransaction";
 import ManageGymInformation from "./pages/GymPages/ManageGymInformation/ManageGymInformation";
 import DashboardGym from "./pages/GymPages/DashboardGym/DashboardGym";
@@ -36,6 +35,9 @@ import ManageGymCustomers from "./pages/GymPages/ManageCustomer/ManageCustomer";
 import ManageReportPage from "./pages/AdminPages/ManageReportPage/ManageReportPage";
 import ManageProductPage from "./pages/AdminPages/ManageProductPage/ManageProductPage";
 import ManageOrderPage from "./pages/AdminPages/ManageOrderPage/ManageOrderPage";
+import ManageContractPage from "./pages/AdminPages/ManageContractPage/ManageContractPage";
+import ContractSigningPage from "./pages/GymPages/ContractSigningPage/ContractSigningPage";
+import ProfilePage from "./pages/ProfilePage/ProfilePage";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -334,6 +336,14 @@ function App() {
             </ProtectedRoute>
           ),
         },
+        {
+          path: route.manageContract,
+          element: (
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <ManageContractPage />
+            </ProtectedRoute>
+          ),
+        },
       ],
     },
 
@@ -403,6 +413,14 @@ function App() {
           ),
         },
         {
+          path: `${route.contractSigning}`,
+          element: (
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+              <ContractSigningPage />
+            </ProtectedRoute>
+          ),
+        },
+        {
           path: "manage-customers",
           element: (
             <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
@@ -411,10 +429,10 @@ function App() {
           ),
         },
         {
-          path: route.billandcontract,
+          path: "profile",
           element: (
             <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <GymBillandContract />
+              <ProfilePage />
             </ProtectedRoute>
           ),
         },
@@ -452,6 +470,14 @@ function App() {
           element: (
             <ProtectedRoute allowedRoles={["FreelancePT"]}>
               <ManagePackageFPT />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute allowedRoles={["FreelancePT"]}>
+              <ProfilePage />
             </ProtectedRoute>
           ),
         },
