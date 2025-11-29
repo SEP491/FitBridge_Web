@@ -241,13 +241,13 @@ export default function OrderDetailModal({
                       width={80}
                       height={80}
                       src={item.productDetail?.imageUrl || defaultImage}
-                      alt={item.productDetail?.productName || "Sản phẩm"}
+                      alt={item.productName || "Sản phẩm"}
                       fallback={defaultImage}
                       className="rounded-lg object-cover"
                     />
                     <div className="flex-1">
                       <div className="font-semibold text-base text-gray-900 mb-2">
-                        {item.productDetail?.productName || "Sản phẩm"}
+                        {item.productName || "Sản phẩm"}
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>

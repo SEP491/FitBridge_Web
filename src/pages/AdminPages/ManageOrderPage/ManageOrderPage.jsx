@@ -71,6 +71,7 @@ export default function ManageOrderPage() {
     total: 0,
     totalPages: 0,
   });
+  const [summaryProductOrder, setSummaryProductOrder] = useState({});
 
   const fetchOrders = async (page = 1, pageSize = 10, filters = {}) => {
     setLoading(true);
@@ -82,7 +83,7 @@ export default function ManageOrderPage() {
     };
     try {
       const response = await orderService.getAllOrders(params);
-      const { items, total, totalPages } = response.data;
+      const { items, total, totalPages } = response.data.productOrders;
       setOrders(items || []);
       setPagination({
         current: page,
@@ -98,42 +99,26 @@ export default function ManageOrderPage() {
     }
   };
 
+ const fetchOrdersSummary = async () => {
+    setLoading(true);
+    const params = {
+      doApplyPaging: false,
+    };
+    try {
+      const response = await orderService.getAllOrders(params);
+      setSummaryProductOrder(response.data.summaryProductOrder || {});
+    } catch {
+      toast.error("Lấy thống kê thất bại. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
+    fetchOrdersSummary();
   }, []);
 
-  // Statistics - Calculate from current page data for display, use pagination.total for overall count
-  const statistics = {
-    totalOrders: pagination.total || 0,
-    createdOrders:
-      orders?.filter((o) => o.currentStatus === "Created").length || 0,
-    pendingOrders:
-      orders?.filter((o) => o.currentStatus === "Pending").length || 0,
-    processingOrders:
-      orders?.filter((o) => o.currentStatus === "Processing").length || 0,
-    assigningOrders:
-      orders?.filter((o) => o.currentStatus === "Assigning").length || 0,
-    acceptedOrders:
-      orders?.filter((o) => o.currentStatus === "Accepted").length || 0,
-    shippingOrders:
-      orders?.filter((o) => o.currentStatus === "Shipping").length || 0,
-    arrivedOrders:
-      orders?.filter((o) => o.currentStatus === "Arrived").length || 0,
-    inReturnOrders:
-      orders?.filter((o) => o.currentStatus === "InReturn").length || 0,
-    returnedOrders:
-      orders?.filter((o) => o.currentStatus === "Returned").length || 0,
-    customerNotReceivedOrders:
-      orders?.filter((o) => o.currentStatus === "CustomerNotReceived").length || 0,
-    finishedOrders:
-      orders?.filter((o) => o.currentStatus === "Finished").length || 0,
-    cancelledOrders:
-      orders?.filter((o) => o.currentStatus === "Cancelled").length || 0,
-    totalRevenue:
-      orders
-        ?.filter((o) => o.currentStatus === "Finished")
-        .reduce((sum, o) => sum + o.totalAmount, 0) || 0,
-  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -467,7 +452,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Tổng Đơn Hàng"
-                value={statistics.totalOrders}
+                value={summaryProductOrder?.totalProductOrders}
                 prefix={<ShoppingCartOutlined style={{ color: "#FF914D" }} />}
                 valueStyle={{
                   color: "#FF914D",
@@ -487,7 +472,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đã Tạo"
-                value={statistics.createdOrders}
+                value={summaryProductOrder?.totalCreated}
                 prefix={<ClockCircleOutlined style={{ color: "#8c8c8c" }} />}
                 valueStyle={{
                   color: "#8c8c8c",
@@ -507,7 +492,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Chờ Xử Lý"
-                value={statistics.pendingOrders}
+                value={summaryProductOrder?.totalPending}
                 prefix={<ClockCircleOutlined style={{ color: "#faad14" }} />}
                 valueStyle={{
                   color: "#faad14",
@@ -527,7 +512,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đang Xử Lý"
-                value={statistics.processingOrders}
+                value={summaryProductOrder?.totalProcessing}
                 prefix={<SyncOutlined style={{ color: "#1890ff" }} />}
                 valueStyle={{
                   color: "#1890ff",
@@ -547,7 +532,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đang Phân Công"
-                value={statistics.assigningOrders}
+                value={summaryProductOrder?.totalAssigning}
                 prefix={<UserOutlined style={{ color: "#9254de" }} />}
                 valueStyle={{
                   color: "#9254de",
@@ -567,7 +552,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đã Chấp Nhận"
-                value={statistics.acceptedOrders}
+                value={summaryProductOrder?.totalAccepted}
                 prefix={<CheckCircleOutlined style={{ color: "#1677ff" }} />}
                 valueStyle={{
                   color: "#1677ff",
@@ -587,7 +572,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đang Giao Hàng"
-                value={statistics.shippingOrders}
+                value={summaryProductOrder?.totalShipping}
                 prefix={<CarOutlined style={{ color: "#13c2c2" }} />}
                 valueStyle={{
                   color: "#13c2c2",
@@ -607,7 +592,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đã Đến Nơi"
-                value={statistics.arrivedOrders}
+                value={summaryProductOrder?.totalArrived}
                 prefix={<EnvironmentOutlined style={{ color: "#eb2f96" }} />}
                 valueStyle={{
                   color: "#eb2f96",
@@ -627,7 +612,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đang Hoàn Trả"
-                value={statistics.inReturnOrders}
+                value={ summaryProductOrder?.totalInReturn}
                 prefix={<CarOutlined style={{ color: "#fa541c" }} />}
                 valueStyle={{
                   color: "#fa541c",
@@ -647,7 +632,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đã Hoàn Trả"
-                value={statistics.returnedOrders}
+                value={summaryProductOrder?.totalReturned}
                 prefix={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
                 valueStyle={{
                   color: "#ff4d4f",
@@ -667,7 +652,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Khách Không Nhận"
-                value={statistics.customerNotReceivedOrders}
+                value={summaryProductOrder?.totalCustomerNotReceived}
                 prefix={<CloseCircleOutlined style={{ color: "#cf1322" }} />}
                 valueStyle={{
                   color: "#cf1322",
@@ -687,7 +672,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Hoàn Thành"
-                value={statistics.finishedOrders}
+                value={summaryProductOrder?.totalFinished}
                 prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
                 valueStyle={{
                   color: "#52c41a",
@@ -707,7 +692,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đã Hủy"
-                value={statistics.cancelledOrders}
+                value={summaryProductOrder?.totalCancelled}
                 prefix={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
                 valueStyle={{
                   color: "#ff4d4f",
@@ -721,7 +706,22 @@ export default function ManageOrderPage() {
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Doanh Thu"
-                value={statistics.totalRevenue}
+                value={summaryProductOrder?.totalRevenue}
+                prefix={<DollarOutlined style={{ color: "#52c41a" }} />}
+                valueStyle={{
+                  color: "#52c41a",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+                suffix="₫"
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Statistic
+                title="Lợi Nhuận"
+                value={summaryProductOrder?.totalProfit}
                 prefix={<DollarOutlined style={{ color: "#52c41a" }} />}
                 valueStyle={{
                   color: "#52c41a",
