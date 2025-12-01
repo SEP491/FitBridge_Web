@@ -92,6 +92,14 @@ export default function OrderDetailModal({
                 </Button>
               </>
             )}
+            {selectedOrder.currentStatus === "CustomerNotReceived" && (
+              <Button
+                type="primary"
+                onClick={() => openStatusUpdateModal("Finished")}
+              >
+                Hoàn Thành Đơn Hàng
+              </Button>
+            )}
           </div>
         ) : (
           <Button onClick={onClose}>Đóng</Button>
