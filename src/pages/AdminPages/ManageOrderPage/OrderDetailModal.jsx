@@ -1,13 +1,5 @@
 import React from "react";
-import {
-  Descriptions,
-  Timeline,
-  Card,
-  Empty,
-  Tag,
-  Image,
-  Button,
-} from "antd";
+import { Descriptions, Timeline, Card, Empty, Tag, Image, Button } from "antd";
 import {
   ShoppingCartOutlined,
   CalendarOutlined,
@@ -52,12 +44,6 @@ export default function OrderDetailModal({
             {selectedOrder.currentStatus === "Created" && (
               <>
                 <Button
-                  danger
-                  onClick={() => handleCancelOrder(selectedOrder.id)}
-                >
-                  Hủy Đơn
-                </Button>
-                <Button
                   type="primary"
                   onClick={() => openStatusUpdateModal("Pending")}
                 >
@@ -69,7 +55,7 @@ export default function OrderDetailModal({
               <>
                 <Button
                   danger
-                  onClick={() => handleCancelOrder(selectedOrder.id)}
+                  onClick={handleCancelOrder}
                 >
                   Hủy Đơn
                 </Button>
@@ -100,6 +86,19 @@ export default function OrderDetailModal({
                 Hoàn Thành Đơn Hàng
               </Button>
             )}
+            {selectedOrder.currentStatus === "Returned" && (
+              <Button danger onClick={() => openStatusUpdateModal("Cancelled")}>
+                Hoàn Thành Hủy Đơn Hàng
+              </Button>
+            )}
+            {(selectedOrder.currentStatus === "Assigning" || selectedOrder.currentStatus === "Accepted") && (
+                <Button
+                  danger
+                  onClick={handleCancelOrder}
+                >
+                  Hủy Đơn
+                </Button>
+              )}
           </div>
         ) : (
           <Button onClick={onClose}>Đóng</Button>
@@ -138,7 +137,8 @@ export default function OrderDetailModal({
               {selectedOrder.currentStatus === "Arrived" && "Đã Đến Nơi"}
               {selectedOrder.currentStatus === "InReturn" && "Đang Hoàn Trả"}
               {selectedOrder.currentStatus === "Returned" && "Đã Hoàn Trả"}
-              {selectedOrder.currentStatus === "CustomerNotReceived" && "Khách Không Nhận"}
+              {selectedOrder.currentStatus === "CustomerNotReceived" &&
+                "Khách Không Nhận"}
               {selectedOrder.currentStatus === "Finished" && "Hoàn Thành"}
               {selectedOrder.currentStatus === "Cancelled" && "Đã Hủy"}
             </Tag>
@@ -172,31 +172,29 @@ export default function OrderDetailModal({
             <CalendarOutlined className="mr-2" />
             {new Date(selectedOrder.updatedAt).toLocaleString("vi-VN")}
           </Descriptions.Item>
-          
-          {selectedOrder.currentStatus === 'Pending' && (
-         
-          <Descriptions.Item label="Link thanh toán" span={3}>
-            {selectedOrder.checkoutUrl && selectedOrder.currentStatus === "Pending" ? (
-              <a
-                href={selectedOrder.checkoutUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {selectedOrder.checkoutUrl}
-              </a>
-            ) : (
-              "N/A"
-            )}
-          </Descriptions.Item>
+
+          {selectedOrder.currentStatus === "Pending" && (
+            <Descriptions.Item label="Link thanh toán" span={3}>
+              {selectedOrder.checkoutUrl &&
+              selectedOrder.currentStatus === "Pending" ? (
+                <a
+                  href={selectedOrder.checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {selectedOrder.checkoutUrl}
+                </a>
+              ) : (
+                "N/A"
+              )}
+            </Descriptions.Item>
           )}
         </Descriptions>
 
         {/* Shipping Details */}
         <Descriptions
           title={
-            <span className="font-semibold text-base">
-              Thông Tin Giao Hàng
-            </span>
+            <span className="font-semibold text-base">Thông Tin Giao Hàng</span>
           }
           bordered
           column={2}

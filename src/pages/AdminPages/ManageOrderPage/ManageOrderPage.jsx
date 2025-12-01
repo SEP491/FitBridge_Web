@@ -186,14 +186,33 @@ export default function ManageOrderPage() {
         )
       );
       toast.success(`Cập nhật trạng thái đơn hàng thành công!`);
-
+      fetchOrders( pagination.current, pagination.pageSize, { status: status });
+      fetchOrdersSummary();
+      setIsStatusUpdateModalOpen(false);
+      setNewStatus("");
+      setStatusDescription("");
+      setSelectedOrder(null);
+      
+      const filters = {};
+      if (statusFilter !== "all") filters.status = statusFilter;
+      if (searchText) filters.search = searchText;
+      const response = await orderService.getAllOrders({
+        page: pagination.current,
+        size: pagination.pageSize,
+        sortOrder: "dsc",
+        ...filters,
+      });
+      const { items } = response.data.productOrders;
+      setOrders(items || []);
+      fetchOrders( pagination.current, pagination.pageSize, { status: status });
+      fetchOrdersSummary();
+      
       // Update selected order if it's open
       if (selectedOrder?.id === orderId) {
-        setSelectedOrder((prev) => ({
-          ...prev,
-          currentStatus: status,
-          updatedAt: new Date().toISOString(),
-        }));
+        const updatedOrder = items.find(order => order.id === orderId);
+        if (updatedOrder) {
+          setSelectedOrder(updatedOrder);
+        }
       }
     } catch {
       toast.error("Cập nhật trạng thái đơn hàng thất bại. Vui lòng thử lại.");
@@ -232,25 +251,35 @@ export default function ManageOrderPage() {
     try {
       await orderService.cancelOrder(selectedOrder.id, { comment: cancelComment });
 
-      setOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order.id === selectedOrder.id
-            ? {
-                ...order,
-                currentStatus: "Cancelled",
-                updatedAt: new Date().toISOString(),
-              }
-            : order
-        )
-      );
       toast.success(`Hủy đơn hàng thành công!`);
+      
+      fetchOrders( pagination.current, pagination.pageSize, { status: status });
+      fetchOrdersSummary();
+      setIsStatusUpdateModalOpen(false);
+      setNewStatus("");
+      setStatusDescription("");
+      setSelectedOrder(null);
+      setCancelComment("");
+      // Fetch updated orders
+      const filters = {};
+      if (statusFilter !== "all") filters.status = statusFilter;
+      if (searchText) filters.search = searchText;
+      const response = await orderService.getAllOrders({
+        page: pagination.current,
+        size: pagination.pageSize,
+        sortOrder: "dsc",
+        ...filters,
+      });
+      const { items } = response.data.productOrders;
+      setOrders(items || []);
+      
+      fetchOrdersSummary();
 
       // Update selected order if it's open
-      setSelectedOrder((prev) => ({
-        ...prev,
-        currentStatus: "Cancelled",
-        updatedAt: new Date().toISOString(),
-      }));
+      const updatedOrder = items.find(order => order.id === selectedOrder.id);
+      if (updatedOrder) {
+        setSelectedOrder(updatedOrder);
+      }
       
       setIsCancelModalOpen(false);
       setCancelComment("");
@@ -276,14 +305,22 @@ export default function ManageOrderPage() {
 
       await orderService.createShippingOrder(data);
       toast.success("Tạo đơn giao hàng thành công!");
-
+      fetchOrders( pagination.current, pagination.pageSize, { status: "Shipping" });
+      fetchOrdersSummary();
       setIsShippingModalOpen(false);
+      setIsCancelModalOpen(false);
+      setIsStatusUpdateModalOpen(false);
+      setNewStatus("");
+      setStatusDescription("");
+      setCancelComment("");
       setShippingRemarks("");
-      fetchOrders(pagination.current, pagination.pageSize);
-    } catch {
+      setSelectedOrder(null); 
+     
+    } catch (error) {
+      console.error("Error creating shipping order:", error);
       toast.error("Tạo đơn giao hàng thất bại. Vui lòng thử lại.");
     }
-  };
+  };  
 
   const handleTableChange = (paginationConfig) => {
     const filters = {};

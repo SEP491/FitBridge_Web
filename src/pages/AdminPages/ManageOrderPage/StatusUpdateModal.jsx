@@ -22,6 +22,12 @@ export default function StatusUpdateModal({
     const currentStatus = selectedOrder.currentStatus;
     const hasCheckoutUrl = selectedOrder.checkoutUrl;
 
+    if (currentStatus === "Created") {
+      return [
+        { value: "Pending", label: "Chờ Xử Lý" },
+        { value: "Cancelled", label: "Hủy Đơn" },
+      ];
+    }
     // Pending: Can go to Processing or Cancelled (only if has checkoutUrl)
     if (currentStatus === "Pending") {
       const options = [
@@ -38,6 +44,12 @@ export default function StatusUpdateModal({
     if (currentStatus === "CustomerNotReceived") {
       return [{ value: "Finished", label: "Hoàn Thành" }];
     }
+
+    if (currentStatus === "Returned") {
+      return [{ value: "Cancelled", label: "Hủy Đơn" }];
+    }
+    
+
 
     // For other statuses, return all options (default behavior)
     return [
