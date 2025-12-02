@@ -14,6 +14,7 @@ import { logout } from "../../redux/features/userSlice";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../routes";
 import Cookies from "js-cookie";
+import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
 
 export default function HeaderAdmin() {
   const user = useSelector(selectUser);
@@ -100,14 +101,7 @@ export default function HeaderAdmin() {
       {/* Right side - User info and actions */}
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <Badge count={5} size="small">
-          <Button
-            type="text"
-            icon={<BellOutlined className="text-lg" />}
-            className="flex items-center justify-center hover:bg-gray-100 transition-colors"
-            size="large"
-          />
-        </Badge>
+        <NotificationDropdown />
 
         {/* User Profile Dropdown */}
         <Dropdown

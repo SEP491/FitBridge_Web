@@ -15,6 +15,7 @@ export const CLIENT_METHODS = {
   REACTION_RECEIVED: "ReactionReceived",
   USER_TYPING: "UserTyping",
   USER_PRESENCE_UPDATE: "UserPresenceUpdate",
+  NOTIFICATION_RECEIVED: "NotificationReceived",
 };
 
 

@@ -39,6 +39,8 @@ import ManageContractPage from "./pages/AdminPages/ManageContractPage/ManageCont
 import ContractSigningPage from "./pages/GymPages/ContractSigningPage/ContractSigningPage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import { MessagingStateProvider } from "./context/messagingStateContext";
+import { NotificationSignalRProvider } from "./context/NotificationSignalRContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import ChatBubble from "./components/Chat/ChatBubble";
 
 // JWT Decode function with expiration validation
@@ -497,9 +499,13 @@ function App() {
   ]);
   return (
     <MessagingStateProvider>
-      <RouterProvider router={router} />
-      {/* Global floating chat bubble, visible on all routes */}
-      <ChatBubble />
+      <NotificationSignalRProvider>
+        <NotificationProvider>
+          <RouterProvider router={router} />
+          {/* Global floating chat bubble, visible on all routes */}
+          <ChatBubble />
+        </NotificationProvider>
+      </NotificationSignalRProvider>
     </MessagingStateProvider>
   );
 }
