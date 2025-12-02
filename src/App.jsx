@@ -38,6 +38,8 @@ import ManageOrderPage from "./pages/AdminPages/ManageOrderPage/ManageOrderPage"
 import ManageContractPage from "./pages/AdminPages/ManageContractPage/ManageContractPage";
 import ContractSigningPage from "./pages/GymPages/ContractSigningPage/ContractSigningPage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import { MessagingStateProvider } from "./context/messagingStateContext";
+import ChatBubble from "./components/Chat/ChatBubble";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -493,7 +495,13 @@ function App() {
       element: <LoginRedirect />,
     },
   ]);
-  return <RouterProvider router={router} />;
+  return (
+    <MessagingStateProvider>
+      <RouterProvider router={router} />
+      {/* Global floating chat bubble, visible on all routes */}
+      <ChatBubble />
+    </MessagingStateProvider>
+  );
 }
 
 export default App;
