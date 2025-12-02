@@ -44,7 +44,12 @@ import {
   CheckCircleOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { FaDumbbell, FaInfoCircle, FaBuilding, FaUserCircle } from "react-icons/fa";
+import {
+  FaDumbbell,
+  FaInfoCircle,
+  FaBuilding,
+  FaUserCircle,
+} from "react-icons/fa";
 import { IoBarbell, IoLocationSharp } from "react-icons/io5";
 import FitBridgeModal from "../../../components/FitBridgeModal";
 import defaultAvatar from "../../../assets/LogoColor.png";
@@ -175,7 +180,10 @@ export default function ManageGymPage() {
   const fetchGym = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await adminService.getAllGymOwners({ page, size: pageSize });
+      const response = await adminService.getAllGymOwners({
+        page,
+        size: pageSize,
+      });
       const { items, total, page: currentPage } = response.data;
 
       setGym(items);
@@ -240,7 +248,7 @@ export default function ManageGymPage() {
 
   const handleBanUnban = async (gymOwnerId, currentStatus) => {
     const isBanning = currentStatus; // If gym owner is active, we want to ban them
-    
+
     Modal.confirm({
       title: isBanning ? "Xác nhận cấm chủ gym" : "Xác nhận mở cấm chủ gym",
       content: isBanning
@@ -250,23 +258,33 @@ export default function ManageGymPage() {
       cancelText: "Hủy",
       okType: isBanning ? "danger" : "primary",
       centered: true,
-      icon: <StopOutlined style={{ color: isBanning ? "#ff4d4f" : "#52c41a" }} />,
+      icon: (
+        <StopOutlined style={{ color: isBanning ? "#ff4d4f" : "#52c41a" }} />
+      ),
       onOk: async () => {
         try {
           const response = await adminService.banUnbanUser({
             userIdBanUnbanList: [gymOwnerId],
-            isBan: isBanning
+            isBan: isBanning,
           });
 
           if (response.status === "200" || response.status === 200) {
-            toast.success(isBanning ? "Cấm chủ gym thành công" : "Mở cấm chủ gym thành công");
+            toast.success(
+              isBanning ? "Cấm chủ gym thành công" : "Mở cấm chủ gym thành công"
+            );
             fetchGym(pagination.current, pagination.pageSize);
           } else {
-            toast.error(isBanning ? "Không thể cấm chủ gym" : "Không thể mở cấm chủ gym");
+            toast.error(
+              isBanning ? "Không thể cấm chủ gym" : "Không thể mở cấm chủ gym"
+            );
           }
         } catch (error) {
           console.error("Error ban/unban gym owner:", error);
-          toast.error(isBanning ? "Đã xảy ra lỗi khi cấm chủ gym" : "Đã xảy ra lỗi khi mở cấm chủ gym");
+          toast.error(
+            isBanning
+              ? "Đã xảy ra lỗi khi cấm chủ gym"
+              : "Đã xảy ra lỗi khi mở cấm chủ gym"
+          );
         }
       },
     });
@@ -319,7 +337,9 @@ export default function ManageGymPage() {
         <div className="space-y-1">
           <div className="flex items-center text-gray-700">
             <UserOutlined className="mr-1 text-green-500" />
-            <span className="font-medium text-sm">{record.fullName || "N/A"}</span>
+            <span className="font-medium text-sm">
+              {record.fullName || "N/A"}
+            </span>
           </div>
           <div className="flex items-center text-gray-500 text-xs">
             <PhoneOutlined className="mr-1 text-blue-500" />
@@ -348,7 +368,10 @@ export default function ManageGymPage() {
       width: 50,
       align: "center",
       render: (hotResearch) => (
-        <Tag color={hotResearch ? "red" : "default"} icon={hotResearch ? <FireOutlined /> : null}>
+        <Tag
+          color={hotResearch ? "red" : "default"}
+          icon={hotResearch ? <FireOutlined /> : null}
+        >
           {hotResearch ? "HOT" : "Thường"}
         </Tag>
       ),
@@ -387,7 +410,9 @@ export default function ManageGymPage() {
             <Button
               type={record.isActive ? "default" : "primary"}
               danger={record.isActive}
-              icon={record.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
+              icon={
+                record.isActive ? <StopOutlined /> : <CheckCircleOutlined />
+              }
               onClick={(e) => {
                 e.stopPropagation();
                 handleBanUnban(record.id, record.isActive);
@@ -476,13 +501,13 @@ export default function ManageGymPage() {
   // Get address from latitude and longitude (Reverse Geocoding)
   const getAddressFromLatLng = async (lat, lng) => {
     try {
-      const results = await getGeocode({ 
-        location: { lat, lng } 
+      const results = await getGeocode({
+        location: { lat, lng },
       });
-      
+
       if (results && results.length > 0) {
         const address = results[0].formatted_address;
-        
+
         // Update form with the address
         formAdd.setFieldsValue({
           address: address,
@@ -703,7 +728,11 @@ export default function ManageGymPage() {
                       <div className="text-2xl font-bold text-blue-600">
                         {selectedGym.gymName || "N/A"}
                         {selectedGym.hotResearch && (
-                          <Tag color="red" className="ml-2" icon={<FireOutlined />}>
+                          <Tag
+                            color="red"
+                            className="ml-2"
+                            icon={<FireOutlined />}
+                          >
                             HOT
                           </Tag>
                         )}
@@ -727,7 +756,7 @@ export default function ManageGymPage() {
               {/* Main Content */}
               <div className="p-6 flex flex-col gap-5 space-y-6">
                 {/* Gym Info Card */}
-                <Card 
+                <Card
                   size="small"
                   className="shadow-sm hover:shadow-md transition-shadow"
                   title={
@@ -745,31 +774,35 @@ export default function ManageGymPage() {
                         {selectedGym.gymName || "N/A"}
                       </div>
                     </Descriptions.Item>
-                    
+
                     <Descriptions.Item label="Địa Chỉ" span={2}>
                       <div className="flex items-center gap-2">
                         <EnvironmentOutlined className="text-red-500" />
                         <span>{selectedGym.address || "N/A"}</span>
                       </div>
                     </Descriptions.Item>
-                    
+
                     <Descriptions.Item label="Hoạt Động Từ">
                       <div className="flex items-center gap-2">
                         <CalendarOutlined className="text-orange-500" />
-                        <span className="font-semibold">Năm {selectedGym.since || "N/A"}</span>
+                        <span className="font-semibold">
+                          Năm {selectedGym.since || "N/A"}
+                        </span>
                       </div>
                     </Descriptions.Item>
-                    
+
                     <Descriptions.Item label="Trạng Thái">
-                      <Tag 
+                      <Tag
                         color={selectedGym.hotResearch ? "red" : "default"}
                         icon={selectedGym.hotResearch ? <FireOutlined /> : null}
                         className="text-sm px-3 py-1"
                       >
-                        {selectedGym.hotResearch ? "Hot Research" : "Bình thường"}
+                        {selectedGym.hotResearch
+                          ? "Hot Research"
+                          : "Bình thường"}
                       </Tag>
                     </Descriptions.Item>
-                    
+
                     <Descriptions.Item label="Tọa Độ" span={2}>
                       {selectedGym.latitude && selectedGym.longitude ? (
                         <div className="flex gap-4">
@@ -790,7 +823,7 @@ export default function ManageGymPage() {
                         <span className="text-gray-400">Chưa có tọa độ</span>
                       )}
                     </Descriptions.Item>
-                    
+
                     <Descriptions.Item label="Mã QR" span={2}>
                       <div className="font-mono text-xs bg-blue-50 p-2 rounded inline-block">
                         {selectedGym.qrcode || "N/A"}
@@ -800,7 +833,7 @@ export default function ManageGymPage() {
                 </Card>
 
                 {/* Owner Info Card */}
-                <Card 
+                <Card
                   size="small"
                   className="shadow-sm hover:shadow-md transition-shadow"
                   title={
@@ -817,18 +850,20 @@ export default function ManageGymPage() {
                       <div className="flex items-center gap-2">
                         <UserOutlined className="text-green-500" />
                         <span className="font-medium text-base">
-                          {selectedGym.fullName || selectedGym.representName || "Chưa có thông tin"}
+                          {selectedGym.fullName ||
+                            selectedGym.representName ||
+                            "Chưa có thông tin"}
                         </span>
                       </div>
                     </Descriptions.Item>
-                    
+
                     <Descriptions.Item label="Số Điện Thoại">
                       <div className="flex items-center gap-2">
                         <PhoneOutlined className="text-blue-500" />
                         <span>{selectedGym.phone || "Chưa có thông tin"}</span>
                       </div>
                     </Descriptions.Item>
-                    
+
                     <Descriptions.Item label="Mã Số Thuế">
                       <div className="font-mono text-xs bg-orange-50 p-2 rounded inline-block">
                         {selectedGym.taxCode || "Chưa có thông tin"}
@@ -836,9 +871,15 @@ export default function ManageGymPage() {
                     </Descriptions.Item>
 
                     <Descriptions.Item label="Trạng Thái Tài Khoản">
-                      <Tag 
+                      <Tag
                         color={selectedGym.isActive ? "green" : "red"}
-                        icon={selectedGym.isActive ? <CheckCircleOutlined /> : <StopOutlined />}
+                        icon={
+                          selectedGym.isActive ? (
+                            <CheckCircleOutlined />
+                          ) : (
+                            <StopOutlined />
+                          )
+                        }
                         className="text-sm px-3 py-1"
                       >
                         {selectedGym.isActive ? "Đang Hoạt Động" : "Bị Cấm"}
@@ -848,8 +889,9 @@ export default function ManageGymPage() {
                 </Card>
 
                 {/* Images Card */}
-                {(selectedGym.mainImage || (selectedGym.images && selectedGym.images.length > 0)) && (
-                  <Card 
+                {(selectedGym.mainImage ||
+                  (selectedGym.images && selectedGym.images.length > 0)) && (
+                  <Card
                     size="small"
                     className="shadow-sm hover:shadow-md transition-shadow"
                     title={
@@ -864,23 +906,27 @@ export default function ManageGymPage() {
                     <div className="space-y-4">
                       {selectedGym.mainImage && (
                         <div>
-                          <div className="text-sm text-gray-500 mb-2">Ảnh Đại Diện</div>
-                          <img 
-                            src={selectedGym.mainImage} 
+                          <div className="text-sm text-gray-500 mb-2">
+                            Ảnh Đại Diện
+                          </div>
+                          <img
+                            src={selectedGym.mainImage}
                             alt="Main gym"
                             className="w-full h-64 object-cover rounded-lg shadow-md"
                           />
                         </div>
                       )}
-                      
+
                       {selectedGym.images && selectedGym.images.length > 0 && (
                         <div>
-                          <div className="text-sm text-gray-500 mb-2">Ảnh Bổ Sung</div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            Ảnh Bổ Sung
+                          </div>
                           <div className="grid grid-cols-3 gap-3">
                             {selectedGym.images.map((img, index) => (
-                              <img 
+                              <img
                                 key={index}
-                                src={img} 
+                                src={img}
                                 alt={`Gym ${index + 1}`}
                                 className="w-full h-32 object-cover rounded-lg shadow-md hover:scale-105 transition-transform"
                               />
@@ -908,7 +954,7 @@ export default function ManageGymPage() {
             setImagesList([]);
           }}
           title={
-            <div className="flex items-center gap-3 pb-4 border-b">
+            <div className="flex items-center gap-3 pb-4">
               <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center">
                 <IoBarbell className="text-white text-lg" />
               </div>
@@ -931,7 +977,7 @@ export default function ManageGymPage() {
             layout="vertical"
             requiredMark={false}
             onFinish={handleAddGym}
-            className="max-h-[70vh] overflow-y-auto py-6"
+            className="max-h-[70vh] overflow-y-auto py-6 overflow-x-hidden"
           >
             <Row gutter={16}>
               <Col span={12}>
@@ -1185,7 +1231,8 @@ export default function ManageGymPage() {
                 </Map>
               </div>
               <Text className="text-gray-500 text-sm mt-2">
-                💡 Click vào bản đồ để chọn vị trí và lấy địa chỉ tự động, hoặc nhập tọa độ rồi click nút "Lấy địa chỉ từ tọa độ"
+                💡 Click vào bản đồ để chọn vị trí và lấy địa chỉ tự động, hoặc
+                nhập tọa độ rồi click nút "Lấy địa chỉ từ tọa độ"
               </Text>
             </div>
 
@@ -1299,11 +1346,14 @@ export default function ManageGymPage() {
 
         <style jsx global>{`
           .custom-modal .ant-modal-header {
-            border-bottom: none;
-            padding: 24px 24px 0;
+             {
+              /* padding: 24px 24px 0; */
+            }
           }
           .custom-modal .ant-modal-body {
-            padding: 0 24px 24px;
+             {
+              /* padding: 0 24px 24px; */
+            }
           }
           .ant-table-thead > tr > th {
             font-weight: 600;
