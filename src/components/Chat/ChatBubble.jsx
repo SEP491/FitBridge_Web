@@ -329,9 +329,10 @@ export default function ChatBubble() {
     };
 
     const handleUserPresenceUpdate = (presenceData) => {
+      console.log("⚪ SignalR Event: USER_PRESENCE_UPDATE", presenceData);
       setUserPresences((prev) => ({
         ...prev,
-        [presenceData.id]: presenceData.isOnline,
+        [presenceData.userId]: presenceData.isOnline,
       }));
     };
 
