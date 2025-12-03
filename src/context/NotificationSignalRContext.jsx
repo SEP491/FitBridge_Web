@@ -28,7 +28,9 @@ export const NotificationSignalRProvider = ({ children }) => {
     // Check if user is authenticated
     const accessToken = Cookies.get("accessToken");
     if (!accessToken) {
-      console.log("NotificationSignalRProvider: No access token, skipping connection");
+      console.log(
+        "NotificationSignalRProvider: No access token, skipping connection"
+      );
       return;
     }
 
@@ -81,16 +83,24 @@ export const NotificationSignalRProvider = ({ children }) => {
 
     const checkAccessToken = () => {
       const accessToken = Cookies.get("accessToken");
-      
+
       // If token exists but no connection, try to connect
-      if (accessToken && !notificationService && connectionStatus === "disconnected") {
-        console.log("NotificationSignalRProvider: Access token detected, initializing connection...");
+      if (
+        accessToken &&
+        !notificationService &&
+        connectionStatus === "disconnected"
+      ) {
+        console.log(
+          "NotificationSignalRProvider: Access token detected, initializing connection..."
+        );
         initializeConnection();
       }
 
       // If token removed but service exists, stop connection
       if (!accessToken && notificationService) {
-        console.log("NotificationSignalRProvider: Access token removed, stopping connection...");
+        console.log(
+          "NotificationSignalRProvider: Access token removed, stopping connection..."
+        );
         notificationService.stop();
         setNotificationService(null);
         setConnectionStatus("disconnected");

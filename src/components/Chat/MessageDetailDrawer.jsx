@@ -125,7 +125,12 @@ const getCurrentUserFromToken = () => {
   }
 };
 
-export default function MessageDetailDrawer({ open, onClose, conversation }) {
+export default function MessageDetailDrawer({
+  open,
+  onClose,
+  conversation,
+  onMessagesRead,
+}) {
   const { messagingService, connectionStatus } = useMessagingState();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -146,6 +151,7 @@ export default function MessageDetailDrawer({ open, onClose, conversation }) {
   const fetchMessagesRef = useRef(null);
   const loadingMoreRef = useRef(false);
   const previousScrollHeightRef = useRef(0);
+  const textAreaRef = useRef(null);
   const currentUser = useMemo(() => getCurrentUserFromToken(), []);
 
   const conversationId = conversation?.id;
@@ -316,11 +322,15 @@ export default function MessageDetailDrawer({ open, onClose, conversation }) {
           conversationId,
           messageIds: unreadIds,
         });
+        // Notify parent that messages have been marked as read
+        if (onMessagesRead) {
+          onMessagesRead(conversationId);
+        }
       }
     } catch (error) {
       console.error("Error marking as read:", error);
     }
-  }, [conversationId, messages, currentUser]);
+  }, [conversationId, messages, currentUser, onMessagesRead]);
 
   // Mark as read when messages change
   useEffect(() => {
@@ -328,6 +338,23 @@ export default function MessageDetailDrawer({ open, onClose, conversation }) {
       markAsRead();
     }
   }, [messages, currentUser, markAsRead]);
+
+  // Mark conversation as read when drawer opens
+  useEffect(() => {
+    if (open && conversationId && onMessagesRead) {
+      onMessagesRead(conversationId);
+    }
+  }, [open, conversationId, onMessagesRead]);
+
+  // Auto-focus text area when drawer opens
+  useEffect(() => {
+    if (open && textAreaRef.current) {
+      // Small delay to ensure drawer is fully rendered
+      setTimeout(() => {
+        textAreaRef.current?.focus();
+      }, 100);
+    }
+  }, [open]);
 
   // Auto-cancel reply if the replied message is deleted
   useEffect(() => {
@@ -1548,6 +1575,7 @@ export default function MessageDetailDrawer({ open, onClose, conversation }) {
             />
           </Upload>
           <TextArea
+            ref={textAreaRef}
             autoSize={{ minRows: 1, maxRows: 4 }}
             placeholder="Nhập tin nhắn..."
             value={input}
