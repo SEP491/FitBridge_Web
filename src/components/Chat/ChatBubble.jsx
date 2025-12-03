@@ -137,13 +137,6 @@ export default function ChatBubble() {
               content: conv.lastMessageContent,
               senderName: conv.lastMessageSenderName,
             }),
-            // Initialize unreadCount if not provided by API
-            unreadCount:
-              conv.unreadCount !== undefined
-                ? conv.unreadCount
-                : conv.isRead === false
-                ? 1
-                : 0,
           };
         });
 
@@ -162,15 +155,73 @@ export default function ChatBubble() {
   );
 
   // Basic mapping from incoming messages -> conversation preview
-  const findAndUpdateConversation = useCallback(
-    (message) => {
-      const conversationId = message.conversationId;
-      const isMessageFromOtherUser = message.senderId !== currentUser?.id;
-      const isConversationOpen =
-        selectedConversation?.id === conversationId ||
-        selectedConversation?.id?.toString() === conversationId?.toString();
+  const findAndUpdateConversation = useCallback((message) => {
+    const conversationId = message.conversationId;
 
-      setConversations((prev) => {
+    setConversations((prev) => {
+      const convo = prev.find(
+        (conv) =>
+          conv.id === conversationId ||
+          conv.id?.toString() === conversationId?.toString()
+      );
+
+      const isDeleted = message.status === "Deleted" || message.isDeleted;
+
+      if (convo) {
+        const updated = prev.map((conv) => {
+          if (
+            conv.id === conversationId ||
+            conv.id?.toString() === conversationId?.toString()
+          ) {
+            return {
+              ...conv,
+              lastMessageContent: formatLastMessageContent({
+                ...message,
+                isDeleted,
+              }),
+              lastMessageSenderName: message.senderName,
+              lastMessageSenderId: message.senderId,
+              lastMessageId: message.id,
+              lastMessageMediaType: message.mediaType,
+              updatedAt: message.createdAt,
+            };
+          }
+          return conv;
+        });
+
+        return updated.sort(
+          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+        );
+      }
+
+      if (message.newConversation) {
+        const newConversation = {
+          id: conversationId,
+          isGroup: message.newConversation.isGroup || false,
+          title: message.senderName || message.newConversation.title,
+          updatedAt: message.createdAt,
+          lastMessageContent: formatLastMessageContent({
+            ...message,
+            isDeleted,
+          }),
+          lastMessageSenderName: message.senderName,
+          lastMessageSenderId: message.senderId,
+          lastMessageMediaType: message.mediaType,
+          conversationImg: message.newConversation.conversationImg || null,
+        };
+
+        const merged = [...prev, newConversation];
+        return merged.sort(
+          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+        );
+      }
+
+      return prev;
+    });
+
+    const currentSearchQuery = searchQueryRef.current;
+    if (currentSearchQuery) {
+      setFilteredConversations((prev) => {
         const convo = prev.find(
           (conv) =>
             conv.id === conversationId ||
@@ -196,18 +247,6 @@ export default function ChatBubble() {
                 lastMessageId: message.id,
                 lastMessageMediaType: message.mediaType,
                 updatedAt: message.createdAt,
-                // Mark as unread if message is from another user and conversation is not open
-                isRead:
-                  isMessageFromOtherUser && !isConversationOpen
-                    ? false
-                    : conv.isRead,
-                // Increment unread count if message is from another user and conversation is not open
-                unreadCount:
-                  isMessageFromOtherUser && !isConversationOpen
-                    ? (conv.unreadCount || 0) + 1
-                    : isConversationOpen
-                    ? 0
-                    : conv.unreadCount || 0,
               };
             }
             return conv;
@@ -217,91 +256,10 @@ export default function ChatBubble() {
             (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
           );
         }
-
-        if (message.newConversation) {
-          const newConversation = {
-            id: conversationId,
-            isGroup: message.newConversation.isGroup || false,
-            title: message.senderName || message.newConversation.title,
-            updatedAt: message.createdAt,
-            lastMessageContent: formatLastMessageContent({
-              ...message,
-              isDeleted,
-            }),
-            lastMessageSenderName: message.senderName,
-            lastMessageSenderId: message.senderId,
-            lastMessageMediaType: message.mediaType,
-            conversationImg: message.newConversation.conversationImg || null,
-            // Mark as unread if message is from another user
-            isRead: !isMessageFromOtherUser,
-            // Set unread count to 1 if message is from another user
-            unreadCount: isMessageFromOtherUser ? 1 : 0,
-          };
-
-          const merged = [...prev, newConversation];
-          return merged.sort(
-            (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-          );
-        }
-
         return prev;
       });
-
-      const currentSearchQuery = searchQueryRef.current;
-      if (currentSearchQuery) {
-        setFilteredConversations((prev) => {
-          const convo = prev.find(
-            (conv) =>
-              conv.id === conversationId ||
-              conv.id?.toString() === conversationId?.toString()
-          );
-
-          const isDeleted = message.status === "Deleted" || message.isDeleted;
-
-          if (convo) {
-            const updated = prev.map((conv) => {
-              if (
-                conv.id === conversationId ||
-                conv.id?.toString() === conversationId?.toString()
-              ) {
-                return {
-                  ...conv,
-                  lastMessageContent: formatLastMessageContent({
-                    ...message,
-                    isDeleted,
-                  }),
-                  lastMessageSenderName: message.senderName,
-                  lastMessageSenderId: message.senderId,
-                  lastMessageId: message.id,
-                  lastMessageMediaType: message.mediaType,
-                  updatedAt: message.createdAt,
-                  // Mark as unread if message is from another user and conversation is not open
-                  isRead:
-                    isMessageFromOtherUser && !isConversationOpen
-                      ? false
-                      : conv.isRead,
-                  // Increment unread count if message is from another user and conversation is not open
-                  unreadCount:
-                    isMessageFromOtherUser && !isConversationOpen
-                      ? (conv.unreadCount || 0) + 1
-                      : isConversationOpen
-                      ? 0
-                      : conv.unreadCount || 0,
-                };
-              }
-              return conv;
-            });
-
-            return updated.sort(
-              (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-            );
-          }
-          return prev;
-        });
-      }
-    },
-    [currentUser, selectedConversation]
-  );
+    }
+  }, []);
 
   // Subscribe to real-time events (similar to RN)
   useEffect(() => {
@@ -579,11 +537,8 @@ export default function ChatBubble() {
                     }}
                   >
                     <span>{item.title}</span>
-                    {!item.isRead && (item.unreadCount || 0) > 0 && (
-                      <Badge
-                        count={item.unreadCount || 1}
-                        style={{ backgroundColor: "#ef4444" }}
-                      />
+                    {!item.isRead && (
+                      <Badge count={1} style={{ backgroundColor: "#ef4444" }} />
                     )}
                   </div>
                 }
@@ -651,25 +606,6 @@ export default function ChatBubble() {
         open={!!selectedConversation}
         conversation={selectedConversation}
         onClose={() => setSelectedConversation(null)}
-        onMessagesRead={(conversationId) => {
-          // Mark conversation as read when messages are read
-          setConversations((prev) =>
-            prev.map((conv) =>
-              conv.id === conversationId ||
-              conv.id?.toString() === conversationId?.toString()
-                ? { ...conv, isRead: true, unreadCount: 0 }
-                : conv
-            )
-          );
-          setFilteredConversations((prev) =>
-            prev.map((conv) =>
-              conv.id === conversationId ||
-              conv.id?.toString() === conversationId?.toString()
-                ? { ...conv, isRead: true, unreadCount: 0 }
-                : conv
-            )
-          );
-        }}
       />
 
       <CreateConversationModal
