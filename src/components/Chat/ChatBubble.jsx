@@ -128,8 +128,15 @@ export default function ChatBubble() {
           response.data?.items || response.items || [];
         console.log("fetchedConversations", fetchedConversations);
         const processed = fetchedConversations.map((conv) => {
+          // Determine if conversation is read based on API response or last message sender
+          const isRead =
+            conv.isRead !== undefined
+              ? conv.isRead
+              : conv.lastMessageSenderId === currentUser?.id;
+
           return {
             ...conv,
+            isRead,
             lastMessageContent: formatLastMessageContent({
               status: conv.lastMessageStatus,
               isDeleted: conv.lastMessageIsDeleted,
@@ -151,115 +158,136 @@ export default function ChatBubble() {
         }, 500);
       }
     },
-    [loading]
+    [loading, currentUser]
   );
 
   // Basic mapping from incoming messages -> conversation preview
-  const findAndUpdateConversation = useCallback((message) => {
-    const conversationId = message.conversationId;
+  const findAndUpdateConversation = useCallback(
+    (message) => {
+      const conversationId = message.conversationId;
+      console.log("ChatBubble: Updating conversation:", conversationId);
 
-    setConversations((prev) => {
-      const convo = prev.find(
-        (conv) =>
-          conv.id === conversationId ||
-          conv.id?.toString() === conversationId?.toString()
-      );
-
-      const isDeleted = message.status === "Deleted" || message.isDeleted;
-
-      if (convo) {
-        const updated = prev.map((conv) => {
-          if (
+      setConversations((prev) => {
+        const convo = prev.find((conv) => {
+          const matches =
             conv.id === conversationId ||
-            conv.id?.toString() === conversationId?.toString()
-          ) {
-            return {
-              ...conv,
-              lastMessageContent: formatLastMessageContent({
-                ...message,
-                isDeleted,
-              }),
-              lastMessageSenderName: message.senderName,
-              lastMessageSenderId: message.senderId,
-              lastMessageId: message.id,
-              lastMessageMediaType: message.mediaType,
-              updatedAt: message.createdAt,
-            };
-          }
-          return conv;
+            conv.id?.toString() === conversationId?.toString();
+          return matches;
         });
-
-        return updated.sort(
-          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-        );
-      }
-
-      if (message.newConversation) {
-        const newConversation = {
-          id: conversationId,
-          isGroup: message.newConversation.isGroup || false,
-          title: message.senderName || message.newConversation.title,
-          updatedAt: message.createdAt,
-          lastMessageContent: formatLastMessageContent({
-            ...message,
-            isDeleted,
-          }),
-          lastMessageSenderName: message.senderName,
-          lastMessageSenderId: message.senderId,
-          lastMessageMediaType: message.mediaType,
-          conversationImg: message.newConversation.conversationImg || null,
-        };
-
-        const merged = [...prev, newConversation];
-        return merged.sort(
-          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-        );
-      }
-
-      return prev;
-    });
-
-    const currentSearchQuery = searchQueryRef.current;
-    if (currentSearchQuery) {
-      setFilteredConversations((prev) => {
-        const convo = prev.find(
-          (conv) =>
-            conv.id === conversationId ||
-            conv.id?.toString() === conversationId?.toString()
-        );
 
         const isDeleted = message.status === "Deleted" || message.isDeleted;
 
         if (convo) {
-          const updated = prev.map((conv) => {
+          // Update existing conversation
+          const updatedConversations = prev.map((conv) => {
             if (
               conv.id === conversationId ||
               conv.id?.toString() === conversationId?.toString()
             ) {
               return {
                 ...conv,
-                lastMessageContent: formatLastMessageContent({
-                  ...message,
-                  isDeleted,
-                }),
+                lastMessageContent: isDeleted
+                  ? "Tin nhắn này đã bị xóa"
+                  : formatLastMessageContent(message),
+                lastMessageType: message.messageType,
+                lastMessageMediaType: message.mediaType,
                 lastMessageSenderName: message.senderName,
                 lastMessageSenderId: message.senderId,
                 lastMessageId: message.id,
-                lastMessageMediaType: message.mediaType,
+                lastMessageStatus: message.status,
+                lastMessageIsDeleted: isDeleted,
                 updatedAt: message.createdAt,
+                isRead: message.senderId === currentUser?.id,
               };
             }
             return conv;
           });
 
-          return updated.sort(
+          // Sort by latest message time
+          return updatedConversations.sort(
             (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
           );
+        } else {
+          // Add new conversation if message includes conversation data
+          if (message.newConversation) {
+            console.log("ChatBubble: Adding new conversation");
+            const newConversation = {
+              id: conversationId,
+              isGroup: message.newConversation.isGroup || false,
+              isRead: false,
+              title: message.senderName || message.newConversation.title,
+              updatedAt: message.createdAt,
+              lastMessageContent: isDeleted
+                ? "Tin nhắn này đã bị xóa"
+                : formatLastMessageContent(message),
+              lastMessageType: message.messageType,
+              lastMessageMediaType: message.mediaType,
+              lastMessageSenderName: message.senderName,
+              lastMessageSenderId: message.senderId,
+              lastMessageId: message.id,
+              lastMessageStatus: message.status,
+              lastMessageIsDeleted: isDeleted,
+              conversationImg: message.newConversation.conversationImg || null,
+            };
+
+            const newConversations = [...prev, newConversation];
+            return newConversations.sort(
+              (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+            );
+          }
+
+          return prev;
         }
-        return prev;
       });
-    }
-  }, []);
+
+      // Also update filtered conversations if search is active
+      const currentSearchQuery = searchQueryRef.current;
+      if (currentSearchQuery) {
+        setFilteredConversations((prev) => {
+          const convo = prev.find(
+            (conv) =>
+              conv.id === conversationId ||
+              conv.id?.toString() === conversationId?.toString()
+          );
+
+          const isDeleted = message.status === "Deleted" || message.isDeleted;
+
+          if (convo) {
+            const updatedConversations = prev.map((conv) => {
+              if (
+                conv.id === conversationId ||
+                conv.id?.toString() === conversationId?.toString()
+              ) {
+                return {
+                  ...conv,
+                  lastMessageContent: isDeleted
+                    ? "Tin nhắn này đã bị xóa"
+                    : formatLastMessageContent(message),
+                  lastMessageType: message.messageType,
+                  lastMessageMediaType: message.mediaType,
+                  lastMessageSenderName: message.senderName,
+                  lastMessageSenderId: message.senderId,
+                  lastMessageId: message.id,
+                  lastMessageStatus: message.status,
+                  lastMessageIsDeleted: isDeleted,
+                  updatedAt: message.createdAt,
+                  isRead: message.senderId === currentUser?.id,
+                };
+              }
+              return conv;
+            });
+
+            return updatedConversations.sort(
+              (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+            );
+          }
+
+          return prev;
+        });
+      }
+    },
+    [currentUser]
+  );
 
   // Subscribe to real-time events (similar to RN)
   useEffect(() => {
@@ -270,27 +298,36 @@ export default function ChatBubble() {
     };
 
     const handleMessageUpdated = (updatedMessage) => {
+      console.log("ChatBubble: Message updated", updatedMessage);
       const isDeleted =
         updatedMessage.status === "Deleted" || updatedMessage.isDeleted;
 
+      const updatedContent = isDeleted
+        ? "Tin nhắn này đã bị xóa"
+        : formatLastMessageContent({
+            ...updatedMessage,
+            content: updatedMessage.newContent || updatedMessage.content,
+            mediaType:
+              updatedMessage.mediaType || updatedMessage.lastMessageMediaType,
+          });
+
+      // Update conversation's last message content
       setConversations((prev) =>
         prev.map((conv) => {
+          // Match by conversationId and either lastMessageId or if it's the most recent
           if (conv.id === updatedMessage.conversationId) {
+            // Update if lastMessageId matches, or if no lastMessageId is set
             if (
               !conv.lastMessageId ||
               conv.lastMessageId === updatedMessage.id
             ) {
+              console.log("ChatBubble: Updating conversation preview", conv.id);
               return {
                 ...conv,
-                lastMessageContent: formatLastMessageContent({
-                  status: updatedMessage.status,
-                  isDeleted,
-                  mediaType:
-                    updatedMessage.mediaType || conv.lastMessageMediaType,
-                  content: updatedMessage.newContent || updatedMessage.content,
-                  senderName: conv.lastMessageSenderName,
-                }),
+                lastMessageContent: updatedContent,
                 lastMessageId: updatedMessage.id,
+                lastMessageStatus: updatedMessage.status,
+                lastMessageIsDeleted: isDeleted,
               };
             }
           }
@@ -307,15 +344,10 @@ export default function ChatBubble() {
             ) {
               return {
                 ...conv,
-                lastMessageContent: formatLastMessageContent({
-                  status: updatedMessage.status,
-                  isDeleted,
-                  mediaType:
-                    updatedMessage.mediaType || conv.lastMessageMediaType,
-                  content: updatedMessage.newContent || updatedMessage.content,
-                  senderName: conv.lastMessageSenderName,
-                }),
+                lastMessageContent: updatedContent,
                 lastMessageId: updatedMessage.id,
+                lastMessageStatus: updatedMessage.status,
+                lastMessageIsDeleted: isDeleted,
               };
             }
           }
@@ -395,10 +427,11 @@ export default function ChatBubble() {
     }
   }, [conversations, searchQuery]);
 
-  const unreadCount = useMemo(
-    () => conversations.filter((c) => !c.isRead).length,
-    [conversations]
-  );
+  const unreadCount = useMemo(() => {
+    const count = conversations.filter((c) => !c.isRead).length;
+    console.log("Unread count:", count, "Conversations:", conversations);
+    return count;
+  }, [conversations]);
 
   const renderHeaderStatus = () => {
     const icon =
@@ -512,7 +545,29 @@ export default function ChatBubble() {
           return (
             <List.Item
               style={{ cursor: "pointer" }}
-              onClick={() => {
+              onClick={async () => {
+                // Mark conversation as read when opened
+                if (!item.isRead) {
+                  try {
+                    await messageService.markAsRead({
+                      conversationId: item.id,
+                      messageIds: [],
+                    });
+                    // Update local state
+                    setConversations((prev) =>
+                      prev.map((c) =>
+                        c.id === item.id ? { ...c, isRead: true } : c
+                      )
+                    );
+                    setFilteredConversations((prev) =>
+                      prev.map((c) =>
+                        c.id === item.id ? { ...c, isRead: true } : c
+                      )
+                    );
+                  } catch (error) {
+                    console.error("Error marking conversation as read:", error);
+                  }
+                }
                 setSelectedConversation(item);
               }}
             >
@@ -537,9 +592,7 @@ export default function ChatBubble() {
                     }}
                   >
                     <span>{item.title}</span>
-                    {!item.isRead && (
-                      <Badge count={1} style={{ backgroundColor: "#ef4444" }} />
-                    )}
+                    {!item.isRead && <Badge dot />}
                   </div>
                 }
                 description={
@@ -557,31 +610,39 @@ export default function ChatBubble() {
 
   return (
     <>
-      <Badge count={unreadCount} offset={[-4, 4]}>
-        <Button
-          type="primary"
-          shape="circle"
-          icon={<MessageOutlined />}
-          size="large"
-          style={{
-            position: "fixed",
-            right: 24,
-            bottom: 24,
-            zIndex: 1000,
-            boxShadow:
-              "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
-            background:
-              "linear-gradient(135deg, rgba(248,113,113,1), rgba(249,115,22,1))",
-            border: "none",
-          }}
-          onClick={() => {
-            setOpen(true);
-            if (!conversations.length) {
-              fetchConversations(true);
-            }
-          }}
-        />
-      </Badge>
+      <div
+        style={{
+          position: "fixed",
+          right: 24,
+          bottom: 24,
+          zIndex: 1000,
+        }}
+      >
+        <Badge count={unreadCount} offset={[-8, 8]} showZero={false}>
+          <Button
+            type="primary"
+            shape="circle"
+            icon={<MessageOutlined />}
+            size="large"
+            style={{
+              width: 64,
+              height: 64,
+              fontSize: 28,
+              boxShadow:
+                "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+              background:
+                "linear-gradient(135deg, rgba(248,113,113,1), rgba(249,115,22,1))",
+              border: "none",
+            }}
+            onClick={() => {
+              setOpen(true);
+              if (!conversations.length) {
+                fetchConversations(true);
+              }
+            }}
+          />
+        </Badge>
+      </div>
 
       <Drawer
         title="Tin nhắn"
