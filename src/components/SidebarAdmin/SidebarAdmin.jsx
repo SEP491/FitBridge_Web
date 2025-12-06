@@ -82,11 +82,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           `${route.admin}/${route.manageWithdrawal}`,
           <MdOutlineAccountBalanceWallet className="text-lg" />
         ),
-        getItem(
-          "Gói Premium",
-          `${route.admin}/manage-premium`,
-          <DropboxOutlined className="text-lg" />
-        ),
+        // getItem(
+        //   "Gói Premium",
+        //   `${route.admin}/manage-premium`,
+        //   <DropboxOutlined className="text-lg" />
+        // ),
         getItem(
           "Quản Lý Voucher",
           `${route.admin}/${route.manageVoucher}`,
@@ -111,11 +111,6 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Quản Lý Hợp Đồng",
           `${route.admin}/${route.manageContract}`,
           <HiDocumentText className="text-lg" />
-        ),
-        getItem(
-          "Thông Báo",
-          `${route.admin}/${route.manageNotification}`,
-          <NotificationOutlined className="text-lg" />
         ),
       ]);
     } else if (user?.role === "GymOwner") {
@@ -202,6 +197,16 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
 
   return (
     <Sider
+      style={{
+        overflow: "auto",
+        height: "100vh",
+        position: "sticky",
+        insetInlineStart: 0,
+        top: 0,
+        bottom: 0,
+        scrollbarWidth: "thin",
+        scrollbarGutter: "stable",
+      }}
       collapsible
       collapsed={internalCollapsed}
       onCollapse={handleCollapse}
@@ -226,42 +231,40 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
       </div>
 
       {/* Menu Section */}
-      <div className="flex-1 overflow-y-auto pb-16">
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[currentPath]}
-          className="!bg-[#1D1D1D] !border-r-0 menu-custom"
-          inlineIndent={24}
-        >
-          {items.map((item) => {
-            const menuItem = (
-              <Menu.Item
-                key={item.key}
-                icon={item.icon}
-                className="!text-gray-300 hover:!bg-[#ed2a46] hover:!text-white transition-all duration-200 !mb-1 !rounded-lg !mx-2"
-              >
-                <Link to={item.key} className="font-medium text-sm ">
-                  {item.label}
-                </Link>
-              </Menu.Item>
-            );
+      <Menu
+        theme="dark"
+        mode="inline"
+        selectedKeys={[currentPath]}
+        className="!bg-[#1D1D1D] !border-r-0 menu-custom"
+        inlineIndent={24}
+      >
+        {items.map((item) => {
+          const menuItem = (
+            <Menu.Item
+              key={item.key}
+              icon={item.icon}
+              className="!text-gray-300 hover:!bg-[#ed2a46] hover:!text-white transition-all duration-200 !mb-1 !rounded-lg !mx-2"
+            >
+              <Link to={item.key} className="font-medium text-sm ">
+                {item.label}
+              </Link>
+            </Menu.Item>
+          );
 
-            return internalCollapsed ? (
-              <Tooltip
-                key={item.key}
-                title={item.label}
-                placement="right"
-                overlayClassName="sidebar-tooltip"
-              >
-                {menuItem}
-              </Tooltip>
-            ) : (
-              menuItem
-            );
-          })}
-        </Menu>
-      </div>
+          return internalCollapsed ? (
+            <Tooltip
+              key={item.key}
+              title={item.label}
+              placement="right"
+              overlayClassName="sidebar-tooltip"
+            >
+              {menuItem}
+            </Tooltip>
+          ) : (
+            menuItem
+          );
+        })}
+      </Menu>
     </Sider>
   );
 }

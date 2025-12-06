@@ -3,6 +3,8 @@ import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
+  useLocation,
+  Outlet,
 } from "react-router-dom";
 import Cookies from "js-cookie";
 import { route } from "./routes";
@@ -38,6 +40,10 @@ import ManageOrderPage from "./pages/AdminPages/ManageOrderPage/ManageOrderPage"
 import ManageContractPage from "./pages/AdminPages/ManageContractPage/ManageContractPage";
 import ContractSigningPage from "./pages/GymPages/ContractSigningPage/ContractSigningPage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import { MessagingStateProvider } from "./context/messagingStateContext";
+import { NotificationSignalRProvider } from "./context/NotificationSignalRContext";
+import { NotificationProvider } from "./context/NotificationContext";
+import ChatBubble from "./components/Chat/ChatBubble";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -187,6 +193,44 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+// Conditional ChatBubble Component - hides on specific routes
+const ConditionalChatBubble = () => {
+  const location = useLocation();
+
+  // Routes where ChatBubble should be hidden (using absolute paths)
+  const hiddenRoutes = [
+    route.welcomeLogin, // "/"
+    route.confirmEmail, // "/confirm-email"
+    `/${route.orderProcess}`, // "/order-process"
+    "/voucher",
+  ];
+
+  // Check if current path should hide ChatBubble
+  const shouldHide = hiddenRoutes.some((hiddenRoute) => {
+    // Handle both exact matches and pathname starts with
+    return (
+      location.pathname === hiddenRoute ||
+      location.pathname.startsWith(hiddenRoute + "/")
+    );
+  });
+
+  if (shouldHide) {
+    return null;
+  }
+
+  return <ChatBubble />;
+};
+
+// Root Layout Component - wraps all routes and includes ConditionalChatBubble
+const RootLayout = () => {
+  return (
+    <>
+      <Outlet />
+      <ConditionalChatBubble />
+    </>
+  );
+};
+
 function App() {
   useEffect(() => {
     console.log("User Role from Tokens:", getUserRole());
@@ -207,293 +251,302 @@ function App() {
 
   const router = createBrowserRouter([
     {
-      path: route.welcomeLogin,
-      element: <LoginRedirect />,
-    },
-    {
-      path: route.confirmEmail,
-      element: <EmailConfirmPage />,
-    },
-    {
-      path: route.orderProcess,
-      element: <OrderProcessPage />,
-    },
-    {
-      path: "/voucher",
-      element: <CustomerVoucherPage />,
-    },
-
-    // Admin Routes - Protected for Admin role only
-    {
-      path: route.admin,
-      element: (
-        <ProtectedRoute allowedRoles={["Admin"]}>
-          <AdminLayout />
-        </ProtectedRoute>
-      ),
-      children: [
-        {
-          path: route.dashboard,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <DashboardPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageGym,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageGymPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.managePT,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManagePTPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageNotification,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageNotificationPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.managePackages,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManagePackagesPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageUser,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageUserPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageTransaction,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageTransactionPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: `manage-premium`,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManagePremiumPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageVoucher,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageVoucher />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageWithdrawal,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageWithdrawalPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageReport,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageReportPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageProduct,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageProductPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageOrder,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageOrderPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageContract,
-          element: (
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <ManageContractPage />
-            </ProtectedRoute>
-          ),
-        },
-      ],
-    },
-
-    // Gym Routes - Protected for GymOwner role
-    {
-      path: route.gym,
-      element: (
-        <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-          <AdminLayout />
-        </ProtectedRoute>
-      ),
-      children: [
-        {
-          path: route.dashboardGym,
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <DashboardGym />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageinformationGym,
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ManageGymInformation />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.managePTGym,
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ManagePTGym />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.managePackagesGym,
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ManageGymPackages />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageTransactionGym,
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ManageGymTransaction />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageSlotGym,
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ManageSlotGym />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.manageVoucherGym,
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ManageVoucherPT />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: `${route.contractSigning}`,
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ContractSigningPage />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "manage-customers",
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ManageGymCustomers />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "profile",
-          element: (
-            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
-              <ProfilePage />
-            </ProtectedRoute>
-          ),
-        },
-      ],
-    },
-
-    // Freelance PT Routes - Protected for FreelancePT role
-    {
-      path: route.freelancePt,
-      element: (
-        <ProtectedRoute allowedRoles={["FreelancePT"]}>
-          <AdminLayout />
-        </ProtectedRoute>
-      ),
-      children: [
-        {
-          path: route.dashboardPT,
-          element: (
-            <ProtectedRoute allowedRoles={["FreelancePT"]}>
-              <DashboardFPT />
-            </ProtectedRoute>
-          ),
-        },
-
-        {
-          path: route.manageVoucherPT,
-          element: (
-            <ProtectedRoute allowedRoles={["FreelancePT"]}>
-              <ManageVoucherPT />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: route.managePackageFPT,
-          element: (
-            <ProtectedRoute allowedRoles={["FreelancePT"]}>
-              <ManagePackageFPT />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "profile",
-          element: (
-            <ProtectedRoute allowedRoles={["FreelancePT"]}>
-              <ProfilePage />
-            </ProtectedRoute>
-          ),
-        },
-      ],
-    },
-
-    {
       path: "/",
-      element: <LoginRedirect />,
-    },
-    {
-      path: "*",
-      element: <LoginRedirect />,
+      element: <RootLayout />,
+      children: [
+        {
+          index: true,
+          element: <LoginRedirect />,
+        },
+        {
+          path: route.confirmEmail,
+          element: <EmailConfirmPage />,
+        },
+        {
+          path: route.orderProcess,
+          element: <OrderProcessPage />,
+        },
+        {
+          path: "/voucher",
+          element: <CustomerVoucherPage />,
+        },
+
+        // Admin Routes - Protected for Admin role only
+        {
+          path: route.admin,
+          element: (
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          ),
+          children: [
+            {
+              path: route.dashboard,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <DashboardPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageGym,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageGymPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.managePT,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManagePTPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageNotification,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageNotificationPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.managePackages,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManagePackagesPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageUser,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageUserPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageTransaction,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageTransactionPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: `manage-premium`,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManagePremiumPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageVoucher,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageVoucher />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageWithdrawal,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageWithdrawalPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageReport,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageReportPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageProduct,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageProductPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageOrder,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageOrderPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageContract,
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageContractPage />
+                </ProtectedRoute>
+              ),
+            },
+          ],
+        },
+
+        // Gym Routes - Protected for GymOwner role
+        {
+          path: route.gym,
+          element: (
+            <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          ),
+          children: [
+            {
+              path: route.dashboardGym,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <DashboardGym />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageinformationGym,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManageGymInformation />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.managePTGym,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManagePTGym />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.managePackagesGym,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManageGymPackages />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageTransactionGym,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManageGymTransaction />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageSlotGym,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManageSlotGym />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.manageVoucherGym,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManageVoucherPT />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: `${route.contractSigning}`,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ContractSigningPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "manage-customers",
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManageGymCustomers />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "profile",
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ProfilePage />
+                </ProtectedRoute>
+              ),
+            },
+          ],
+        },
+
+        // Freelance PT Routes - Protected for FreelancePT role
+        {
+          path: route.freelancePt,
+          element: (
+            <ProtectedRoute allowedRoles={["FreelancePT"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          ),
+          children: [
+            {
+              path: route.dashboardPT,
+              element: (
+                <ProtectedRoute allowedRoles={["FreelancePT"]}>
+                  <DashboardFPT />
+                </ProtectedRoute>
+              ),
+            },
+
+            {
+              path: route.manageVoucherPT,
+              element: (
+                <ProtectedRoute allowedRoles={["FreelancePT"]}>
+                  <ManageVoucherPT />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.managePackageFPT,
+              element: (
+                <ProtectedRoute allowedRoles={["FreelancePT"]}>
+                  <ManagePackageFPT />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "profile",
+              element: (
+                <ProtectedRoute allowedRoles={["FreelancePT"]}>
+                  <ProfilePage />
+                </ProtectedRoute>
+              ),
+            },
+          ],
+        },
+        {
+          path: "*",
+          element: <LoginRedirect />,
+        },
+      ],
     },
   ]);
-  return <RouterProvider router={router} />;
+  return (
+    <MessagingStateProvider>
+      <NotificationSignalRProvider>
+        <NotificationProvider>
+          <RouterProvider router={router} />
+        </NotificationProvider>
+      </NotificationSignalRProvider>
+    </MessagingStateProvider>
+  );
 }
 
 export default App;
