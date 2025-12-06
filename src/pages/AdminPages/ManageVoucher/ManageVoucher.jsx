@@ -17,7 +17,10 @@ import {
   Avatar,
   Tooltip,
   Progress,
+  Descriptions,
+  DatePicker,
 } from "antd";
+import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import FitBridgeModal from "../../../components/FitBridgeModal";
@@ -36,6 +39,11 @@ import {
   CheckCircleOutlined,
   StopOutlined,
 } from "@ant-design/icons";
+import {
+  FaGift,
+  FaInfoCircle,
+  FaTag,
+} from "react-icons/fa";
 import { couponService } from "../../../services/couponService";
 
 export default function ManageVoucher() {
@@ -159,6 +167,8 @@ export default function ManageVoucher() {
       maxDiscount: values.maxDiscount,
       discountPercent: values.discountPercent,
       quantity: values.quantity,
+      startDate: values.startDate ? dayjs(values.startDate).format("YYYY-MM-DD") : null,
+      expirationDate: values.expirationDate ? dayjs(values.expirationDate).format("YYYY-MM-DD") : null,
     };
 
     try {
@@ -201,9 +211,9 @@ export default function ManageVoucher() {
 
   const columns = [
     {
-      title: "Coupon ID",
-      dataIndex: "id",
-      key: "id",
+      title: "Coupon Code",
+      dataIndex: "couponCode",
+      key: "couponCode",
       align: "left",
       render: (text) => (
         <div className="flex items-center gap-3">
@@ -214,7 +224,7 @@ export default function ManageVoucher() {
           />
           <div>
             <div className="font-medium text-gray-900 text-xs">
-              {text.substring(0, 8)}...
+              {text}
             </div>
             <div className="text-xs text-gray-500"></div>
           </div>
@@ -283,19 +293,9 @@ export default function ManageVoucher() {
       title: "Thao Tác",
       key: "actions",
       align: "center",
+      width: 150,
       render: (_, record) => (
-        <Space>
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              className="text-blue-600 hover:bg-blue-50"
-              onClick={() => {
-                setSelectedCoupon(record);
-                setIsModalDetailOpen(true);
-              }}
-            />
-          </Tooltip>
+        <Space onClick={(e) => e.stopPropagation()}>
           <Tooltip title="Chỉnh sửa">
             <Button
               type="text"
@@ -454,15 +454,7 @@ export default function ManageVoucher() {
 
           {/* Table */}
           <ConfigProvider
-            theme={{
-              components: {
-                Table: {
-                  headerBg: "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
-                  headerColor: "#333",
-                  rowHoverBg: "#FFF9FA",
-                },
-              },
-            }}
+            theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
           >
             <Table
               dataSource={filteredData}
@@ -482,6 +474,15 @@ export default function ManageVoucher() {
               className="rounded-lg overflow-hidden"
               scroll={{ x: 1200 }}
               rowKey="id"
+              loading={loading}
+              size="middle"
+              onRow={(record) => ({
+                onClick: () => {
+                  setSelectedCoupon(record);
+                  setIsModalDetailOpen(true);
+                },
+                style: { cursor: "pointer" },
+              })}
             />
           </ConfigProvider>
         </Card>
@@ -564,6 +565,59 @@ export default function ManageVoucher() {
               placeholder="100"
               className="!w-full rounded-lg"
               addonAfter="coupon"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <p className="text-xl font-bold text-[#ED2A46]">Ngày Bắt Đầu</p>
+            }
+            name="startDate"
+            rules={[{ required: true, message: "Vui lòng chọn ngày bắt đầu" }]}
+          >
+            <DatePicker
+              className="!w-full rounded-lg"
+              format="DD/MM/YYYY"
+              placeholder="Chọn ngày bắt đầu"
+              disabledDate={(current) => current && current < dayjs().startOf("day")}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <p className="text-xl font-bold text-[#ED2A46]">Ngày Kết Thúc</p>
+            }
+            name="expirationDate"
+            rules={[
+              { required: true, message: "Vui lòng chọn ngày kết thúc" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const startDate = getFieldValue("startDate");
+                  if (!value || !startDate) {
+                    return Promise.resolve();
+                  }
+                  if (dayjs(value).isBefore(dayjs(startDate), "day")) {
+                    return Promise.reject(
+                      new Error("Ngày kết thúc phải sau ngày bắt đầu")
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+            dependencies={["startDate"]}
+          >
+            <DatePicker
+              className="!w-full rounded-lg"
+              format="DD/MM/YYYY"
+              placeholder="Chọn ngày kết thúc"
+              disabledDate={(current) => {
+                const startDate = formAdd.getFieldValue("startDate");
+                if (startDate) {
+                  return current && current < dayjs(startDate).startOf("day");
+                }
+                return current && current < dayjs().startOf("day");
+              }}
             />
           </Form.Item>
 
@@ -685,7 +739,7 @@ export default function ManageVoucher() {
         </Form>
       </FitBridgeModal>
 
-      {/* Detail Modal */}
+      {/* Detail Modal - Enhanced UI */}
       <FitBridgeModal
         open={isModalDetailOpen}
         onCancel={() => {
@@ -694,70 +748,176 @@ export default function ManageVoucher() {
         }}
         title="Chi Tiết Coupon"
         titleIcon={<EyeOutlined />}
-        width={700}
+        width={950}
         logoSize="medium"
+        bodyStyle={{ padding: "0", maxHeight: "75vh", overflowY: "auto" }}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button onClick={() => setIsModalDetailOpen(false)}>Đóng</Button>
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              className="bg-orange-500 hover:bg-orange-600"
+              onClick={() => {
+                setIsModalDetailOpen(false);
+                if (selectedCoupon) {
+                  formEdit.setFieldsValue(selectedCoupon);
+                  setIsModalEditOpen(true);
+                }
+              }}
+            >
+              Chỉnh Sửa
+            </Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                setIsModalDetailOpen(false);
+                if (selectedCoupon) {
+                  handleDelete(selectedCoupon.id);
+                }
+              }}
+            >
+              Xóa
+            </Button>
+          </div>
+        }
       >
         {selectedCoupon && (
-          <div className="py-4">
-            <Row gutter={[16, 16]}>
-              <Col span={24}>
-                <Card className="mb-4">
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Statistic
-                        title="Phần trăm giảm giá"
-                        value={selectedCoupon.discountPercent}
-                        suffix="%"
-                        prefix={<PercentageOutlined />}
-                        valueStyle={{ color: "#1890ff" }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="Số tiền giảm tối đa"
-                        value={selectedCoupon.maxDiscount}
-                        formatter={(value) => `${value?.toLocaleString("vi")}₫`}
-                        prefix={<DollarOutlined />}
-                        valueStyle={{ color: "#52c41a" }}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card>
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Statistic
-                        title="Số lượng coupon"
-                        value={selectedCoupon.quantity}
-                        prefix={<NumberOutlined />}
-                        valueStyle={{ color: "#722ed1" }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <div className="text-center">
-                        <p className="text-gray-500 mb-2">Trạng thái</p>
-                        <Tag
-                          icon={selectedCoupon.isActive ? <CheckCircleOutlined /> : <StopOutlined />}
-                          color={selectedCoupon.isActive ? "success" : "error"}
-                          className="px-4 py-2 text-base"
-                        >
-                          {selectedCoupon.isActive ? "Hoạt động" : "Không hoạt động"}
-                        </Tag>
-                      </div>
-                    </Col>
-                  </Row>
-                </Card>
-              </Col>
-              <Col span={24}>
-                <Card title="Thông tin ID" className="mt-4">
-                  <p className="text-sm text-gray-600 break-all">
-                    {selectedCoupon.id}
-                  </p>
-                </Card>
-              </Col>
-            </Row>
+          <div className="flex flex-col">
+            {/* Header Section with Key Info */}
+            <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
+              <Row gutter={[24, 16]}>
+                <Col xs={24} md={12}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <FaTag className="text-[#FF914D]" />
+                      <span>Mã Coupon</span>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedCoupon.couponCode || "N/A"}
+                    </div>
+                  </div>
+                </Col>
+                <Col xs={24} md={12}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <FaGift className="text-[#FF914D]" />
+                      <span>Trạng Thái</span>
+                    </div>
+                    <div>
+                      <Tag
+                        icon={selectedCoupon.isActive ? <CheckCircleOutlined /> : <StopOutlined />}
+                        color={selectedCoupon.isActive ? "success" : "error"}
+                        className="px-4 py-2 text-base"
+                      >
+                        {selectedCoupon.isActive ? "Hoạt động" : "Không hoạt động"}
+                      </Tag>
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Main Content */}
+            <div className="p-6 flex flex-col gap-5 space-y-6">
+              {/* Coupon Info Card */}
+              <Card 
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaInfoCircle />
+                    Thông Tin Coupon
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+                  <Descriptions.Item label="Mã Coupon" span={2}>
+                    <div className="font-mono text-xs bg-gray-50 p-2 rounded inline-block">
+                      {selectedCoupon.couponCode}
+                    </div>
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Phần Trăm Giảm Giá">
+                    <Tag color="blue" className="text-sm px-3 py-1">
+                      <PercentageOutlined className="mr-1" />
+                      {selectedCoupon.discountPercent}%
+                    </Tag>
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Số Tiền Giảm Tối Đa">
+                    <span className="text-lg font-bold text-green-600">
+                      {selectedCoupon.maxDiscount?.toLocaleString("vi", {
+                        style: "currency",
+                        currency: "VND",
+                      }) || "0 VNĐ"}
+                    </span>
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Số Lượng">
+                    <span className="text-lg font-bold text-purple-600">
+                      {selectedCoupon.quantity || 0} coupon
+                    </span>
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Trạng Thái">
+                    <Tag
+                      icon={selectedCoupon.isActive ? <CheckCircleOutlined /> : <StopOutlined />}
+                      color={selectedCoupon.isActive ? "success" : "error"}
+                      className="text-sm px-3 py-1"
+                    >
+                      {selectedCoupon.isActive ? "Hoạt động" : "Không hoạt động"}
+                    </Tag>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              {/* Additional Info Card */}
+              <Card 
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaGift />
+                    Thông Tin Bổ Sung
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item label="ID Coupon">
+                    <div className="font-mono text-xs bg-blue-50 p-2 rounded inline-block">
+                      {selectedCoupon.id}
+                    </div>
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Giá Trị Giảm Tối Đa">
+                    <div className="text-base font-semibold text-green-600">
+                      {selectedCoupon.maxDiscount?.toLocaleString("vi", {
+                        style: "currency",
+                        currency: "VND",
+                      }) || "0 VNĐ"}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Số tiền tối đa có thể giảm khi sử dụng coupon này
+                    </div>
+                  </Descriptions.Item>
+                  
+                  <Descriptions.Item label="Số Lượng Còn Lại">
+                    <div className="text-base font-semibold text-purple-600">
+                      {selectedCoupon.quantity || 0} coupon
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Số lượng coupon còn có thể sử dụng
+                    </div>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            </div>
           </div>
         )}
       </FitBridgeModal>
