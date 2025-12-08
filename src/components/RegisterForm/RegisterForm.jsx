@@ -16,8 +16,11 @@ import {
   HomeOutlined,
 } from "@ant-design/icons";
 
-
-const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleForm }) => {
+const RegisterForm = ({
+  title = "FitBridge",
+  subtitle = "Đăng Ký",
+  onToggleForm,
+}) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -40,31 +43,30 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
     try {
       const response = await authService.register(requestData);
       console.log("Register response:", response);
-      
+
       // Show detailed success message
       toast.success(
         "🎉 Đăng ký thành công!\n📧 Vui lòng kiểm tra email để xác thực tài khoản của bạn.",
         {
           duration: 6000,
           style: {
-            background: '#10b981',
-            color: '#ffffff',
-            fontSize: '14px',
-            textAlign: 'left',
-            whiteSpace: 'pre-line'
-          }
+            background: "#10b981",
+            color: "#ffffff",
+            fontSize: "14px",
+            textAlign: "left",
+            whiteSpace: "pre-line",
+          },
         }
       );
-      
+
       form.resetFields();
-      
+
       // Switch back to login form after successful registration
       if (onToggleForm) {
         setTimeout(() => {
           onToggleForm();
         }, 3000);
       }
-      
     } catch (error) {
       console.log("Register error:", error);
       toast.error(error.response?.data?.message || "Đăng ký thất bại");
@@ -74,14 +76,14 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="flex flex-col h-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
       {/* Header Section */}
-      <motion.div 
+      <motion.div
         className="pt-4 sm:pt-6 md:pt-8 pb-2 sm:pb-4 px-4 sm:px-6 md:px-8 text-center"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -96,7 +98,7 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
       </motion.div>
 
       {/* Form Section */}
-      <motion.div 
+      <motion.div
         className="flex-1 px-12 overflow-y-scroll pt-[30vh] "
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -109,11 +111,11 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
           requiredMark={false}
           className="h-full flex flex-col justify-center space-y-2"
           initialValues={{
-            isMale: true
+            isMale: true,
           }}
         >
           {/* Row 1: Full Name and Email */}
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 gap-3"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -129,11 +131,19 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng nhập họ và tên</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Vui lòng nhập họ và tên
+                    </p>
+                  ),
                 },
                 {
                   min: 2,
-                  message: <p className="text-red-300 !mt-1">Họ và tên phải có ít nhất 2 ký tự</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Họ và tên phải có ít nhất 2 ký tự
+                    </p>
+                  ),
                 },
               ]}
             >
@@ -154,11 +164,15 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng nhập email</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">Vui lòng nhập email</p>
+                  ),
                 },
                 {
-                  type: 'email',
-                  message: <p className="text-red-300 !mt-1">Email không hợp lệ</p>
+                  type: "email",
+                  message: (
+                    <p className="text-red-300 !mt-1">Email không hợp lệ</p>
+                  ),
                 },
               ]}
             >
@@ -171,7 +185,7 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
           </motion.div>
 
           {/* Row 2: Phone Number */}
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 gap-3"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -187,11 +201,19 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng nhập số điện thoại</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Vui lòng nhập số điện thoại
+                    </p>
+                  ),
                 },
                 {
                   pattern: /^(03|05|07|08|09)[0-9]{8}$/,
-                  message: <p className="text-red-300 !mt-1">Số điện thoại không hợp lệ</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Số điện thoại không hợp lệ
+                    </p>
+                  ),
                 },
               ]}
             >
@@ -211,7 +233,7 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
           </motion.div>
 
           {/* Row 3: Date of Birth, Role and Gender */}
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-3 gap-3"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -227,20 +249,26 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng chọn ngày sinh</p>
-                }
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Vui lòng chọn ngày sinh
+                    </p>
+                  ),
+                },
               ]}
             >
               <DatePicker
                 placeholder="Chọn ngày sinh"
                 format="DD/MM/YYYY"
                 className="rounded-lg py-1.5 sm:py-2 px-3 border-0 bg-white/80 backdrop-blur-sm text-xs sm:text-sm w-full transition-all duration-300 hover:bg-white/90"
-                disabledDate={(current) => current && current.isAfter(dayjs().subtract(16, 'year'))}
-                maxDate={dayjs().subtract(16, 'year')}
+                disabledDate={(current) =>
+                  current && current.isAfter(dayjs().subtract(16, "year"))
+                }
+                maxDate={dayjs().subtract(16, "year")}
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                  backdropFilter: 'blur(4px)',
-                  border: 'none'
+                  backgroundColor: "rgba(255, 255, 255, 0.8)",
+                  backdropFilter: "blur(4px)",
+                  border: "none",
                 }}
               />
             </Form.Item>
@@ -255,33 +283,36 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng chọn vai trò</p>
-                }
+                  message: (
+                    <p className="text-red-300 !mt-1">Vui lòng chọn vai trò</p>
+                  ),
+                },
               ]}
             >
               <Select
                 placeholder="Chọn vai trò"
                 className="text-xs sm:text-sm"
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                  backdropFilter: 'blur(4px)',
-                  borderRadius: '8px'
+                  backgroundColor: "rgba(255, 255, 255, 0.8)",
+                  backdropFilter: "blur(4px)",
+                  borderRadius: "8px",
                 }}
                 dropdownStyle={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '8px',
-                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.2)'
+                  backgroundColor: "rgba(255, 255, 255, 0.95)",
+                  backdropFilter: "blur(10px)",
+                  borderRadius: "8px",
+                  boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.2)",
                 }}
               >
                 <Select.Option value="GymOwner">Chủ phòng gym</Select.Option>
-                <Select.Option value="GymPT">Huấn luyện viên phòng gym</Select.Option>
+                <Select.Option value="GymPT">
+                  Huấn luyện viên phòng gym
+                </Select.Option>
                 <Select.Option value="Admin">Quản trị viên</Select.Option>
                 <Select.Option value="Customer">Khách hàng</Select.Option>
-                <Select.Option value="FreelancePT">Huấn luyện viên tự do</Select.Option>
-
-
-
+                <Select.Option value="FreelancePT">
+                  Huấn luyện viên tự do
+                </Select.Option>
               </Select>
             </Form.Item>
 
@@ -295,23 +326,27 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng chọn giới tính</p>
-                }
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Vui lòng chọn giới tính
+                    </p>
+                  ),
+                },
               ]}
             >
               <Select
                 placeholder="Chọn giới tính"
                 className="text-xs sm:text-sm"
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                  backdropFilter: 'blur(4px)',
-                  borderRadius: '8px'
+                  backgroundColor: "rgba(255, 255, 255, 0.8)",
+                  backdropFilter: "blur(4px)",
+                  borderRadius: "8px",
                 }}
                 dropdownStyle={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '8px',
-                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.2)'
+                  backgroundColor: "rgba(255, 255, 255, 0.95)",
+                  backdropFilter: "blur(10px)",
+                  borderRadius: "8px",
+                  boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.2)",
                 }}
               >
                 <Select.Option value={true}>Nam</Select.Option>
@@ -321,7 +356,7 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
           </motion.div>
 
           {/* Row 4: Gym Name and Tax Code */}
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 gap-3"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -337,8 +372,12 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng nhập tên phòng gym</p>
-                }
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Vui lòng nhập tên phòng gym
+                    </p>
+                  ),
+                },
               ]}
             >
               <Input
@@ -358,12 +397,20 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng nhập mã số thuế</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Vui lòng nhập mã số thuế
+                    </p>
+                  ),
                 },
                 {
                   pattern: /^[0-9]{10,13}$/,
-                  message: <p className="text-red-300 !mt-1">Mã số thuế phải từ 10-13 số</p>
-                }
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Mã số thuế phải từ 10-13 số
+                    </p>
+                  ),
+                },
               ]}
             >
               <Input
@@ -379,10 +426,8 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
             </Form.Item>
           </motion.div>
 
-
-
           {/* Row 5: Password Fields */}
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 gap-3"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -398,11 +443,17 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng nhập mật khẩu</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">Vui lòng nhập mật khẩu</p>
+                  ),
                 },
                 {
                   min: 6,
-                  message: <p className="text-red-300 !mt-1">Mật khẩu phải có ít nhất 6 ký tự</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Mật khẩu phải có ít nhất 6 ký tự
+                    </p>
+                  ),
                 },
               ]}
             >
@@ -423,18 +474,24 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
                 </span>
               }
               name="confirmPassword"
-              dependencies={['password']}
+              dependencies={["password"]}
               rules={[
                 {
                   required: true,
-                  message: <p className="text-red-300 !mt-1">Vui lòng xác nhận mật khẩu</p>
+                  message: (
+                    <p className="text-red-300 !mt-1">
+                      Vui lòng xác nhận mật khẩu
+                    </p>
+                  ),
                 },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
+                    if (!value || getFieldValue("password") === value) {
                       return Promise.resolve();
                     }
-                    return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                    return Promise.reject(
+                      new Error("Mật khẩu xác nhận không khớp!")
+                    );
                   },
                 }),
               ]}
@@ -451,24 +508,21 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
           </motion.div>
 
           {/* Register Button */}
-          <motion.div 
+          <motion.div
             className="text-center mt-2 sm:mt-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.6 }}
           >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 onClick={() => form.submit()}
                 loading={loading}
                 className="w-[70%] sm:w-[60%] rounded-full h-10 sm:h-12 font-medium border-0 bg-gradient-to-r from-[#FF914D] to-[#FF3A50] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
                 style={{
-                  background: 'linear-gradient(to right, #FF914D, #FF3A50)',
-                  border: 'none',
-                  boxShadow: '0 4px 15px 0 rgba(255, 145, 77, 0.3)'
+                  background: "linear-gradient(to right, #FF914D, #FF3A50)",
+                  border: "none",
+                  boxShadow: "0 4px 15px 0 rgba(255, 145, 77, 0.3)",
                 }}
               >
                 Đăng ký
@@ -477,7 +531,7 @@ const RegisterForm = ({ title = "GymRadar", subtitle = "Đăng Ký", onToggleFor
           </motion.div>
 
           {/* Toggle to Login */}
-          <motion.div 
+          <motion.div
             className="text-center mt-3 sm:mt-4 pb-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

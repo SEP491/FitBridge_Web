@@ -92,13 +92,15 @@ export default function HomeLoginPage() {
           <div className="pt-6 sm:pt-8 pb-3 sm:pb-4 px-4 sm:px-6 md:px-8 text-center">
             {/* <img
               src={LogoColor}
-              alt="GymRadar Logo"
+              alt="FitBridge Logo"
               className="h-30 w-30 items-center justify-center mx-auto"
             /> */}
             <div className="scale-75 sm:scale-90 md:scale-100">
-              <LoadingLogo/>
+              <LoadingLogo />
             </div>
-            <h1 className="text-[#FF3A50] font-bold text-2xl sm:text-3xl lg:text-4xl">GymRadar</h1>
+            <h1 className="text-[#FF3A50] font-bold text-2xl sm:text-3xl lg:text-4xl">
+              FitBridge
+            </h1>
             <h2 className="text-[#FF3A50] font-bold text-xl sm:text-2xl lg:text-3xl mt-3 sm:mt-5">
               Đăng Nhập
             </h2>
@@ -156,7 +158,9 @@ export default function HomeLoginPage() {
 
               <Form.Item
                 label={
-                  <span className="text-base sm:text-lg md:text-xl font-bold text-white">Mật khẩu</span>
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-white">
+                    Mật khẩu
+                  </span>
                 }
                 name="password"
                 rules={[
