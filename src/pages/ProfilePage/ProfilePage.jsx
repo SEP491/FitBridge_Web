@@ -79,9 +79,13 @@ export default function ProfilePage() {
       setAvatarUrl(data.avatarUrl);
       setFrontCitizenId(data.frontCitizenIdUrl);
       setBackCitizenId(data.backCitizenIdUrl);
-      setExistingImages(
-        data.images || data.galleryImages || data.gymImages || []
-      );
+      const combinedImages = [
+        ...(data.freelancePtImages || []),
+        ...(data.gymImages || []),
+        ...(data.images || []),
+        ...(data.galleryImages || []),
+      ];
+      setExistingImages(Array.from(new Set(combinedImages)));
       setImagesToRemove([]);
 
       // Set form values based on role
@@ -270,6 +274,12 @@ export default function ProfilePage() {
     setImagesToAdd(fileList);
   };
 
+  const toggleRemoveImage = (url) => {
+    setImagesToRemove((prev) =>
+      prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]
+    );
+  };
+
   const renderImagesSection = () => (
     <Col xs={24}>
       <Card
@@ -281,48 +291,68 @@ export default function ProfilePage() {
           background: "#fafafa",
         }}
       >
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12}>
-            <Text strong style={{ display: "block", marginBottom: "12px" }}>
-              Thêm ảnh mới
-            </Text>
-            <Upload
-              listType="picture-card"
-              multiple
-              accept="image/*"
-              fileList={imagesToAdd}
-              beforeUpload={() => false}
-              onChange={handleImagesChange}
-              disabled={!isEditMode}
-            >
-              {isEditMode && "+ Thêm ảnh"}
-            </Upload>
-            <Text type="secondary">
-              Ảnh sẽ được tải lên khi bạn lưu thay đổi.
-            </Text>
-          </Col>
-          <Col xs={24} lg={12}>
-            <Text strong style={{ display: "block", marginBottom: "12px" }}>
-              Xóa ảnh (chọn URL cần xóa)
-            </Text>
-            <Select
-              mode="multiple"
-              size="large"
-              style={{ width: "100%" }}
-              placeholder="Chọn hoặc nhập URL ảnh cần xóa"
-              disabled={!isEditMode}
-              options={existingImages.map((url) => ({
-                label: url,
-                value: url,
-              }))}
-              value={imagesToRemove}
-              onChange={setImagesToRemove}
-            />
-            <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
-              Chỉ áp dụng cho các URL có trong danh sách hình ảnh.
-            </Text>
-          </Col>
-        </Row>
+        <div style={{ marginBottom: 16 }}>
+          <Upload
+            listType="picture-card"
+            multiple
+            accept="image/*"
+            fileList={imagesToAdd}
+            beforeUpload={() => false}
+            onChange={handleImagesChange}
+            disabled={!isEditMode}
+          >
+            {isEditMode && "+ Thêm hình"}
+          </Upload>
+          <Text type="secondary">
+            Ảnh sẽ được tải lên khi bạn lưu thay đổi.
+          </Text>
+        </div>
+
+        {["FreelancePT", "GymOwner"].includes(user?.role) &&
+          existingImages.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <Divider orientation="left">
+                {user?.role === "FreelancePT"
+                  ? "Hình ảnh Freelance PT"
+                  : "Hình ảnh phòng tập"}
+              </Divider>
+              <Row gutter={[16, 16]}>
+                {existingImages.map((url) => (
+                  <Col xs={24} sm={12} md={8} lg={6} key={url}>
+                    <Card
+                      hoverable
+                      cover={
+                        <img
+                          alt="Hình ảnh"
+                          src={url}
+                          style={{ height: 180, objectFit: "cover" }}
+                        />
+                      }
+                      actions={
+                        isEditMode
+                          ? [
+                              <span
+                                key="remove"
+                                style={{
+                                  color: imagesToRemove.includes(url)
+                                    ? "#ff4d4f"
+                                    : "inherit",
+                                }}
+                                onClick={() => toggleRemoveImage(url)}
+                              >
+                                {imagesToRemove.includes(url)
+                                  ? "Hoàn tác xóa"
+                                  : "Xóa hình"}
+                              </span>,
+                            ]
+                          : undefined
+                      }
+                    />
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
       </Card>
     </Col>
   );
@@ -1198,7 +1228,7 @@ export default function ProfilePage() {
           {/* Avatar Section */}
           <Card
             style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              background: "linear-gradient(135deg, #FF914D 0%, #FF3A50 100%)",
               marginBottom: "32px",
               borderRadius: "12px",
               border: "none",
