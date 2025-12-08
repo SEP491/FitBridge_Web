@@ -120,9 +120,11 @@ export default function ProfilePage() {
           phone: data.phone,
           dob: data.dob ? dayjs(data.dob) : null,
           gender: data.gender,
-          weight: data.userDetail?.weight,
-          height: data.userDetail?.height,
+          weight: data.weight,
+          height: data.height,
           bio: data.bio,
+          ptMaxCourse: data.ptMaxCourse,
+          ptCurrentCourse: data.ptCurrentCourse,
           citizenIdNumber: data.citizenIdNumber,
           identityCardPlace: data.identityCardPlace,
           citizenCardPermanentAddress: data.citizenCardPermanentAddress,
@@ -211,6 +213,8 @@ export default function ProfilePage() {
         appendIfPresent("dob", values.dob ? values.dob.toISOString() : null);
         appendIfPresent("weight", values.weight || 0);
         appendIfPresent("height", values.height || 0);
+        appendIfPresent("ptMaxCourse", values.ptMaxCourse);
+        appendIfPresent("ptCurrentCourse", values.ptCurrentCourse);
       }
 
       await profileService.updateProfile(formData);
@@ -737,10 +741,10 @@ export default function ProfilePage() {
           }
         >
           <Input
-            disabled={!(isEditMode && user?.role === "FreelancePT")}
+            disabled={!isEditMode}
             size="large"
             style={{ borderRadius: "8px" }}
-            placeholder="Nhập họ và tên"
+            placeholder="Nhập địa chỉ kinh doanh"
           />
         </Form.Item>
       </Col>
@@ -899,6 +903,23 @@ export default function ProfilePage() {
         </Form.Item>
       </Col>
 
+      <Col xs={24}>
+        <Divider
+          orientation="left"
+          style={{
+            fontSize: "16px",
+            fontWeight: "600",
+            color: "#1890ff",
+            marginTop: "16px",
+          }}
+        >
+          <Space>
+            <CheckCircleOutlined />
+            <span>Thông tin huấn luyện</span>
+          </Space>
+        </Divider>
+      </Col>
+
       <Col xs={24} md={12}>
         <Form.Item name="height" label={<Text strong>Chiều cao</Text>}>
           <Input
@@ -923,6 +944,38 @@ export default function ProfilePage() {
             size="large"
             style={{ borderRadius: "8px" }}
             placeholder="Nhập cân nặng"
+          />
+        </Form.Item>
+      </Col>
+
+      <Col xs={24} md={12}>
+        <Form.Item
+          name="ptMaxCourse"
+          label={<Text strong>Số học viên tối đa</Text>}
+        >
+          <Input
+            type="number"
+            disabled={!isEditMode}
+            min={0}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập số học viên tối đa"
+          />
+        </Form.Item>
+      </Col>
+
+      <Col xs={24} md={12}>
+        <Form.Item
+          name="ptCurrentCourse"
+          label={<Text strong>Số học viên hiện tại</Text>}
+        >
+          <Input
+            type="number"
+            disabled={!isEditMode}
+            min={0}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập số học viên hiện tại"
           />
         </Form.Item>
       </Col>
