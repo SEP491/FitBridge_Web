@@ -171,7 +171,7 @@ export default function ManageWithdrawalPage() {
     }
 
     try {
-      await paymentService.confirmWithdrawalRequest(
+      await paymentService.approveWithdrawalRequest(
         requestToApprove.id,
         approvalImageUrl
       );
