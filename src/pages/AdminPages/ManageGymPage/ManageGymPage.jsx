@@ -24,6 +24,7 @@ import {
 } from "antd";
 import React, { useEffect, useState } from "react";
 import adminService from "../../../services/adminServices";
+import authService from "../../../services/authServices";
 import toast from "react-hot-toast";
 import {
   LoadingOutlined,
@@ -451,32 +452,47 @@ export default function ManageGymPage() {
 
     const formData = new FormData();
 
-    formData.append("Phone", values.phone || "");
-    formData.append("Email", values.email || "");
-    formData.append("Password", values.password || "");
-    formData.append("CreateNewGym.GymName", values.gymName || "");
-    formData.append("CreateNewGym.Since", values.since || 0);
-    formData.append("CreateNewGym.Address", values.address || "");
-    formData.append("CreateNewGym.RepresentName", values.representName || "");
-    formData.append("CreateNewGym.TaxCode", values.taxCode || "");
-    formData.append("CreateNewGym.Longitude", values.longitude || 0);
-    formData.append("CreateNewGym.Latitude", values.latitude || 0);
-    formData.append("CreateNewGym.Qrcode", values.qrcode || "");
+    // Basic account information
+    formData.append("email", values.email || "");
+    formData.append("phoneNumber", values.phone || "");
+    formData.append("password", values.password || "");
+    formData.append("fullName", values.representName || "");
+    formData.append("gymName", values.gymName || "");
+    formData.append("taxCode", values.taxCode || "");
+    formData.append("role", "GymOwner");
+    formData.append("isTestAccount", false);
 
-    if (values.mainImage && values.mainImage.originFileObj) {
-      formData.append("CreateNewGym.MainImage", values.mainImage.originFileObj);
+    // Location information
+    formData.append("longitude", values.longitude || 0);
+    formData.append("latitude", values.latitude || 0);
+
+    // Citizen ID files (optional for gym owner)
+    if (values.frontCitizenIdFile && values.frontCitizenIdFile.originFileObj) {
+      formData.append(
+        "frontCitizenIdFile",
+        values.frontCitizenIdFile.originFileObj
+      );
+    }
+    if (values.backCitizenIdFile && values.backCitizenIdFile.originFileObj) {
+      formData.append(
+        "backCitizenIdFile",
+        values.backCitizenIdFile.originFileObj
+      );
     }
 
-    if (values.images && values.images.length > 0) {
-      values.images.forEach((file) => {
-        if (file.originFileObj) {
-          formData.append("CreateNewGym.Images", file.originFileObj);
-        }
-      });
-    }
+    formData.append("citizenIdNumber", values.citizenIdNumber || "");
+    formData.append("identityCardPlace", values.identityCardPlace || "");
+    formData.append(
+      "citizenCardPermanentAddress",
+      values.citizenCardPermanentAddress || ""
+    );
+    formData.append("identityCardDate", values.identityCardDate || "");
+    formData.append("businessAddress", values.address || "");
+    formData.append("openTime", values.openTime || "");
+    formData.append("closeTime", values.closeTime || "");
 
     try {
-      const response = await adminService.addGym(formData);
+      const response = await authService.register(formData);
       console.log("Add Gym Response Data:", response);
       toast.success("Thêm phòng gym thành công!");
       fetchGym();
@@ -823,12 +839,6 @@ export default function ManageGymPage() {
                         <span className="text-gray-400">Chưa có tọa độ</span>
                       )}
                     </Descriptions.Item>
-
-                    <Descriptions.Item label="Mã QR" span={2}>
-                      <div className="font-mono text-xs bg-blue-50 p-2 rounded inline-block">
-                        {selectedGym.qrcode || "N/A"}
-                      </div>
-                    </Descriptions.Item>
                   </Descriptions>
                 </Card>
 
@@ -954,22 +964,22 @@ export default function ManageGymPage() {
             setImagesList([]);
           }}
           title={
-            <div className="flex items-center gap-3 pb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center">
-                <IoBarbell className="text-white text-lg" />
+            <div className="flex items-center gap-3 pb-4 border-b">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
+                <IoBarbell className="text-white text-xl" />
               </div>
               <div>
                 <Title level={3} className="m-0 text-gray-800">
                   Thêm Phòng Gym Mới
                 </Title>
-                <Text className="text-gray-500">
+                <Text className="text-gray-500 text-sm">
                   Điền thông tin để thêm phòng gym vào hệ thống
                 </Text>
               </div>
             </div>
           }
           footer={null}
-          width={900}
+          width={950}
           className="custom-modal"
         >
           <Form
@@ -977,342 +987,562 @@ export default function ManageGymPage() {
             layout="vertical"
             requiredMark={false}
             onFinish={handleAddGym}
-            className="max-h-[70vh] overflow-y-auto py-6 overflow-x-hidden"
+            className="max-h-[70vh] justify-between flex gap-4   flex-col overflow-y-auto py-6 overflow-x-hidden"
           >
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">
-                      Số điện thoại
-                    </span>
-                  }
-                  name="phone"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập số điện thoại" },
-                    { pattern: /^[0-9]+$/, message: "Vui lòng chỉ nhập số" },
-                  ]}
-                >
-                  <Input
-                    prefix={<PhoneOutlined className="text-gray-400" />}
-                    placeholder="09XXXXXXXX"
-                    maxLength={10}
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">Email</span>
-                  }
-                  name="email"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập email" },
-                    { type: "email", message: "Email không hợp lệ" },
-                  ]}
-                >
-                  <Input
-                    prefix={<GlobalOutlined className="text-gray-400" />}
-                    placeholder="example@email.com"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Form.Item
-              label={
-                <span className="font-semibold text-gray-700">Mật khẩu</span>
-              }
-              name="password"
-              rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
-            >
-              <Input.Password placeholder="Nhập mật khẩu" size="large" />
-            </Form.Item>
-
-            <Divider />
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">
-                      Tên Phòng Gym
-                    </span>
-                  }
-                  name="gymName"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập tên phòng gym" },
-                  ]}
-                >
-                  <Input
-                    prefix={<FaDumbbell className="text-gray-400" />}
-                    placeholder="Tên phòng gym"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">
-                      Hoạt động từ năm
-                    </span>
-                  }
-                  name="since"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập năm hoạt động" },
-                  ]}
-                >
-                  <Input
-                    prefix={<CalendarOutlined className="text-gray-400" />}
-                    placeholder="2025"
-                    type="number"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Form.Item
-              label={
-                <span className="font-semibold text-gray-700">Địa chỉ</span>
-              }
-              name="address"
-              rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
-            >
-              <PlacesAutocomplete
-                onSelect={handlePlaceSelect}
-                formInstance={formAdd}
-              />
-            </Form.Item>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">
-                      Tên người đại diện
-                    </span>
-                  }
-                  name="representName"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Vui lòng nhập tên người đại diện",
-                    },
-                  ]}
-                >
-                  <Input
-                    prefix={<UserOutlined className="text-gray-400" />}
-                    placeholder="Nguyễn Văn A"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">
-                      Mã số thuế
-                    </span>
-                  }
-                  name="taxCode"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập mã số thuế" },
-                  ]}
-                >
-                  <Input
-                    prefix={<BankOutlined className="text-gray-400" />}
-                    placeholder="ABC1234567"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">Kinh độ</span>
-                  }
-                  name="longitude"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Vui lòng chọn địa chỉ để tự động điền tọa độ",
-                    },
-                  ]}
-                >
-                  <Input
-                    placeholder="Nhập kinh độ hoặc chọn địa chỉ"
-                    type="number"
-                    step="any"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">Vĩ độ</span>
-                  }
-                  name="latitude"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Vui lòng chọn địa chỉ để tự động điền tọa độ",
-                    },
-                  ]}
-                >
-                  <Input
-                    placeholder="Nhập vĩ độ hoặc chọn địa chỉ"
-                    type="number"
-                    step="any"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={24}>
-                <Button
-                  type="dashed"
-                  icon={<EnvironmentOutlined />}
-                  onClick={async () => {
-                    const lat = formAdd.getFieldValue("latitude");
-                    const lng = formAdd.getFieldValue("longitude");
-                    if (lat && lng) {
-                      await getAddressFromLatLng(lat, lng);
-                    } else {
-                      toast.error("Vui lòng nhập cả vĩ độ và kinh độ");
-                    }
-                  }}
-                  className="w-full mb-4"
-                  size="large"
-                >
-                  Lấy địa chỉ từ tọa độ
-                </Button>
-              </Col>
-            </Row>
-
-            <div className="mb-4">
-              <Text className="font-semibold text-gray-700 block mb-2">
-                Xem vị trí trên bản đồ
-              </Text>
-              <div
-                className="border rounded-lg overflow-hidden shadow-sm"
-                style={{ height: "400px" }}
-              >
-                <Map
-                  defaultCenter={center}
-                  center={mapCenter}
-                  defaultZoom={13}
-                  zoom={position ? 15 : 13}
-                  gestureHandling={"greedy"}
-                  disableDefaultUI={false}
-                  mapId="gym-location-map"
-                  onClick={async (e) => {
-                    if (e.detail.latLng) {
-                      const { lat, lng } = e.detail.latLng;
-                      await getAddressFromLatLng(lat, lng);
-                    }
-                  }}
-                >
-                  {position && (
-                    <AdvancedMarker position={position}>
-                      <Pin
-                        background={"#FF914D"}
-                        borderColor={"#FF6B35"}
-                        glyphColor={"#FFFFFF"}
-                      />
-                    </AdvancedMarker>
-                  )}
-                </Map>
-              </div>
-              <Text className="text-gray-500 text-sm mt-2">
-                💡 Click vào bản đồ để chọn vị trí và lấy địa chỉ tự động, hoặc
-                nhập tọa độ rồi click nút "Lấy địa chỉ từ tọa độ"
-              </Text>
-            </div>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-gray-700">QR Code</span>
-                  }
-                  name="qrcode"
-                  rules={[{ required: true, message: "Vui lòng nhập QR code" }]}
-                >
-                  <Input
-                    prefix={<QrcodeOutlined className="text-gray-400" />}
-                    placeholder="QR123456"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            {/* Main Image Upload */}
-            <Form.Item
-              label={
-                <span className="font-semibold text-gray-700">
-                  Ảnh đại diện phòng gym
+            {/* Section 1: Account Information */}
+            <Card
+              size="small"
+              className="mb-4 shadow-sm"
+              title={
+                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                  <UserOutlined />
+                  Thông Tin Tài Khoản
                 </span>
               }
-              name="mainImage"
-              rules={[
-                { required: true, message: "Vui lòng tải lên ảnh đại diện" },
-              ]}
+              bordered={true}
+              style={{ borderColor: "#FFE5E9" }}
             >
-              <Upload
-                listType="picture-card"
-                fileList={mainImageList ? [mainImageList] : []}
-                onChange={({ fileList }) => {
-                  const latestFile = fileList[fileList.length - 1] || null;
-                  setMainImageList(latestFile);
-                  formAdd.setFieldsValue({ mainImage: latestFile });
-                }}
-                beforeUpload={() => false}
-                accept="image/*"
-                maxCount={1}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Số điện thoại
+                      </span>
+                    }
+                    name="phone"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập số điện thoại",
+                      },
+                      { pattern: /^[0-9]+$/, message: "Vui lòng chỉ nhập số" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<PhoneOutlined className="text-gray-400" />}
+                      placeholder="09XXXXXXXX"
+                      maxLength={10}
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">Email</span>
+                    }
+                    name="email"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập email" },
+                      { type: "email", message: "Email không hợp lệ" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<GlobalOutlined className="text-gray-400" />}
+                      placeholder="example@email.com"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item
+                label={
+                  <span className="font-semibold text-gray-700">Mật khẩu</span>
+                }
+                name="password"
+                rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
               >
-                {!mainImageList && (
+                <Input.Password placeholder="Nhập mật khẩu" size="large" />
+              </Form.Item>
+            </Card>
+
+            {/* Section 2: Gym Information */}
+            <Card
+              size="small"
+              className="mb-4 shadow-sm"
+              title={
+                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                  <FaDumbbell />
+                  Thông Tin Phòng Gym
+                </span>
+              }
+              bordered={true}
+              style={{ borderColor: "#FFE5E9" }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Tên Phòng Gym
+                      </span>
+                    }
+                    name="gymName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập tên phòng gym",
+                      },
+                    ]}
+                  >
+                    <Input
+                      prefix={<FaDumbbell className="text-gray-400" />}
+                      placeholder="Tên phòng gym"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Hoạt động từ năm
+                      </span>
+                    }
+                    name="since"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập năm hoạt động",
+                      },
+                    ]}
+                  >
+                    <Input
+                      prefix={<CalendarOutlined className="text-gray-400" />}
+                      placeholder="2025"
+                      type="number"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Tên người đại diện
+                      </span>
+                    }
+                    name="representName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập tên người đại diện",
+                      },
+                    ]}
+                  >
+                    <Input
+                      prefix={<UserOutlined className="text-gray-400" />}
+                      placeholder="Nguyễn Văn A"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Mã số thuế
+                      </span>
+                    }
+                    name="taxCode"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập mã số thuế" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<BankOutlined className="text-gray-400" />}
+                      placeholder="ABC1234567"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Card>
+
+            {/* Section 3: Location & Map */}
+            <Card
+              size="small"
+              className="mb-4 shadow-sm"
+              title={
+                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                  <EnvironmentOutlined />
+                  Vị Trí & Bản Đồ
+                </span>
+              }
+              bordered={true}
+              style={{ borderColor: "#FFE5E9" }}
+            >
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Địa chỉ kinh doanh
+                      </span>
+                    }
+                    name="address"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập địa chỉ" },
+                    ]}
+                  >
+                    <PlacesAutocomplete
+                      onSelect={handlePlaceSelect}
+                      formInstance={formAdd}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Hidden fields for coordinates */}
+              <Form.Item name="longitude" hidden>
+                <Input type="hidden" />
+              </Form.Item>
+              <Form.Item name="latitude" hidden>
+                <Input type="hidden" />
+              </Form.Item>
+
+              <div className="mb-2">
+                <Text className="font-semibold text-gray-700 block mb-2">
+                  Xem vị trí trên bản đồ
+                </Text>
+                <div
+                  className="border rounded-lg overflow-hidden shadow-sm"
+                  style={{ height: "350px" }}
+                >
+                  <Map
+                    defaultCenter={center}
+                    center={mapCenter}
+                    defaultZoom={13}
+                    zoom={position ? 15 : 13}
+                    gestureHandling={"greedy"}
+                    disableDefaultUI={false}
+                    mapId="gym-location-map"
+                    onClick={async (e) => {
+                      if (e.detail.latLng) {
+                        const { lat, lng } = e.detail.latLng;
+                        await getAddressFromLatLng(lat, lng);
+                      }
+                    }}
+                  >
+                    {position && (
+                      <AdvancedMarker position={position}>
+                        <Pin
+                          background={"#FF914D"}
+                          borderColor={"#FF6B35"}
+                          glyphColor={"#FFFFFF"}
+                        />
+                      </AdvancedMarker>
+                    )}
+                  </Map>
+                </div>
+                <Text className="text-gray-500 text-xs mt-2 block">
+                  💡 Click vào bản đồ để chọn vị trí và lấy địa chỉ tự động
+                </Text>
+              </div>
+            </Card>
+
+            {/* Section 4: CCCD Information */}
+            <Card
+              size="small"
+              className="mb-4 shadow-sm"
+              title={
+                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                  <FaUserCircle />
+                  Thông Tin CCCD
+                </span>
+              }
+              bordered={true}
+              style={{ borderColor: "#FFE5E9" }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Số CCCD
+                      </span>
+                    }
+                    name="citizenIdNumber"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập số CCCD" },
+                      { pattern: /^[0-9]{12}$/, message: "CCCD phải có 12 số" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<UserOutlined className="text-gray-400" />}
+                      placeholder="079204029889"
+                      maxLength={12}
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Nơi Cấp CCCD
+                      </span>
+                    }
+                    name="identityCardPlace"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập nơi cấp CCCD" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<EnvironmentOutlined className="text-gray-400" />}
+                      placeholder="Cục Cảnh sát ĐKQL cư trú và DLQG về dân cư"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Ngày Cấp CCCD
+                      </span>
+                    }
+                    name="identityCardDate"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng chọn ngày cấp CCCD",
+                      },
+                    ]}
+                  >
+                    <Input
+                      type="date"
+                      size="large"
+                      prefix={<CalendarOutlined className="text-gray-400" />}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Địa Chỉ Thường Trú (Theo CCCD)
+                      </span>
+                    }
+                    name="citizenCardPermanentAddress"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập địa chỉ thường trú",
+                      },
+                    ]}
+                  >
+                    <Input
+                      prefix={<EnvironmentOutlined className="text-gray-400" />}
+                      placeholder="Địa chỉ theo CCCD"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Ảnh CCCD Mặt Trước
+                      </span>
+                    }
+                    name="frontCitizenIdFile"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng tải lên ảnh CCCD mặt trước",
+                      },
+                    ]}
+                  >
+                    <Upload
+                      listType="picture-card"
+                      maxCount={1}
+                      beforeUpload={() => false}
+                      accept="image/*"
+                    >
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>Mặt Trước</div>
+                      </div>
+                    </Upload>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Ảnh CCCD Mặt Sau
+                      </span>
+                    }
+                    name="backCitizenIdFile"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng tải lên ảnh CCCD mặt sau",
+                      },
+                    ]}
+                  >
+                    <Upload
+                      listType="picture-card"
+                      maxCount={1}
+                      beforeUpload={() => false}
+                      accept="image/*"
+                    >
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>Mặt Sau</div>
+                      </div>
+                    </Upload>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Card>
+
+            {/* Section 5: Business Information */}
+            <Card
+              size="small"
+              className="mb-4 shadow-sm"
+              title={
+                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                  <CalendarOutlined />
+                  Thông Tin Kinh Doanh
+                </span>
+              }
+              bordered={true}
+              style={{ borderColor: "#FFE5E9" }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Giờ Mở Cửa
+                      </span>
+                    }
+                    name="openTime"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập giờ mở cửa" },
+                    ]}
+                  >
+                    <Input
+                      type="time"
+                      size="large"
+                      prefix={<CalendarOutlined className="text-gray-400" />}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Giờ Đóng Cửa
+                      </span>
+                    }
+                    name="closeTime"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập giờ đóng cửa" },
+                    ]}
+                  >
+                    <Input
+                      type="time"
+                      size="large"
+                      prefix={<CalendarOutlined className="text-gray-400" />}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Card>
+
+            {/* Section 6: Images
+            <Card
+              size="small"
+              className="mb-4 shadow-sm"
+              title={
+                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                  <FaBuilding />
+                  Hình Ảnh Phòng Gym
+                </span>
+              }
+              bordered={true}
+              style={{ borderColor: "#FFE5E9" }}
+            >
+              {/* Main Image Upload */}
+              <Form.Item
+                label={
+                  <span className="font-semibold text-gray-700">
+                    Ảnh đại diện phòng gym
+                  </span>
+                }
+                name="mainImage"
+                rules={[
+                  { required: true, message: "Vui lòng tải lên ảnh đại diện" },
+                ]}
+              >
+                <Upload
+                  listType="picture-card"
+                  fileList={mainImageList ? [mainImageList] : []}
+                  onChange={({ fileList }) => {
+                    const latestFile = fileList[fileList.length - 1] || null;
+                    setMainImageList(latestFile);
+                    formAdd.setFieldsValue({ mainImage: latestFile });
+                  }}
+                  beforeUpload={() => false}
+                  accept="image/*"
+                  maxCount={1}
+                >
+                  {!mainImageList && (
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>Tải lên</div>
+                    </div>
+                  )}
+                </Upload>
+              </Form.Item>
+
+              {/* Multiple Images Upload */}
+              <Form.Item
+                label={
+                  <span className="font-semibold text-gray-700">
+                    Ảnh bổ sung phòng gym
+                  </span>
+                }
+                name="images"
+                rules={[
+                  {
+                    required: true,
+                    message: "Vui lòng tải lên ít nhất 1 ảnh bổ sung",
+                  },
+                ]}
+              >
+                <Upload
+                  listType="picture-card"
+                  fileList={imagesList}
+                  onChange={({ fileList }) => {
+                    setImagesList(fileList);
+                    formAdd.setFieldsValue({ images: fileList });
+                  }}
+                  beforeUpload={() => false}
+                  accept="image/*"
+                  multiple
+                >
                   <div>
                     <PlusOutlined />
                     <div style={{ marginTop: 8 }}>Tải lên</div>
                   </div>
-                )}
-              </Upload>
-            </Form.Item>
-
-            {/* Multiple Images Upload */}
-            <Form.Item
-              label={
-                <span className="font-semibold text-gray-700">
-                  Ảnh bổ sung phòng gym
-                </span>
-              }
-              name="images"
-            >
-              <Upload
-                listType="picture-card"
-                fileList={imagesList}
-                onChange={({ fileList }) => {
-                  setImagesList(fileList);
-                  formAdd.setFieldsValue({ images: fileList });
-                }}
-                beforeUpload={() => false}
-                accept="image/*"
-                multiple
-              >
-                <div>
-                  <PlusOutlined />
-                  <div style={{ marginTop: 8 }}>Tải lên</div>
-                </div>
-              </Upload>
-            </Form.Item>
+                </Upload>
+              </Form.Item>
+            </Card> */}
 
             <div className="text-center pt-6 border-t mt-6">
               <Space size="middle">
@@ -1355,6 +1585,23 @@ export default function ManageGymPage() {
               /* padding: 0 24px 24px; */
             }
           }
+
+          /* Card Section Backgrounds */
+          .custom-modal .ant-card {
+            background: linear-gradient(135deg, #fff9fa 0%, #fffbf7 100%);
+            transition: all 0.3s ease;
+          }
+
+          .custom-modal .ant-card:hover {
+            background: linear-gradient(135deg, #fff5f7 0%, #fff8f3 100%);
+            box-shadow: 0 4px 12px rgba(255, 145, 77, 0.1);
+          }
+
+          .custom-modal .ant-card .ant-card-head {
+            background: linear-gradient(90deg, #ffebee 0%, #fff3e0 100%);
+            border-bottom: 2px solid #ffe5e9;
+          }
+
           .ant-table-thead > tr > th {
             font-weight: 600;
             color: #374151;

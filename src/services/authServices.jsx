@@ -2,7 +2,7 @@ import { request } from "./request";
 
 const authService = {
   login: (loginData) => request("POST", "/v1/identities/login", loginData),
-  register: (registerData) => request("POST", "/v1/identities/register-other-accounts", registerData),
+  register: (registerData) => request("POST", "/v1/identities/register-other-accounts", registerData,{ "Content-Type": "multipart/form-data" }),
   emailConfirm : (email, token) => {
     // Properly encode the token and email for URL
     const encodedToken = encodeURIComponent(token);
