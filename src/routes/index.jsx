@@ -17,6 +17,7 @@ export const route = {
   manageOrder: "manage-order",
   manageContract: "manage-contract",
   manageCertificate: "manage-certificate",
+  manageAssets: "manage-assets",
 
   gym: "/gym",
   dashboardGym: "dashboard-gym",

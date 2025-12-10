@@ -16,6 +16,9 @@ import {
   Tooltip,
   Progress,
   Descriptions,
+  Modal,
+  Form,
+  Divider,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import adminService from "../../../services/adminServices";
@@ -40,12 +43,98 @@ import {
   MailOutlined,
   PhoneOutlined,
   IdcardOutlined,
+  GlobalOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import { FaUserCircle, FaInfoCircle, FaDumbbell } from "react-icons/fa";
 import FitBridgeModal from "../../../components/FitBridgeModal";
 import defaultAvatar from "../../../assets/LogoColor.png";
+import { APIProvider } from "@vis.gl/react-google-maps";
+import usePlacesAutocomplete, {
+  getGeocode,
+  getLatLng,
+} from "use-places-autocomplete";
 
 const { Option } = Select;
+
+// Custom Places Autocomplete Component for PT Page
+function PlacesAutocompletePT({ onSelect, formInstance }) {
+  const {
+    ready,
+    value,
+    suggestions: { status, data },
+    setValue,
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: {
+      componentRestrictions: { country: "vn" },
+    },
+    debounce: 300,
+    initOnMount: true,
+  });
+
+  const handleSelect = async (address) => {
+    setValue(address, false);
+    clearSuggestions();
+
+    try {
+      const results = await getGeocode({ address });
+      const { lat, lng } = await getLatLng(results[0]);
+
+      onSelect({
+        address: address,
+        lat: lat,
+        lng: lng,
+      });
+
+      formInstance.setFieldsValue({
+        businessAddress: address,
+        latitude: lat,
+        longitude: lng,
+      });
+
+      toast.success("Đã chọn địa chỉ thành công!");
+    } catch (error) {
+      console.error("Error: ", error);
+      toast.error("Không thể lấy tọa độ cho địa chỉ này");
+    }
+  };
+
+  const options = data.map(({ place_id, description }) => ({
+    value: description,
+    label: description,
+    key: place_id,
+  }));
+
+  return (
+    <Select
+      showSearch
+      value={value || undefined}
+      placeholder={
+        ready ? "Nhập địa chỉ để tìm kiếm..." : "Đang tải Google Maps..."
+      }
+      size="large"
+      style={{ width: "100%" }}
+      defaultActiveFirstOption={false}
+      suffixIcon={<EnvironmentOutlined />}
+      filterOption={false}
+      onSearch={(val) => setValue(val)}
+      onSelect={handleSelect}
+      notFoundContent={
+        !ready ? (
+          <div style={{ padding: "8px", color: "#999" }}>Đang tải...</div>
+        ) : status === "OK" && data.length === 0 ? (
+          <div style={{ padding: "8px", color: "#999" }}>
+            Không tìm thấy địa chỉ
+          </div>
+        ) : null
+      }
+      disabled={!ready}
+      options={options}
+      loading={!ready}
+    />
+  );
+}
 
 export default function ManagePTPage() {
   const [pts, setPts] = useState([]);
@@ -55,6 +144,9 @@ export default function ManagePTPage() {
   const [ptType, setPtType] = useState("gym"); // "gym" or "freelance"
   const [selectedPT, setSelectedPT] = useState(null);
   const [isModalPTDetailOpen, setIsModalPTDetailOpen] = useState(false);
+  const [isModalAddPTOpen, setIsModalAddPTOpen] = useState(false);
+  const [formAddPT] = Form.useForm();
+  const [loadingAddPT, setLoadingAddPT] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -71,14 +163,19 @@ export default function ManagePTPage() {
   const fetchGymPTs = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await adminService.getAllGymPTs({ page, size: pageSize });
+      const response = await adminService.getAllGymPTs({
+        page,
+        size: pageSize,
+      });
       const { items, total, page: currentPage, totalPages } = response.data;
       setPts(items || []);
 
       // Update statistics based on fetched data
       const activePTs = items?.filter((pt) => pt.isActive === true).length || 0;
-      const inactivePTs = items?.filter((pt) => pt.isActive === false).length || 0;
-      const totalExperience = items?.reduce((sum, pt) => sum + (pt.experience || 0), 0) || 0;
+      const inactivePTs =
+        items?.filter((pt) => pt.isActive === false).length || 0;
+      const totalExperience =
+        items?.reduce((sum, pt) => sum + (pt.experience || 0), 0) || 0;
 
       setStatistics({
         totalPTs: total || 0,
@@ -105,22 +202,30 @@ export default function ManagePTPage() {
   const fetchFreelancePTs = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await adminService.getAllFreelancePTs({ page, size: pageSize });
+      const response = await adminService.getAllFreelancePTs({
+        page,
+        size: pageSize,
+      });
       const { items, total, page: currentPage, totalPages } = response.data;
-      
+
       // Normalize Freelance PT data to match Gym PT structure
-      const normalizedItems = items?.map(pt => ({
-        ...pt,
-        experience: pt.experienceYears || pt.experience || 0,
-        isActive: true, // Freelance PTs are considered active if they're in the system
-      })) || [];
-      
+      const normalizedItems =
+        items?.map((pt) => ({
+          ...pt,
+          experience: pt.experienceYears || pt.experience || 0,
+          isActive: true, // Freelance PTs are considered active if they're in the system
+        })) || [];
+
       setPts(normalizedItems);
 
       // Update statistics based on fetched data
-      const activePTs = normalizedItems?.filter((pt) => pt.isActive === true).length || 0;
-      const inactivePTs = normalizedItems?.filter((pt) => pt.isActive === false).length || 0;
-      const totalExperience = normalizedItems?.reduce((sum, pt) => sum + (pt.experience || 0), 0) || 0;
+      const activePTs =
+        normalizedItems?.filter((pt) => pt.isActive === true).length || 0;
+      const inactivePTs =
+        normalizedItems?.filter((pt) => pt.isActive === false).length || 0;
+      const totalExperience =
+        normalizedItems?.reduce((sum, pt) => sum + (pt.experience || 0), 0) ||
+        0;
 
       setStatistics({
         totalPTs: total || 0,
@@ -157,6 +262,39 @@ export default function ManagePTPage() {
     // eslint-disable-next-line
   }, [ptType]);
 
+  const handleAddPT = async (values) => {
+    setLoadingAddPT(true);
+
+    const formData = new FormData();
+
+    // PT Information
+    formData.append("email", values.email || "");
+    formData.append("phoneNumber", values.phoneNumber || "");
+    formData.append("fullName", values.fullName || "");
+    formData.append("password", values.password || "");
+    formData.append("businessAddress", values.businessAddress || "");
+    formData.append("longitude", values.longitude || 0);
+    formData.append("latitude", values.latitude || 0);
+
+    // Role - GymPT or FreelancePT
+    formData.append("role", values.role || "GymPT");
+
+    try {
+      const response = await adminService.registerOtherAccounts(formData);
+      console.log("Add PT Response Data:", response);
+      toast.success("Thêm Personal Trainer thành công!");
+      fetchPTs();
+      setIsModalAddPTOpen(false);
+      formAddPT.resetFields();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Không thể thêm Personal Trainer"
+      );
+    } finally {
+      setLoadingAddPT(false);
+    }
+  };
+
   const handleTableChange = (newPagination) => {
     fetchPTs(newPagination.current, newPagination.pageSize);
   };
@@ -188,94 +326,116 @@ export default function ManagePTPage() {
             )}
             {ptType === "freelance" && record.rating !== undefined && (
               <div className="text-xs text-yellow-600 flex items-center gap-1">
-                ⭐ {record.rating.toFixed(1)} • {record.totalPurchased || 0} lượt mua
+                ⭐ {record.rating.toFixed(1)} • {record.totalPurchased || 0}{" "}
+                lượt mua
               </div>
             )}
           </div>
         </div>
       ),
     },
-    ...(ptType === "gym" ? [{
-      title: "Giới Tính",
-      dataIndex: "isMale",
-      key: "isMale",
-      align: "center",
-      width: 100,
-      render: (isMale) => (
-        <Tag color={isMale ? "blue" : "pink"} icon={isMale ? <ManOutlined /> : <WomanOutlined />}>
-          {isMale ? "Nam" : "Nữ"}
-        </Tag>
-      ),
-    },
-    {
-      title: "Liên Hệ",
-      dataIndex: "phone",
-      key: "phone",
-      align: "center",
-      width: 120,
-      render: (text) => (
-        <span className="text-gray-700">{text || "Chưa cập nhật"}</span>
-      ),
-    },
-    {
-      title: "Ngày Sinh",
-      dataIndex: "dob",
-      key: "dob",
-      align: "center",
-      width: 120,
-      render: (date) => (
-        <div className="flex flex-col items-center">
-          <span>{date ? new Date(date).toLocaleDateString("vi-VN") : "N/A"}</span>
-          <span className="text-xs text-gray-500">
-            {date ? `${new Date().getFullYear() - new Date(date).getFullYear()} tuổi` : ""}
-          </span>
-        </div>
-      ),
-    }] : []),
-    ...(ptType === "freelance" ? [{
-      title: "Giá Từ",
-      dataIndex: "priceFrom",
-      key: "priceFrom",
-      align: "center",
-      width: 130,
-      sorter: (a, b) => (a.priceFrom || 0) - (b.priceFrom || 0),
-      render: (price) => (
-        <div className="flex flex-col items-center">
-          <span className="text-green-600 font-bold">
-            {price ? `${price.toLocaleString('vi-VN')}đ` : "N/A"}
-          </span>
-          <span className="text-xs text-gray-500">/ buổi</span>
-        </div>
-      ),
-    },
-    {
-      title: "Đánh Giá",
-      dataIndex: "rating",
-      key: "rating",
-      align: "center",
-      width: 100,
-      sorter: (a, b) => (a.rating || 0) - (b.rating || 0),
-      render: (rating) => (
-        <div className="flex flex-col items-center">
-          <span className="text-yellow-500 text-lg">⭐</span>
-          <span className="text-sm font-bold">{rating?.toFixed(1) || "0.0"}</span>
-        </div>
-      ),
-    },
-    {
-      title: "Lượt Mua",
-      dataIndex: "totalPurchased",
-      key: "totalPurchased",
-      align: "center",
-      width: 100,
-      sorter: (a, b) => (a.totalPurchased || 0) - (b.totalPurchased || 0),
-      render: (total) => (
-        <div className="flex flex-col items-center">
-          <span className="text-blue-600 font-bold text-lg">{total || 0}</span>
-          <span className="text-xs text-gray-500">gói</span>
-        </div>
-      ),
-    }] : []),
+    ...(ptType === "gym"
+      ? [
+          {
+            title: "Giới Tính",
+            dataIndex: "isMale",
+            key: "isMale",
+            align: "center",
+            width: 100,
+            render: (isMale) => (
+              <Tag
+                color={isMale ? "blue" : "pink"}
+                icon={isMale ? <ManOutlined /> : <WomanOutlined />}
+              >
+                {isMale ? "Nam" : "Nữ"}
+              </Tag>
+            ),
+          },
+          {
+            title: "Liên Hệ",
+            dataIndex: "phone",
+            key: "phone",
+            align: "center",
+            width: 120,
+            render: (text) => (
+              <span className="text-gray-700">{text || "Chưa cập nhật"}</span>
+            ),
+          },
+          {
+            title: "Ngày Sinh",
+            dataIndex: "dob",
+            key: "dob",
+            align: "center",
+            width: 120,
+            render: (date) => (
+              <div className="flex flex-col items-center">
+                <span>
+                  {date ? new Date(date).toLocaleDateString("vi-VN") : "N/A"}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {date
+                    ? `${
+                        new Date().getFullYear() - new Date(date).getFullYear()
+                      } tuổi`
+                    : ""}
+                </span>
+              </div>
+            ),
+          },
+        ]
+      : []),
+    ...(ptType === "freelance"
+      ? [
+          {
+            title: "Giá Từ",
+            dataIndex: "priceFrom",
+            key: "priceFrom",
+            align: "center",
+            width: 130,
+            sorter: (a, b) => (a.priceFrom || 0) - (b.priceFrom || 0),
+            render: (price) => (
+              <div className="flex flex-col items-center">
+                <span className="text-green-600 font-bold">
+                  {price ? `${price.toLocaleString("vi-VN")}đ` : "N/A"}
+                </span>
+                <span className="text-xs text-gray-500">/ buổi</span>
+              </div>
+            ),
+          },
+          {
+            title: "Đánh Giá",
+            dataIndex: "rating",
+            key: "rating",
+            align: "center",
+            width: 100,
+            sorter: (a, b) => (a.rating || 0) - (b.rating || 0),
+            render: (rating) => (
+              <div className="flex flex-col items-center">
+                <span className="text-yellow-500 text-lg">⭐</span>
+                <span className="text-sm font-bold">
+                  {rating?.toFixed(1) || "0.0"}
+                </span>
+              </div>
+            ),
+          },
+          {
+            title: "Lượt Mua",
+            dataIndex: "totalPurchased",
+            key: "totalPurchased",
+            align: "center",
+            width: 100,
+            sorter: (a, b) => (a.totalPurchased || 0) - (b.totalPurchased || 0),
+            render: (total) => (
+              <div className="flex flex-col items-center">
+                <span className="text-blue-600 font-bold text-lg">
+                  {total || 0}
+                </span>
+                <span className="text-xs text-gray-500">gói</span>
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       title: "Kinh Nghiệm",
       dataIndex: "experience",
@@ -286,7 +446,9 @@ export default function ManagePTPage() {
       render: (experience) => (
         <div className="flex flex-col items-center">
           <TrophyOutlined style={{ fontSize: "16px", color: "#FFD700" }} />
-          <span className="text-sm font-bold text-orange-600">{experience || 0}</span>
+          <span className="text-sm font-bold text-orange-600">
+            {experience || 0}
+          </span>
           <span className="text-xs text-gray-500">năm</span>
         </div>
       ),
@@ -311,7 +473,9 @@ export default function ManagePTPage() {
 
   const filteredData = pts.filter((item) => {
     const matchesSearch = searchText
-      ? (item.fullName?.toLowerCase() || "").includes(searchText.toLowerCase()) ||
+      ? (item.fullName?.toLowerCase() || "").includes(
+          searchText.toLowerCase()
+        ) ||
         (item.email?.toLowerCase() || "").includes(searchText.toLowerCase())
       : true;
 
@@ -351,14 +515,16 @@ export default function ManagePTPage() {
         </div>
 
         {/* PT Type Selection Header */}
-        <Card className=" border-0 shadow-lg" style={{marginBottom:15}}>
+        <Card className=" border-0 shadow-lg" style={{ marginBottom: 15 }}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <TeamOutlined style={{ fontSize: "20px", color: "#FF914D" }} />
-              <h3 className="text-lg font-semibold text-gray-800 m-0">Chọn Loại Personal Trainer</h3>
+              <h3 className="text-lg font-semibold text-gray-800 m-0">
+                Chọn Loại Personal Trainer
+              </h3>
             </div>
           </div>
-          
+
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <div
@@ -376,13 +542,19 @@ export default function ManagePTPage() {
                     <span className="text-xs font-semibold">Đang chọn</span>
                   </div>
                 )}
-                
-                <div className={`p-5 ${ptType === "gym" ? "bg-gradient-to-br from-[#FFF9FA] via-[#FFF5F0] to-[#FFE5E9]" : "bg-white"}`}>
+
+                <div
+                  className={`p-5 ${
+                    ptType === "gym"
+                      ? "bg-gradient-to-br from-[#FFF9FA] via-[#FFF5F0] to-[#FFE5E9]"
+                      : "bg-white"
+                  }`}
+                >
                   <div className="flex items-center gap-4">
                     <div
                       className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                        ptType === "gym" 
-                          ? "bg-[#FF914D] shadow-lg transform rotate-3" 
+                        ptType === "gym"
+                          ? "bg-[#FF914D] shadow-lg transform rotate-3"
                           : "bg-gray-100"
                       }`}
                     >
@@ -401,7 +573,13 @@ export default function ManagePTPage() {
                       >
                         Gym PT
                       </h3>
-                      <p className={`text-sm ${ptType === "gym" ? "text-gray-700 font-medium" : "text-gray-500"}`}>
+                      <p
+                        className={`text-sm ${
+                          ptType === "gym"
+                            ? "text-gray-700 font-medium"
+                            : "text-gray-500"
+                        }`}
+                      >
                         Huấn luyện viên phòng gym
                       </p>
                     </div>
@@ -409,7 +587,7 @@ export default function ManagePTPage() {
                 </div>
               </div>
             </Col>
-            
+
             <Col xs={24} sm={12}>
               <div
                 className={`relative border-3 rounded-lg cursor-pointer transition-all duration-300 overflow-hidden ${
@@ -426,13 +604,19 @@ export default function ManagePTPage() {
                     <span className="text-xs font-semibold">Đang chọn</span>
                   </div>
                 )}
-                
-                <div className={`p-5 ${ptType === "freelance" ? "bg-gradient-to-br from-[#FFF9FA] via-[#FFF5F0] to-[#FFE5E9]" : "bg-white"}`}>
+
+                <div
+                  className={`p-5 ${
+                    ptType === "freelance"
+                      ? "bg-gradient-to-br from-[#FFF9FA] via-[#FFF5F0] to-[#FFE5E9]"
+                      : "bg-white"
+                  }`}
+                >
                   <div className="flex items-center gap-4">
                     <div
                       className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                        ptType === "freelance" 
-                          ? "bg-[#FF914D] shadow-lg transform rotate-3" 
+                        ptType === "freelance"
+                          ? "bg-[#FF914D] shadow-lg transform rotate-3"
                           : "bg-gray-100"
                       }`}
                     >
@@ -446,12 +630,20 @@ export default function ManagePTPage() {
                     <div className="flex-1">
                       <h3
                         className={`text-2xl font-bold mb-1 transition-colors ${
-                          ptType === "freelance" ? "text-[#ED2A46]" : "text-gray-600"
+                          ptType === "freelance"
+                            ? "text-[#ED2A46]"
+                            : "text-gray-600"
                         }`}
                       >
                         Freelance PT
                       </h3>
-                      <p className={`text-sm ${ptType === "freelance" ? "text-gray-700 font-medium" : "text-gray-500"}`}>
+                      <p
+                        className={`text-sm ${
+                          ptType === "freelance"
+                            ? "text-gray-700 font-medium"
+                            : "text-gray-500"
+                        }`}
+                      >
                         Huấn luyện viên tự do
                       </p>
                     </div>
@@ -549,6 +741,15 @@ export default function ManagePTPage() {
                 <Option value="busy">Bận</Option>
               </Select>
             </div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              size="large"
+              className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 rounded-lg px-6 shadow-lg hover:shadow-xl transition-all duration-300"
+              onClick={() => setIsModalAddPTOpen(true)}
+            >
+              Thêm Personal Trainer
+            </Button>
           </div>
 
           {/* Results Summary */}
@@ -652,20 +853,29 @@ export default function ManagePTPage() {
                   <div className="flex items-center gap-4 flex-wrap">
                     <Tag
                       color={selectedPT.isMale ? "blue" : "pink"}
-                      icon={selectedPT.isMale ? <ManOutlined /> : <WomanOutlined />}
+                      icon={
+                        selectedPT.isMale ? <ManOutlined /> : <WomanOutlined />
+                      }
                       className="text-sm px-3 py-1"
                     >
                       {selectedPT.isMale ? "Nam" : "Nữ"}
                     </Tag>
                     <Tag
-                      icon={selectedPT.isActive ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+                      icon={
+                        selectedPT.isActive ? (
+                          <CheckCircleOutlined />
+                        ) : (
+                          <ClockCircleOutlined />
+                        )
+                      }
                       color={selectedPT.isActive ? "success" : "default"}
                       className="text-sm px-3 py-1"
                     >
                       {selectedPT.isActive ? "Hoạt động" : "Không hoạt động"}
                     </Tag>
                     <Tag color="orange" className="text-sm px-3 py-1">
-                      <TrophyOutlined /> {selectedPT.experience || 0} năm kinh nghiệm
+                      <TrophyOutlined /> {selectedPT.experience || 0} năm kinh
+                      nghiệm
                     </Tag>
                   </div>
                 </div>
@@ -688,48 +898,95 @@ export default function ManagePTPage() {
                 style={{ borderColor: "#FFE5E9" }}
               >
                 <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
-                  <Descriptions.Item label={<span><IdcardOutlined /> ID</span>} span={2}>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <IdcardOutlined /> ID
+                      </span>
+                    }
+                    span={2}
+                  >
                     <div className="font-mono text-xs bg-gray-50 p-2 rounded inline-block">
                       {selectedPT.id}
                     </div>
                   </Descriptions.Item>
-                <Descriptions.Item label="Trạng Thái">
+                  <Descriptions.Item label="Trạng Thái">
                     <Tag
-                      icon={selectedPT.isActive ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+                      icon={
+                        selectedPT.isActive ? (
+                          <CheckCircleOutlined />
+                        ) : (
+                          <ClockCircleOutlined />
+                        )
+                      }
                       color={selectedPT.isActive ? "success" : "default"}
                       className="px-3 py-1"
                     >
                       {selectedPT.isActive ? "Hoạt động" : "Không hoạt động"}
                     </Tag>
                   </Descriptions.Item>
-                  <Descriptions.Item label={<span><UserOutlined /> Họ Tên</span>}>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <UserOutlined /> Họ Tên
+                      </span>
+                    }
+                  >
                     <div className="font-semibold p-2 text-gray-800">
                       {selectedPT.fullName || "N/A"}
                     </div>
                   </Descriptions.Item>
 
-                  <Descriptions.Item span={2} label={<span><MailOutlined /> Email</span>}>
-                    <span className="text-blue-600">{selectedPT.email || "N/A"}</span>
+                  <Descriptions.Item
+                    span={2}
+                    label={
+                      <span>
+                        <MailOutlined /> Email
+                      </span>
+                    }
+                  >
+                    <span className="text-blue-600">
+                      {selectedPT.email || "N/A"}
+                    </span>
                   </Descriptions.Item>
 
-                  <Descriptions.Item label={<span><PhoneOutlined /> Số Điện Thoại</span>}>
-                    <span className="font-semibold">{selectedPT.phone || "Chưa cập nhật"}</span>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <PhoneOutlined /> Số Điện Thoại
+                      </span>
+                    }
+                  >
+                    <span className="font-semibold">
+                      {selectedPT.phone || "Chưa cập nhật"}
+                    </span>
                   </Descriptions.Item>
 
-                  <Descriptions.Item label={<span><CalendarOutlined /> Ngày Sinh</span>}>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <CalendarOutlined /> Ngày Sinh
+                      </span>
+                    }
+                  >
                     <div className="flex flex-col">
                       <span className="font-semibold">
                         {selectedPT.dob
-                          ? new Date(selectedPT.dob).toLocaleDateString("vi-VN", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })
+                          ? new Date(selectedPT.dob).toLocaleDateString(
+                              "vi-VN",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
+                            )
                           : "N/A"}
                       </span>
                       {selectedPT.dob && (
                         <span className="text-xs text-gray-500">
-                          {new Date().getFullYear() - new Date(selectedPT.dob).getFullYear()} tuổi
+                          {new Date().getFullYear() -
+                            new Date(selectedPT.dob).getFullYear()}{" "}
+                          tuổi
                         </span>
                       )}
                     </div>
@@ -737,12 +994,13 @@ export default function ManagePTPage() {
                   <Descriptions.Item label="Giới Tính">
                     <Tag
                       color={selectedPT.isMale ? "blue" : "pink"}
-                      icon={selectedPT.isMale ? <ManOutlined /> : <WomanOutlined />}
+                      icon={
+                        selectedPT.isMale ? <ManOutlined /> : <WomanOutlined />
+                      }
                     >
                       {selectedPT.isMale ? "Nam" : "Nữ"}
                     </Tag>
                   </Descriptions.Item>
-                  
                 </Descriptions>
               </Card>
 
@@ -760,7 +1018,13 @@ export default function ManagePTPage() {
                 style={{ borderColor: "#FFE5E9" }}
               >
                 <Descriptions column={1} bordered size="small">
-                  <Descriptions.Item label={<span><TrophyOutlined /> Kinh Nghiệm</span>}>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <TrophyOutlined /> Kinh Nghiệm
+                      </span>
+                    }
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-bold text-orange-600">
                         {selectedPT.experience || 0}
@@ -769,8 +1033,17 @@ export default function ManagePTPage() {
                     </div>
                   </Descriptions.Item>
 
-                  <Descriptions.Item label={<span><HomeOutlined /> Loại PT</span>}>
-                    <Tag color={ptType === "gym" ? "blue" : "purple"} className="px-3 py-1">
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <HomeOutlined /> Loại PT
+                      </span>
+                    }
+                  >
+                    <Tag
+                      color={ptType === "gym" ? "blue" : "purple"}
+                      className="px-3 py-1"
+                    >
                       {ptType === "gym" ? "Gym PT" : "Freelance PT"}
                     </Tag>
                   </Descriptions.Item>
@@ -787,9 +1060,11 @@ export default function ManagePTPage() {
                     <>
                       <Descriptions.Item label="Giá Từ">
                         <span className="text-green-600 font-bold text-lg">
-                          {selectedPT.priceFrom?.toLocaleString('vi-VN')}đ
+                          {selectedPT.priceFrom?.toLocaleString("vi-VN")}đ
                         </span>
-                        <span className="text-gray-500 text-sm ml-2">/ buổi</span>
+                        <span className="text-gray-500 text-sm ml-2">
+                          / buổi
+                        </span>
                       </Descriptions.Item>
 
                       <Descriptions.Item label="Đánh Giá">
@@ -809,29 +1084,39 @@ export default function ManagePTPage() {
                         <span className="text-gray-500 ml-2">gói đã bán</span>
                       </Descriptions.Item>
 
-                      {selectedPT.goalTrainings && selectedPT.goalTrainings.length > 0 && (
-                        <Descriptions.Item label="Mục Tiêu Huấn Luyện">
-                          <div className="flex flex-wrap gap-2">
-                            {selectedPT.goalTrainings.map((goal, index) => (
-                              <Tag key={index} color="blue" className="px-2 py-1">
-                                {goal}
-                              </Tag>
-                            ))}
-                          </div>
-                        </Descriptions.Item>
-                      )}
+                      {selectedPT.goalTrainings &&
+                        selectedPT.goalTrainings.length > 0 && (
+                          <Descriptions.Item label="Mục Tiêu Huấn Luyện">
+                            <div className="flex flex-wrap gap-2">
+                              {selectedPT.goalTrainings.map((goal, index) => (
+                                <Tag
+                                  key={index}
+                                  color="blue"
+                                  className="px-2 py-1"
+                                >
+                                  {goal}
+                                </Tag>
+                              ))}
+                            </div>
+                          </Descriptions.Item>
+                        )}
 
-                      {selectedPT.certifications && selectedPT.certifications.length > 0 && (
-                        <Descriptions.Item label="Chứng Chỉ">
-                          <div className="flex flex-wrap gap-2">
-                            {selectedPT.certifications.map((cert, index) => (
-                              <Tag key={index} color="green" icon={<CheckCircleOutlined />}>
-                                Chứng chỉ {index + 1}
-                              </Tag>
-                            ))}
-                          </div>
-                        </Descriptions.Item>
-                      )}
+                      {selectedPT.certifications &&
+                        selectedPT.certifications.length > 0 && (
+                          <Descriptions.Item label="Chứng Chỉ">
+                            <div className="flex flex-wrap gap-2">
+                              {selectedPT.certifications.map((cert, index) => (
+                                <Tag
+                                  key={index}
+                                  color="green"
+                                  icon={<CheckCircleOutlined />}
+                                >
+                                  Chứng chỉ {index + 1}
+                                </Tag>
+                              ))}
+                            </div>
+                          </Descriptions.Item>
+                        )}
 
                       {selectedPT.description && (
                         <Descriptions.Item label="Mô Tả" span={2}>
@@ -865,7 +1150,9 @@ export default function ManagePTPage() {
                         <div className="text-3xl font-bold text-[#FF914D] mb-2">
                           {selectedPT.experience || 0}
                         </div>
-                        <div className="text-sm text-gray-600">Năm Kinh Nghiệm</div>
+                        <div className="text-sm text-gray-600">
+                          Năm Kinh Nghiệm
+                        </div>
                       </div>
                     </Col>
                     <Col xs={24} sm={ptType === "freelance" ? 6 : 8}>
@@ -874,7 +1161,9 @@ export default function ManagePTPage() {
                           {selectedPT.isActive ? "✓" : "✗"}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {selectedPT.isActive ? "Đang Hoạt Động" : "Ngừng Hoạt Động"}
+                          {selectedPT.isActive
+                            ? "Đang Hoạt Động"
+                            : "Ngừng Hoạt Động"}
                         </div>
                       </div>
                     </Col>
@@ -897,7 +1186,9 @@ export default function ManagePTPage() {
                             <div className="text-3xl font-bold text-yellow-500 mb-2">
                               ⭐ {selectedPT.rating?.toFixed(1) || "0.0"}
                             </div>
-                            <div className="text-sm text-gray-600">Đánh Giá</div>
+                            <div className="text-sm text-gray-600">
+                              Đánh Giá
+                            </div>
                           </div>
                         </Col>
                         <Col xs={24} sm={6}>
@@ -905,7 +1196,9 @@ export default function ManagePTPage() {
                             <div className="text-3xl font-bold text-blue-600 mb-2">
                               {selectedPT.totalPurchased || 0}
                             </div>
-                            <div className="text-sm text-gray-600">Lượt Mua</div>
+                            <div className="text-sm text-gray-600">
+                              Lượt Mua
+                            </div>
                           </div>
                         </Col>
                       </>
@@ -917,6 +1210,214 @@ export default function ManagePTPage() {
           </div>
         )}
       </FitBridgeModal>
+
+      {/* Add PT Modal */}
+      <Modal
+        open={isModalAddPTOpen}
+        onCancel={() => {
+          setIsModalAddPTOpen(false);
+          formAddPT.resetFields();
+        }}
+        title={
+          <div className="flex items-center gap-3 pb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+              <UserOutlined className="text-white text-lg" />
+            </div>
+            <div>
+              <h3 className="m-0 text-gray-800 text-xl font-bold">
+                Thêm Personal Trainer Mới
+              </h3>
+              <p className="text-gray-500 text-sm">
+                Điền thông tin để thêm PT vào hệ thống
+              </p>
+            </div>
+          </div>
+        }
+        footer={null}
+        width={700}
+        className="custom-modal"
+      >
+        <APIProvider apiKey={import.meta.env.VITE_API_KEY_GOOGLE}>
+          <Form
+            form={formAddPT}
+            layout="vertical"
+            requiredMark={false}
+            onFinish={handleAddPT}
+            className="max-h-[70vh] overflow-y-auto py-4 overflow-x-hidden"
+          >
+            {/* Thông tin PT Section */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <UserOutlined className="text-orange-500 text-lg" />
+                <span className="font-bold text-lg text-gray-800">
+                  Thông Tin Personal Trainer
+                </span>
+              </div>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">Email</span>
+                    }
+                    name="email"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập email" },
+                      { type: "email", message: "Email không hợp lệ" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<GlobalOutlined className="text-gray-400" />}
+                      placeholder="example@email.com"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Số điện thoại
+                      </span>
+                    }
+                    name="phoneNumber"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập số điện thoại",
+                      },
+                      { pattern: /^[0-9]+$/, message: "Vui lòng chỉ nhập số" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<PhoneOutlined className="text-gray-400" />}
+                      placeholder="09XXXXXXXX"
+                      maxLength={10}
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Họ và Tên
+                      </span>
+                    }
+                    name="fullName"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập họ và tên" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<UserOutlined className="text-gray-400" />}
+                      placeholder="Nguyễn Văn A"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Mật khẩu
+                      </span>
+                    }
+                    name="password"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập mật khẩu" },
+                    ]}
+                  >
+                    <Input.Password placeholder="Nhập mật khẩu" size="large" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item
+                label={
+                  <span className="font-semibold text-gray-700">Loại PT</span>
+                }
+                name="role"
+                rules={[{ required: true, message: "Vui lòng chọn loại PT" }]}
+              >
+                <Select
+                  placeholder="Chọn loại Personal Trainer"
+                  size="large"
+                  suffixIcon={<TeamOutlined className="text-gray-400" />}
+                >
+                  <Option value="GymPT">
+                    <div className="flex items-center gap-2">
+                      <HomeOutlined className="text-blue-500" />
+                      <span>Gym PT - Huấn luyện viên phòng gym</span>
+                    </div>
+                  </Option>
+                  <Option value="FreelancePT">
+                    <div className="flex items-center gap-2">
+                      <UserOutlined className="text-green-500" />
+                      <span>Freelance PT - Huấn luyện viên tự do</span>
+                    </div>
+                  </Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label={
+                  <span className="font-semibold text-gray-700">
+                    Địa chỉ kinh doanh
+                  </span>
+                }
+                name="businessAddress"
+                rules={[
+                  {
+                    required: true,
+                    message: "Vui lòng nhập địa chỉ kinh doanh",
+                  },
+                ]}
+              >
+                <PlacesAutocompletePT
+                  onSelect={(location) => {
+                    console.log("Selected location:", location);
+                  }}
+                  formInstance={formAddPT}
+                />
+              </Form.Item>
+
+              {/* Hidden fields for coordinates */}
+              <Form.Item name="longitude" hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item name="latitude" hidden>
+                <Input />
+              </Form.Item>
+            </div>
+
+            <div className="text-center pt-6 border-t mt-6">
+              <Space size="middle">
+                <Button
+                  size="large"
+                  onClick={() => {
+                    setIsModalAddPTOpen(false);
+                    formAddPT.resetFields();
+                  }}
+                  className="px-8"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={loadingAddPT}
+                  onClick={() => formAddPT.submit()}
+                  className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-8 shadow-lg"
+                >
+                  {loadingAddPT ? "Đang thêm..." : "Thêm Personal Trainer"}
+                </Button>
+              </Space>
+            </div>
+          </Form>
+        </APIProvider>
+      </Modal>
     </div>
   );
 }

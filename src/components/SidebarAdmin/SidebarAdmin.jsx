@@ -141,6 +141,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           <GiTeacher className="text-lg" />
         ),
         getItem(
+          "Quản Lý Cơ Sở Vật Chất",
+          `${route.gym}/${route.manageAssets}`,
+          <HiDocumentText className="text-lg" />
+        ),
+        getItem(
           "Quản Lý Gói Tập",
           `${route.gym}/${route.managePackagesGym}`,
           <GiGymBag className="text-lg" />

@@ -45,6 +45,7 @@ import { NotificationSignalRProvider } from "./context/NotificationSignalRContex
 import { NotificationProvider } from "./context/NotificationContext";
 import ChatBubble from "./components/Chat/ChatBubble";
 import ManageCerPage from "./pages/AdminPages/ManageCerPage/ManageCerPage";
+import ManageAssetsPage from "./pages/GymPages/ManageAssetsPage/ManageAssetsPage";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -493,6 +494,14 @@ function App() {
                 </ProtectedRoute>
               ),
             },
+            {
+              path: route.manageAssets,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManageAssetsPage />
+                </ProtectedRoute>
+              ),
+            },
           ],
         },
 
@@ -530,6 +539,7 @@ function App() {
                 </ProtectedRoute>
               ),
             },
+
             {
               path: "profile",
               element: (
