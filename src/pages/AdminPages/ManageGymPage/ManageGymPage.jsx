@@ -1464,7 +1464,6 @@ export default function ManageGymPage() {
               </Row>
             </Card>
 
-            {/* Section 6: Images
             <Card
               size="small"
               className="mb-4 shadow-sm"
@@ -1542,7 +1541,7 @@ export default function ManageGymPage() {
                   </div>
                 </Upload>
               </Form.Item>
-            </Card> */}
+            </Card>
 
             <div className="text-center pt-6 border-t mt-6">
               <Space size="middle">
