@@ -17,7 +17,7 @@ import { route } from "../../routes/index";
 import Cookies from "js-cookie";
 
 const LoginForm = ({
-  title = "GymRadar",
+  title = "FitBridge",
   subtitle = "Đăng Nhập",
   onToggleForm,
 }) => {

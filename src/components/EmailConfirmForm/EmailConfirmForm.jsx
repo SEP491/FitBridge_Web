@@ -2,28 +2,32 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "antd";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  MailOutlined, 
+import {
+  MailOutlined,
   ArrowLeftOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import authService from "../../services/authServices";
 
-const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }) => {
+const EmailConfirmForm = ({
+  title = "FitBridge",
+  subtitle = "Xác Thực Email",
+}) => {
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [searchParams] = useSearchParams();
 
   // Get email and token from URL params with manual + character handling
-  const email = searchParams.get('email');
-  const rawToken = searchParams.get('token');
-  const token = rawToken ? rawToken.replace(/ /g, '+') : null; // Replace all spaces with + characters
+  const email = searchParams.get("email");
+  const rawToken = searchParams.get("token");
+  const token = rawToken ? rawToken.replace(/ /g, "+") : null; // Replace all spaces with + characters
 
   // Validate that we have proper email and token
-  const isValidData = email && token && email.includes('@') && token.length > 10;
+  const isValidData =
+    email && token && email.includes("@") && token.length > 10;
 
   useEffect(() => {
     // Add a small delay to ensure URL params are fully loaded
@@ -50,7 +54,9 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
 
     // Validate data before making API call
     if (!isValidData) {
-      toast.error("Dữ liệu xác thực không hợp lệ. Vui lòng kiểm tra link email.");
+      toast.error(
+        "Dữ liệu xác thực không hợp lệ. Vui lòng kiểm tra link email."
+      );
       console.error("Invalid email or token:", { email, token });
       return;
     }
@@ -63,19 +69,17 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
 
     setLoading(true);
     console.log("Verifying with token:", token, "for email:", email);
-    
+
     try {
       // Call the actual email confirmation API
       const response = await authService.emailConfirm(email, token);
       console.log("Email confirmation response:", response);
-      
+
       setVerified(true);
       toast.success("Email đã được xác thực thành công!");
-      
-      
     } catch (error) {
       console.error("Email verification error:", error);
-      
+
       // Handle different types of errors
       if (error.response?.status === 400) {
         toast.error("Mã xác thực không hợp lệ hoặc đã hết hạn");
@@ -93,7 +97,6 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
     }
   }, [email, token, loading, verified, isValidData, isReady]); // Dependencies for useCallback
 
-
   return (
     <motion.div
       className="w-full h-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-4"
@@ -102,7 +105,7 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
       transition={{ duration: 0.8, delay: 6.5 }}
     >
       {/* Header */}
-      <motion.div 
+      <motion.div
         className="text-center mb-6"
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -117,7 +120,7 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
       </motion.div>
 
       {/* Email Info */}
-      <motion.div 
+      <motion.div
         className="text-center mb-6 space-y-3"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -134,13 +137,12 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
             Email không hợp lệ
           </p>
         )}
-        
       </motion.div>
 
       {/* Success Animation or Verify Button */}
       <AnimatePresence mode="wait">
         {!verified ? (
-          <motion.div 
+          <motion.div
             className="w-full max-w-md"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -159,15 +161,22 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
                 loading={loading}
                 disabled={!isValidData || !isReady || loading || verified}
                 className="w-full h-12 sm:h-14 rounded-lg text-base sm:text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                 style={{
-                  background: isValidData && isReady ? 'linear-gradient(to right, #FF914D, #FF3A50)' : '#666',
-                  border: 'none',
-                  boxShadow: '0 4px 15px 0 rgba(255, 145, 77, 0.3)'
+                style={{
+                  background:
+                    isValidData && isReady
+                      ? "linear-gradient(to right, #FF914D, #FF3A50)"
+                      : "#666",
+                  border: "none",
+                  boxShadow: "0 4px 15px 0 rgba(255, 145, 77, 0.3)",
                 }}
               >
-                {!isReady ? "Đang tải..." : 
-                 !isValidData ? "Dữ liệu không hợp lệ" :
-                 loading ? "Đang xác thực..." : "Xác Thực Email"}
+                {!isReady
+                  ? "Đang tải..."
+                  : !isValidData
+                  ? "Dữ liệu không hợp lệ"
+                  : loading
+                  ? "Đang xác thực..."
+                  : "Xác Thực Email"}
               </Button>
             </motion.div>
           </motion.div>
@@ -176,29 +185,32 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
             className="flex flex-col items-center justify-center w-full max-w-md"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ 
-              duration: 0.8, 
+            transition={{
+              duration: 0.8,
               ease: "backOut",
-              scale: { delay: 0.2 }
+              scale: { delay: 0.2 },
             }}
           >
             {/* Success Icon */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ 
+              transition={{
                 duration: 0.6,
                 delay: 0.3,
                 type: "spring",
-                stiffness: 300
+                stiffness: 300,
               }}
             >
-              <CheckCircleOutlined 
+              <CheckCircleOutlined
                 className="text-6xl sm:text-8xl text-green-400 mb-4"
-                style={{ filter: 'drop-shadow(0 0 20px rgba(34, 197, 94, 0.5))', color:'green' }}
+                style={{
+                  filter: "drop-shadow(0 0 20px rgba(34, 197, 94, 0.5))",
+                  color: "green",
+                }}
               />
             </motion.div>
-            
+
             {/* Success Message */}
             <motion.h3
               className="text-xl sm:text-2xl font-bold text-white mb-2 text-center"
@@ -208,7 +220,7 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
             >
               Xác thực thành công!
             </motion.h3>
-            
+
             <motion.p
               className="text-sm sm:text-base text-white/80 text-center mb-6"
               initial={{ opacity: 0, y: 20 }}
@@ -220,7 +232,6 @@ const EmailConfirmForm = ({ title = "GymRadar", subtitle = "Xác Thực Email" }
           </motion.div>
         )}
       </AnimatePresence>
-
     </motion.div>
   );
 };

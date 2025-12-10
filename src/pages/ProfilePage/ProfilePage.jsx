@@ -4,8 +4,10 @@ import {
   Form,
   Input,
   DatePicker,
+  TimePicker,
   Button,
   Upload,
+  Select,
   message,
   Avatar,
   Row,
@@ -35,6 +37,7 @@ import {
   FileTextOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../redux/features/userSlice";
@@ -53,10 +56,14 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [frontCitizenId, setFrontCitizenId] = useState(null);
   const [backCitizenId, setBackCitizenId] = useState(null);
-  const [certificates, setCertificates] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [frontPreview, setFrontPreview] = useState(null);
   const [backPreview, setBackPreview] = useState(null);
+  const [frontCitizenFile, setFrontCitizenFile] = useState(null);
+  const [backCitizenFile, setBackCitizenFile] = useState(null);
+  const [imagesToAdd, setImagesToAdd] = useState([]);
+  const [imagesToRemove, setImagesToRemove] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
 
   useEffect(() => {
     fetchProfile();
@@ -72,7 +79,14 @@ export default function ProfilePage() {
       setAvatarUrl(data.avatarUrl);
       setFrontCitizenId(data.frontCitizenIdUrl);
       setBackCitizenId(data.backCitizenIdUrl);
-      setCertificates(data.userDetail?.certificates || []);
+      const combinedImages = [
+        ...(data.freelancePtImages || []),
+        ...(data.gymImages || []),
+        ...(data.images || []),
+        ...(data.galleryImages || []),
+      ];
+      setExistingImages(Array.from(new Set(combinedImages)));
+      setImagesToRemove([]);
 
       // Set form values based on role
       if (user?.role === "GymOwner") {
@@ -95,6 +109,8 @@ export default function ProfilePage() {
           gymFoundationDate: data.gymFoundationDate
             ? dayjs(data.gymFoundationDate)
             : null,
+          openTime: data.openTime ? dayjs(data.openTime, "HH:mm:ss") : null,
+          closeTime: data.closeTime ? dayjs(data.closeTime, "HH:mm:ss") : null,
           businessAddress: data.businessAddress,
         });
       } else if (user?.role === "FreelancePT") {
@@ -104,8 +120,11 @@ export default function ProfilePage() {
           phone: data.phone,
           dob: data.dob ? dayjs(data.dob) : null,
           gender: data.gender,
-          weight: data.userDetail?.weight,
-          height: data.userDetail?.height,
+          weight: data.weight,
+          height: data.height,
+          bio: data.bio,
+          ptMaxCourse: data.ptMaxCourse,
+          ptCurrentCourse: data.ptCurrentCourse,
           citizenIdNumber: data.citizenIdNumber,
           identityCardPlace: data.identityCardPlace,
           citizenCardPermanentAddress: data.citizenCardPermanentAddress,
@@ -126,52 +145,87 @@ export default function ProfilePage() {
   const handleSubmit = async (values) => {
     setSaving(true);
     try {
-      let payload = {};
+      const formData = new FormData();
+      const appendIfPresent = (key, value) => {
+        if (value !== undefined && value !== null && value !== "") {
+          formData.append(key, value);
+        }
+      };
+
+      appendIfPresent("id", user?.id);
+
+      // Shared identity fields
+      appendIfPresent("citizenIdNumber", values.citizenIdNumber);
+      appendIfPresent("identityCardPlace", values.identityCardPlace);
+      appendIfPresent(
+        "citizenCardPermanentAddress",
+        values.citizenCardPermanentAddress
+      );
+      appendIfPresent(
+        "identityCardDate",
+        values.identityCardDate
+          ? values.identityCardDate.format("YYYY-MM-DD")
+          : null
+      );
+
+      if (frontCitizenFile) {
+        formData.append("frontCitizenIdFile", frontCitizenFile);
+      }
+      if (backCitizenFile) {
+        formData.append("backCitizenIdFile", backCitizenFile);
+      }
+
+      imagesToAdd.forEach((file) => {
+        const rawFile = file.originFileObj || file;
+        formData.append("imagesToAdd", rawFile);
+      });
+
+      imagesToRemove.forEach((url) => {
+        formData.append("imagesToRemove", url);
+      });
 
       // Add role-specific fields
       if (user?.role === "GymOwner") {
-        payload = {
-          dob: values.dob ? values.dob.toISOString() : null,
-          citizenIdNumber: values.citizenIdNumber,
-          identityCardPlace: values.identityCardPlace,
-          citizenCardPermanentAddress: values.citizenCardPermanentAddress,
-          identityCardDate: values.identityCardDate
-            ? values.identityCardDate.format("YYYY-MM-DD")
-            : null,
-          gymDescription: values.gymDescription,
-          gymFoundationDate: values.gymFoundationDate
+        appendIfPresent("dob", values.dob ? values.dob.toISOString() : null);
+        appendIfPresent("gymDescription", values.gymDescription);
+        appendIfPresent(
+          "gymFoundationDate",
+          values.gymFoundationDate
             ? values.gymFoundationDate.format("YYYY-MM-DD")
-            : null,
-        };
+            : null
+        );
+        appendIfPresent("gymName", values.gymName);
+        appendIfPresent("taxCode", values.taxCode);
+        appendIfPresent(
+          "openTime",
+          values.openTime ? values.openTime.format("HH:mm:ss") : null
+        );
+        appendIfPresent(
+          "closeTime",
+          values.closeTime ? values.closeTime.format("HH:mm:ss") : null
+        );
       } else if (user?.role === "FreelancePT") {
-        payload = {
-          dob: values.dob ? values.dob.toISOString() : null,
-          citizenIdNumber: values.citizenIdNumber,
-          identityCardPlace: values.identityCardPlace,
-          citizenCardPermanentAddress: values.citizenCardPermanentAddress,
-          identityCardDate: values.identityCardDate
-            ? values.identityCardDate.format("YYYY-MM-DD")
-            : null,
-          userDetail: {
-            weight: values.weight || 0,
-            height: values.height || 0,
-            biceps: 0,
-            foreArm: 0,
-            thigh: 0,
-            calf: 0,
-            chest: 0,
-            waist: 0,
-            hip: 0,
-            shoulder: 0,
-            certificates: certificates,
-            experience: 0,
-          },
-        };
+        appendIfPresent("fullName", values.fullName);
+        appendIfPresent("email", values.email);
+        appendIfPresent("phone", values.phone);
+        appendIfPresent("gender", values.gender);
+        appendIfPresent("bio", values.bio);
+        appendIfPresent("dob", values.dob ? values.dob.toISOString() : null);
+        appendIfPresent("weight", values.weight || 0);
+        appendIfPresent("height", values.height || 0);
+        appendIfPresent("ptMaxCourse", values.ptMaxCourse);
+        appendIfPresent("ptCurrentCourse", values.ptCurrentCourse);
       }
 
-      await profileService.updateProfile(user.id, payload);
+      await profileService.updateProfile(formData);
       message.success("Cập nhật thông tin thành công!");
       setIsEditMode(false);
+      setImagesToAdd([]);
+      setImagesToRemove([]);
+      setFrontCitizenFile(null);
+      setBackCitizenFile(null);
+      setFrontPreview(null);
+      setBackPreview(null);
       fetchProfile();
     } catch (error) {
       message.error("Không thể cập nhật thông tin");
@@ -197,8 +251,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleCitizenIdUpload = async (file, type) => {
-    // Create preview URL
+  const handleCitizenIdUpload = (file, type) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       if (type === "front") {
@@ -209,44 +262,104 @@ export default function ProfilePage() {
     };
     reader.readAsDataURL(file);
 
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await profileService.uploadCitizenImage(formData);
-      const uploadedUrl = response.data;
-
-      // Update state immediately for UI
-      if (type === "front") {
-        setFrontCitizenId(uploadedUrl);
-        setFrontPreview(null);
-      } else {
-        setBackCitizenId(uploadedUrl);
-        setBackPreview(null);
-      }
-
-      // Prepare payload with both URLs
-      const payload = {
-        frontCitizenIdUrl: type === "front" ? uploadedUrl : frontCitizenId,
-        backCitizenIdUrl: type === "back" ? uploadedUrl : backCitizenId,
-      };
-
-      // Update profile with the new CCCD URLs
-      await profileService.updateProfile(user.id, payload);
-      message.success("Tải ảnh CCCD thành công!");
-      fetchProfile();
-      return false;
-    } catch (error) {
-      message.error("Không thể tải ảnh lên");
-      console.error(error);
-      if (type === "front") {
-        setFrontPreview(null);
-      } else {
-        setBackPreview(null);
-      }
-      return false;
+    if (type === "front") {
+      setFrontCitizenFile(file);
+      setFrontCitizenId(null);
+    } else {
+      setBackCitizenFile(file);
+      setBackCitizenId(null);
     }
+
+    message.info("Ảnh sẽ được gửi khi bạn lưu thay đổi");
+    return false;
   };
+
+  const handleImagesChange = ({ fileList }) => {
+    setImagesToAdd(fileList);
+  };
+
+  const toggleRemoveImage = (url) => {
+    setImagesToRemove((prev) =>
+      prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]
+    );
+  };
+
+  const renderImagesSection = () => (
+    <Col xs={24}>
+      <Card
+        type="inner"
+        title={<Text strong>Hình ảnh</Text>}
+        style={{
+          marginBottom: "24px",
+          borderRadius: "12px",
+          background: "#fafafa",
+        }}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Upload
+            listType="picture-card"
+            multiple
+            accept="image/*"
+            fileList={imagesToAdd}
+            beforeUpload={() => false}
+            onChange={handleImagesChange}
+            disabled={!isEditMode}
+          >
+            {isEditMode && "+ Thêm hình"}
+          </Upload>
+          <Text type="secondary">
+            Ảnh sẽ được tải lên khi bạn lưu thay đổi.
+          </Text>
+        </div>
+
+        {["FreelancePT", "GymOwner"].includes(user?.role) &&
+          existingImages.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <Divider orientation="left">
+                {user?.role === "FreelancePT"
+                  ? "Hình ảnh Freelance PT"
+                  : "Hình ảnh phòng tập"}
+              </Divider>
+              <Row gutter={[16, 16]}>
+                {existingImages.map((url) => (
+                  <Col xs={24} sm={12} md={8} lg={6} key={url}>
+                    <Card
+                      hoverable
+                      cover={
+                        <img
+                          alt="Hình ảnh"
+                          src={url}
+                          style={{ height: 180, objectFit: "cover" }}
+                        />
+                      }
+                      actions={
+                        isEditMode
+                          ? [
+                              <span
+                                key="remove"
+                                style={{
+                                  color: imagesToRemove.includes(url)
+                                    ? "#ff4d4f"
+                                    : "inherit",
+                                }}
+                                onClick={() => toggleRemoveImage(url)}
+                              >
+                                {imagesToRemove.includes(url)
+                                  ? "Hoàn tác xóa"
+                                  : "Xóa hình"}
+                              </span>,
+                            ]
+                          : undefined
+                      }
+                    />
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
+      </Card>
+    </Col>
+  );
 
   const renderGymOwnerFields = () => (
     <>
@@ -277,7 +390,12 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập họ và tên"
+          />
         </Form.Item>
       </Col>
 
@@ -290,7 +408,12 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập email"
+          />
         </Form.Item>
       </Col>
 
@@ -303,7 +426,12 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập số điện thoại"
+          />
         </Form.Item>
       </Col>
 
@@ -539,7 +667,12 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled={!isEditMode}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập tên phòng tập"
+          />
         </Form.Item>
       </Col>
 
@@ -552,7 +685,12 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled={!isEditMode}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập mã số thuế"
+          />
         </Form.Item>
       </Col>
 
@@ -602,7 +740,50 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled={!isEditMode}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập địa chỉ kinh doanh"
+          />
+        </Form.Item>
+      </Col>
+
+      <Col xs={24} md={12}>
+        <Form.Item
+          name="openTime"
+          label={
+            <Text strong>
+              <ClockCircleOutlined /> Giờ mở cửa
+            </Text>
+          }
+        >
+          <TimePicker
+            style={{ width: "100%", borderRadius: "8px" }}
+            size="large"
+            format="HH:mm"
+            disabled={!isEditMode}
+            placeholder="Chọn giờ mở cửa"
+          />
+        </Form.Item>
+      </Col>
+
+      <Col xs={24} md={12}>
+        <Form.Item
+          name="closeTime"
+          label={
+            <Text strong>
+              <ClockCircleOutlined /> Giờ đóng cửa
+            </Text>
+          }
+        >
+          <TimePicker
+            style={{ width: "100%", borderRadius: "8px" }}
+            size="large"
+            format="HH:mm"
+            disabled={!isEditMode}
+            placeholder="Chọn giờ đóng cửa"
+          />
         </Form.Item>
       </Col>
     </>
@@ -636,7 +817,12 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled={!(isEditMode && user?.role === "FreelancePT")}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập họ và tên"
+          />
         </Form.Item>
       </Col>
 
@@ -649,7 +835,12 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled={!(isEditMode && user?.role === "FreelancePT")}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập email"
+          />
         </Form.Item>
       </Col>
 
@@ -662,7 +853,12 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          <Input
+            disabled={!(isEditMode && user?.role === "FreelancePT")}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập số điện thoại"
+          />
         </Form.Item>
       </Col>
 
@@ -687,11 +883,16 @@ export default function ProfilePage() {
 
       <Col xs={24} md={12}>
         <Form.Item name="gender" label={<Text strong>Giới tính</Text>}>
-          <Input
-            disabled
+          <Select
+            disabled={!(isEditMode && user?.role === "FreelancePT")}
             size="large"
             style={{ borderRadius: "8px" }}
-            prefix={
+            placeholder="Chọn giới tính"
+            options={[
+              { label: "Nam", value: "Male" },
+              { label: "Nữ", value: "Female" },
+            ]}
+            suffixIcon={
               profileData?.gender === "Male" ? (
                 <ManOutlined />
               ) : (
@@ -700,6 +901,23 @@ export default function ProfilePage() {
             }
           />
         </Form.Item>
+      </Col>
+
+      <Col xs={24}>
+        <Divider
+          orientation="left"
+          style={{
+            fontSize: "16px",
+            fontWeight: "600",
+            color: "#1890ff",
+            marginTop: "16px",
+          }}
+        >
+          <Space>
+            <CheckCircleOutlined />
+            <span>Thông tin huấn luyện</span>
+          </Space>
+        </Divider>
       </Col>
 
       <Col xs={24} md={12}>
@@ -726,6 +944,49 @@ export default function ProfilePage() {
             size="large"
             style={{ borderRadius: "8px" }}
             placeholder="Nhập cân nặng"
+          />
+        </Form.Item>
+      </Col>
+
+      <Col xs={24} md={12}>
+        <Form.Item
+          name="ptMaxCourse"
+          label={<Text strong>Số học viên tối đa</Text>}
+        >
+          <Input
+            type="number"
+            disabled={!isEditMode}
+            min={0}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập số học viên tối đa"
+          />
+        </Form.Item>
+      </Col>
+
+      <Col xs={24} md={12}>
+        <Form.Item
+          name="ptCurrentCourse"
+          label={<Text strong>Số học viên hiện tại</Text>}
+        >
+          <Input
+            type="number"
+            disabled={!isEditMode}
+            min={0}
+            size="large"
+            style={{ borderRadius: "8px" }}
+            placeholder="Nhập số học viên hiện tại"
+          />
+        </Form.Item>
+      </Col>
+
+      <Col xs={24}>
+        <Form.Item name="bio" label={<Text strong>Giới thiệu bản thân</Text>}>
+          <TextArea
+            rows={4}
+            disabled={!isEditMode}
+            style={{ borderRadius: "8px" }}
+            placeholder="Chia sẻ đôi nét về bạn"
           />
         </Form.Item>
       </Col>
@@ -1020,7 +1281,7 @@ export default function ProfilePage() {
           {/* Avatar Section */}
           <Card
             style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              background: "linear-gradient(135deg, #FF914D 0%, #FF3A50 100%)",
               marginBottom: "32px",
               borderRadius: "12px",
               border: "none",
@@ -1120,6 +1381,7 @@ export default function ProfilePage() {
               {/* Role-specific Fields */}
               {user?.role === "GymOwner" && renderGymOwnerFields()}
               {user?.role === "FreelancePT" && renderFreelancePTFields()}
+              {renderImagesSection()}
             </Row>
 
             {isEditMode && (

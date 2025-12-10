@@ -224,7 +224,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           <div className="flex flex-col items-center">
             <img src={logo} alt="Logo" className="w-16 h-16 mb-2" />
             <div className="text-white font-bold text-xl tracking-wide">
-              GymRadar
+              FitBridge
             </div>
           </div>
         )}
