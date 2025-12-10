@@ -38,6 +38,7 @@ import {
   DeleteOutlined,
   CheckCircleOutlined,
   StopOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import {
   FaGift,
@@ -184,6 +185,12 @@ export default function ManageVoucher() {
     }
   };
 
+  const formatTime = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN");
+  };
+
   const handleEditCoupon = async (values) => {
     setLoadingEdit(true);
     
@@ -271,6 +278,19 @@ export default function ManageVoucher() {
           <NumberOutlined style={{ fontSize: "16px", color: "#722ed1" }} />
           <span className="text-sm font-medium">{quantity}</span>
           <span className="text-xs text-gray-500">coupon</span>
+        </div>
+      ),
+    },
+    {
+      title: "Thời Gian Hiệu Lực",
+      dataIndex: "expirationDate",
+      key: "expirationDate",
+      align: "center",
+      render: (expirationDate) => (
+        <div className="flex flex-col items-center">
+          <CalendarOutlined style={{ fontSize: "16px", color: "#1890ff" }} />
+          <span className="text-sm font-medium">{formatTime(expirationDate)}</span>
+          <span className="text-xs text-gray-500">hết hạn</span>
         </div>
       ),
     },
