@@ -17,8 +17,14 @@ const contractService = {
 
   confirmContract: (contractId) =>
     request("PUT", `/v1/contracts/confirm/${contractId}`),
-  getCustomersToCreateContract: () =>
-    request("GET", `/v1/accounts/admin/expired-contract-users`),
+  getCustomersToCreateContract: (params) =>
+    request(
+      "GET",
+      `/v1/accounts/admin/expired-contract-users`,
+      null,
+      {},
+      params
+    ),
 };
 
 export default contractService;

@@ -93,7 +93,11 @@ const ManageContractPage = () => {
   const fetchUsers = async () => {
     setLoadingUsers(true);
     try {
-      const response = await contractService.getCustomersToCreateContract();
+      const response = await contractService.getCustomersToCreateContract({
+        page: 1,
+        size: 200,
+        doApplyPaging: false,
+      });
       setUsers(response.data?.items || []);
     } catch (error) {
       message.error("Không thể tải danh sách người dùng");
