@@ -462,7 +462,7 @@ const ContractTemplate = React.forwardRef(
               <strong>Chức vụ:</strong> Admin
             </p>
             <p>
-              <strong>Số CCCD:</strong> ___________________
+              <strong>Số CCCD:</strong> 077204000387
             </p>
             <p>
               <strong>Ngày cấp:</strong> ___________________
@@ -475,7 +475,7 @@ const ContractTemplate = React.forwardRef(
               Đức, TP.HCM
             </p>
             <p>
-              <strong>Điện thoại:</strong> ___________________
+              <strong>Điện thoại:</strong> 0973035305
             </p>
             <p>
               <strong>Email:</strong> admin@fitbridge.vn
