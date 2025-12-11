@@ -42,13 +42,27 @@ const ContractSigningPage = () => {
   const [selectedContract, setSelectedContract] = useState(null);
   const [customerSignature, setCustomerSignature] = useState(null);
   const [signing, setSigning] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   const user = useSelector(selectUser);
-  const fetchContracts = async () => {
+  const fetchContracts = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await contractService.getContractForCustomer(user.id);
+      const response = await contractService.getContractForCustomer(
+        user.id,
+        page,
+        pageSize
+      );
       setContracts(response.data?.items || []);
+      setPagination({
+        current: page,
+        pageSize: pageSize,
+        total: response.data?.totalCount || 0,
+      });
     } catch (error) {
       message.error("Không thể tải danh sách hợp đồng");
       console.error(error);
@@ -376,9 +390,13 @@ const ContractSigningPage = () => {
           loading={loading}
           rowKey="id"
           pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total) => `Tổng ${total} hợp đồng`,
+            pageSizeOptions: ["10", "20", "50", "100"],
           }}
           onChange={handleTableChange}
           scroll={{ x: 1200 }}

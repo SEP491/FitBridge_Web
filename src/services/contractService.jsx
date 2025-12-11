@@ -10,8 +10,8 @@ const contractService = {
   getContractById: (contractId) =>
     request("GET", "/v1/contracts", null, {}, { contractId }),
 
-  getContractForCustomer: (customerId) =>
-    request("GET", "/v1/contracts", null, {}, { customerId }),
+  getContractForCustomer: (customerId, page = 1, size = 10) =>
+    request("GET", "/v1/contracts", null, {}, { customerId, page, size }),
 
   updateContract: (formData) => request("PUT", "/v1/contracts", formData),
 
