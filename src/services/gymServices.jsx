@@ -22,7 +22,8 @@ const gymService = {
     request("POST", `/v1/gym-slots/deactivated-slots`, id),
   updateSlot: (data) => request("PUT", `/v1/gym-slots`, data),
 
-  addPTToCourse: (data) => request("POST", "/v1/course-pt", data),
+  addPTToCourse: (data) =>
+    request("POST", "/v1/gym-courses/assign-pt-to-course", data),
   getPTOfCourse: (id) => request("GET", `/v1/course/${id}/pts`, null, {}),
 
   getRevenueOfGym: (params) =>

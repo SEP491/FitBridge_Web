@@ -131,7 +131,12 @@ export default function ManageGymPackages() {
 
   const fetchPTGym = async (page = 1, pageSize = 10) => {
     try {
-      const response = await gymService.getPTofGym({ page, size: pageSize });
+      const response = await gymService.getPTofGym({
+        page,
+        size: pageSize,
+        gymId: user.id,
+      });
+      console.log(response);
       const { items } = response.data;
       setPts(items);
     } catch (error) {
@@ -185,11 +190,15 @@ export default function ManageGymPackages() {
   };
 
   const getTypeColor = (type) => {
-    return (type === "WithPT" || type === "WithPt") ? "success" : "blue";
+    return type === "WithPT" || type === "WithPt" ? "success" : "blue";
   };
 
   const getTypeIcon = (type) => {
-    return (type === "WithPT" || type === "WithPt") ? <UserOutlined /> : <TrophyOutlined />;
+    return type === "WithPT" || type === "WithPt" ? (
+      <UserOutlined />
+    ) : (
+      <TrophyOutlined />
+    );
   };
 
   const columns = [
@@ -253,7 +262,7 @@ export default function ManageGymPackages() {
           color={getTypeColor(type)}
           className="px-3 py-1"
         >
-          {(type === "WithPT" || type === "WithPt") ? "Có PT" : "Bình thường"}
+          {type === "WithPT" || type === "WithPt" ? "Có PT" : "Bình thường"}
         </Tag>
       ),
     },
@@ -337,8 +346,11 @@ export default function ManageGymPackages() {
       ? (item.name?.toLowerCase() || "").includes(searchText.toLowerCase())
       : true;
 
-    const matchesType = typeFilter === "all" || item.type === typeFilter || 
-      (typeFilter === "WithPt" && (item.type === "WithPT" || item.type === "WithPt"));
+    const matchesType =
+      typeFilter === "all" ||
+      item.type === typeFilter ||
+      (typeFilter === "WithPt" &&
+        (item.type === "WithPT" || item.type === "WithPt"));
 
     return matchesSearch && matchesType;
   });
@@ -350,20 +362,23 @@ export default function ManageGymPackages() {
   };
 
   const beforeUpload = (file) => {
-    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp';
+    const isJpgOrPng =
+      file.type === "image/jpeg" ||
+      file.type === "image/png" ||
+      file.type === "image/webp";
     if (!isJpgOrPng) {
-      toast.error('Chỉ có thể tải lên file JPG/PNG/WEBP!');
+      toast.error("Chỉ có thể tải lên file JPG/PNG/WEBP!");
     }
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      toast.error('Hình ảnh phải nhỏ hơn 2MB!');
+      toast.error("Hình ảnh phải nhỏ hơn 2MB!");
     }
     return isJpgOrPng && isLt2M;
   };
 
   const handleAddCourseGym = async (values) => {
     setLoadingAdd(true);
-    
+
     // // Get image URL from uploaded files
     // let imageUrl = "https://via.placeholder.com/400x300?text=Gym+Package";
     // if (fileList.length > 0 && fileList[0].response) {
@@ -378,11 +393,13 @@ export default function ManageGymPackages() {
       duration: values.duration,
       type: values.type,
       description: values.description,
-      imageUrl:"https://ztltswmqxsfoobwvbynz.supabase.co/storage/v1/object/public/Image/LogoColor.png",
+      imageUrl:
+        "https://ztltswmqxsfoobwvbynz.supabase.co/storage/v1/object/public/Image/LogoColor.png",
     };
 
     try {
-      await gymService.addCourse(requestData);``
+      await gymService.addCourse(requestData);
+      ``;
       toast.success("Thêm gói tập thành công");
       fetchCoursesGym();
       setIsModalAddCourseOpen(false);
@@ -766,7 +783,9 @@ export default function ManageGymPackages() {
 
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Hình ảnh gói tập</p>
+              <p className="text-xl font-bold text-[#ED2A46]">
+                Hình ảnh gói tập
+              </p>
             }
             name="imageUrl"
           >
@@ -782,9 +801,15 @@ export default function ManageGymPackages() {
             >
               {fileList.length < 1 && (
                 <div className="flex flex-col items-center justify-center p-2">
-                  <UploadOutlined style={{ fontSize: '24px', color: '#FF914D' }} />
-                  <div className="mt-2 text-sm text-gray-600">Tải lên hình ảnh</div>
-                  <div className="text-xs text-gray-400">JPG, PNG, WEBP &lt; 2MB</div>
+                  <UploadOutlined
+                    style={{ fontSize: "24px", color: "#FF914D" }}
+                  />
+                  <div className="mt-2 text-sm text-gray-600">
+                    Tải lên hình ảnh
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    JPG, PNG, WEBP &lt; 2MB
+                  </div>
                 </div>
               )}
             </Upload>
@@ -943,16 +968,16 @@ export default function ManageGymPackages() {
         .custom-pagination .ant-pagination-item:hover a {
           color: #ff914d;
         }
-        
+
         /* Upload component styling */
         :global(.upload-list-inline .ant-upload-select) {
           width: 120px !important;
           height: 120px !important;
-          border: 2px dashed #FF914D !important;
+          border: 2px dashed #ff914d !important;
           border-radius: 8px !important;
         }
         :global(.upload-list-inline .ant-upload-select:hover) {
-          border-color: #ED2A46 !important;
+          border-color: #ed2a46 !important;
         }
         :global(.upload-list-inline .ant-upload-list-picture-card-container) {
           width: 120px !important;
