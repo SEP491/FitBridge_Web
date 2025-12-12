@@ -82,11 +82,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           `${route.admin}/${route.manageWithdrawal}`,
           <MdOutlineAccountBalanceWallet className="text-lg" />
         ),
-        // getItem(
-        //   "Gói Premium",
-        //   `${route.admin}/manage-premium`,
-        //   <DropboxOutlined className="text-lg" />
-        // ),
+        getItem(
+          "Gói Premium",
+          `${route.admin}/manage-premium`,
+          <DropboxOutlined className="text-lg" />
+        ),
         getItem(
           "Quản Lý Voucher",
           `${route.admin}/${route.manageVoucher}`,

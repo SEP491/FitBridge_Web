@@ -1,631 +1,843 @@
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  ConfigProvider,
-  Input,
-  Spin,
   Table,
   Card,
+  Spin,
   Row,
   Col,
-  Statistic,
-  Button,
-  Space,
   Tag,
-  Tooltip,
+  Statistic,
+  ConfigProvider,
+  Button,
   Modal,
-  Form,
-  InputNumber,
-  message,
-  Progress,
+  Descriptions,
+  Tabs,
+  Space,
+  Badge,
+  Tooltip,
+  Input,
 } from "antd";
-import React, { useEffect, useState, useCallback } from "react";
-import membershipService from "../../../services/membershipServices";
 import {
-  LoadingOutlined,
-  SearchOutlined,
-  CrownOutlined,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend,
+  ArcElement,
+} from "chart.js";
+import { Bar, Line, Doughnut } from "react-chartjs-2";
+import {
   DollarOutlined,
-  PlusOutlined,
+  UserOutlined,
+  ShoppingCartOutlined,
+  LoadingOutlined,
+  GlobalOutlined,
+  MobileOutlined,
+  AppleOutlined,
   EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  StarOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  SearchOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
+import revenueCatService from "../../../services/revenueCatService";
+import toast from "react-hot-toast";
+import dayjs from "dayjs";
 
-const { TextArea } = Input;
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  ChartTooltip,
+  Legend,
+  ArcElement
+);
+
+// Format currency
+const formatCurrency = (value, unit = "$") => {
+  if (value === null || value === undefined) return `${unit}0`;
+  return `${unit}${value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+// Format date from timestamp
+const formatDate = (timestamp) => {
+  if (!timestamp) return "Không có";
+  return dayjs(timestamp).format("DD/MM/YYYY HH:mm");
+};
 
 export default function ManagePremiumPage() {
-  const [premiumPackages, setPremiumPackages] = useState([]);
+  const [metrics, setMetrics] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingPackage, setEditingPackage] = useState(null);
-  const [form] = Form.useForm();
+  const [customersLoading, setCustomersLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
+    pageSize: 20,
     total: 0,
   });
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [customerDetailsModalVisible, setCustomerDetailsModalVisible] =
+    useState(false);
+  const [customerSubscriptions, setCustomerSubscriptions] = useState([]);
+  const [customerEntitlements, setCustomerEntitlements] = useState([]);
+  const [customerPurchases, setCustomerPurchases] = useState([]);
+  const [loadingCustomerDetails, setLoadingCustomerDetails] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Premium package statistics
-  const [statistics, setStatistics] = useState({
-    totalPackages: 0,
-    averagePrice: 0,
-    highestPrice: 0,
-    lowestPrice: 0,
-  });
-
-  const calculateStatistics = useCallback((data) => {
-    if (data.length === 0) {
-      setStatistics({
-        totalPackages: 0,
-        averagePrice: 0,
-        highestPrice: 0,
-        lowestPrice: 0,
-      });
-      return;
-    }
-
-    const prices = data.map((pkg) => pkg.serviceCharge || 0);
-    const totalPackages = data.length;
-    const averagePrice =
-      prices.reduce((sum, price) => sum + price, 0) / totalPackages;
-    const highestPrice = Math.max(...prices);
-    const lowestPrice = Math.min(...prices);
-
-    setStatistics({
-      totalPackages,
-      averagePrice,
-      highestPrice,
-      lowestPrice,
-    });
-  }, []);
-
-  // API service functions
-  const fetchPremiumPackages = useCallback(async (page = 1, pageSize = 10) => {
+  // Fetch revenue metrics
+  const fetchMetrics = async () => {
     setLoading(true);
     try {
-      // Using membership API
-      const response = await membershipService.getAllMemberships({
-        page,
-        size: pageSize,
-      });
-
-      const { items, total, page: currentPage, totalPages } = response.data;
-
-      setPremiumPackages(items);
-      setPagination({
-        current: currentPage,
-        pageSize,
-        total,
-        totalPages,
-      });
-
-      // Calculate statistics from the data
-      calculateStatistics(items);
+      const response = await revenueCatService.getChartRevenue();
+      if (response.data && response.data.metrics) {
+        setMetrics(response.data.metrics);
+      }
     } catch (error) {
-      console.error("Error fetching memberships:", error);
-      message.error("Không thể tải danh sách gói membership");
+      console.error("Error fetching metrics:", error);
+      toast.error("Không thể tải dữ liệu doanh thu");
     } finally {
       setLoading(false);
     }
-  }, [calculateStatistics]);
-
-  const createPremiumPackage = async (values) => {
-    try {
-      await membershipService.createMembership(values);
-      message.success("Tạo gói membership thành công!");
-      setModalVisible(false);
-      form.resetFields();
-      fetchPremiumPackages(pagination.current, pagination.pageSize);
-    } catch (error) {
-      console.error("Error creating membership:", error);
-      message.error("Không thể tạo gói membership");
-    }
   };
 
-  const updatePremiumPackage = async (id, values) => {
-    try {
-      await membershipService.updateMembership(id, values);
-      message.success("Cập nhật gói membership thành công!");
-      setModalVisible(false);
-      setEditingPackage(null);
-      form.resetFields();
-      fetchPremiumPackages(pagination.current, pagination.pageSize);
-    } catch (error) {
-      console.error("Error updating membership:", error);
-      message.error("Không thể cập nhật gói membership");
-    }
-  };
+  // Fetch customers
+  const fetchCustomers = useCallback(
+    async (page = 1, limit = 20, search = "") => {
+      setCustomersLoading(true);
+      try {
+        const params = {
+          limit,
+          ...(search && { search }),
+        };
+        const response = await revenueCatService.getCustomers(params);
+        if (response.data) {
+          setCustomers(response.data.items || []);
+          setPagination((prev) => ({
+            ...prev,
+            current: page,
+            total: response.data.items?.length || 0,
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+        toast.error("Không thể tải danh sách khách hàng");
+      } finally {
+        setCustomersLoading(false);
+      }
+    },
+    []
+  );
 
-  const deletePremiumPackage = async (id) => {
+  // Fetch customer details
+  const fetchCustomerDetails = useCallback(async (customerId) => {
+    setLoadingCustomerDetails(true);
     try {
-      await membershipService.deleteMembership(id);
-      message.success("Xóa gói membership thành công!");
-      fetchPremiumPackages(pagination.current, pagination.pageSize);
+      const [customerRes, subscriptionsRes, entitlementsRes, purchasesRes] =
+        await Promise.all([
+          revenueCatService.getCustomer(customerId, { expand: ["attributes"] }),
+          revenueCatService.getCustomerSubscriptions(customerId),
+          revenueCatService.getCustomerActiveEntitlements(customerId),
+          revenueCatService.getCustomerPurchases(customerId),
+        ]);
+
+      setSelectedCustomer(customerRes.data);
+      setCustomerSubscriptions(subscriptionsRes.data?.items || []);
+      setCustomerEntitlements(entitlementsRes.data?.items || []);
+      setCustomerPurchases(purchasesRes.data?.items || []);
+      setCustomerDetailsModalVisible(true);
     } catch (error) {
-      console.error("Error deleting membership:", error);
-      message.error("Không thể xóa gói membership");
+      console.error("Error fetching customer details:", error);
+      toast.error("Không thể tải thông tin chi tiết khách hàng");
+    } finally {
+      setLoadingCustomerDetails(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchPremiumPackages();
-  }, [fetchPremiumPackages]);
+    fetchMetrics();
+    fetchCustomers();
+  }, [fetchCustomers]);
 
-  const handleTableChange = (pagination) => {
-    fetchPremiumPackages(pagination.current, pagination.pageSize);
+  // Get key metrics
+  const getMetric = (id) => {
+    return metrics.find((m) => m.id === id);
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      minimumFractionDigits: 0,
-    }).format(amount || 0);
+  const activeTrials = getMetric("active_trials")?.value || 0;
+  const activeSubscriptions = getMetric("active_subscriptions")?.value || 0;
+  const mrr = getMetric("mrr")?.value || 0;
+  const revenue = getMetric("revenue")?.value || 0;
+  const newCustomers = getMetric("new_customers")?.value || 0;
+  const activeUsers = getMetric("active_users")?.value || 0;
+
+  // Prepare chart data for revenue metrics
+  const revenueMetrics = metrics.filter(
+    (m) => m.id.startsWith("mrr_") || m.id === "mrr"
+  );
+  const revenueChartData = {
+    labels: revenueMetrics.map((m) => m.name.replace("MRR ", "")),
+    datasets: [
+      {
+        label: "Doanh Thu Định Kỳ Hàng Tháng",
+        data: revenueMetrics.map((m) => m.value),
+        backgroundColor: "rgba(237, 42, 71, 0.6)",
+        borderColor: "#ed2a47c9",
+        borderWidth: 2,
+      },
+    ],
   };
 
-  const handleAddPackage = () => {
-    setEditingPackage(null);
-    form.resetFields();
-    setModalVisible(true);
+  // Prepare chart data for revenue by period
+  const revenuePeriodData = {
+    labels: ["MRR", "Doanh Thu (28 ngày)"],
+    datasets: [
+      {
+        label: "Doanh Thu",
+        data: [mrr, revenue],
+        backgroundColor: ["rgba(255, 145, 77, 0.6)", "rgba(237, 42, 71, 0.6)"],
+        borderColor: ["#FF914D", "#ed2a47c9"],
+        borderWidth: 2,
+      },
+    ],
   };
 
-  const handleEditPackage = (record) => {
-    setEditingPackage(record);
-    form.setFieldsValue({
-      serviceName: record.serviceName,
-      serviceCharge: record.serviceCharge,
-      maximumHotResearchSlot: record.maximumHotResearchSlot,
-      availableHotResearchSlot: record.availableHotResearchSlot,
-    });
-    setModalVisible(true);
+  // Prepare doughnut chart for subscriptions
+  const subscriptionData = {
+    labels: ["Đăng Ký Đang Hoạt Động", "Dùng Thử Đang Hoạt Động"],
+    datasets: [
+      {
+        data: [activeSubscriptions, activeTrials],
+        backgroundColor: ["rgba(237, 42, 71, 0.8)", "rgba(255, 145, 77, 0.8)"],
+        borderColor: ["#ed2a47c9", "#FF914D"],
+        borderWidth: 2,
+      },
+    ],
   };
 
-  const handleDeletePackage = (record) => {
-    Modal.confirm({
-      title: "Xác nhận xóa gói membership",
-      content: `Bạn có chắc chắn muốn xóa gói "${record.serviceName}"?`,
-      okText: "Xóa",
-      cancelText: "Hủy",
-      okType: "danger",
-      onOk: () => deletePremiumPackage(record.id),
-    });
-  };
-
-  const handleSubmit = (values) => {
-    if (editingPackage) {
-      updatePremiumPackage(editingPackage.id, values);
-    } else {
-      createPremiumPackage(values);
-    }
-  };
-
-  const columns = [
+  // Table columns for customers
+  const customerColumns = [
     {
-      title: "Tên Gói",
-      dataIndex: "serviceName",
-      key: "serviceName",
-      align: "left",
-      render: (text) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-            <CrownOutlined className="text-white text-lg" />
-          </div>
-          <div>
-            <div className="font-medium text-gray-900">{text}</div>
-            <Tag color="gold" size="small">
-              Membership
-            </Tag>
-          </div>
-        </div>
+      title: "Mã Khách Hàng",
+      dataIndex: "id",
+      key: "id",
+      width: 250,
+      render: (id) => (
+        <span className="font-mono text-xs text-gray-700">{id}</span>
       ),
     },
     {
-      title: "Số lượng Slot",
-      key: "hotResearchSlot",
-      align: "center",
-      render: (_, record) => (
-        <div className="text-center">
-          <div className="text-gray-700">
-            <span className="font-semibold text-blue-600">
-              {record.availableHotResearchSlot || 0}
-            </span>
-            <span className="text-gray-500"> / </span>
-            <span className="font-semibold text-gray-600">
-              {record.maximumHotResearchSlot || 0}
-            </span>
-          </div>
-          <div className="text-xs text-gray-500 mt-1">Có sẵn / Tối đa</div>
-          <Progress
-            percent={
-              record.maximumHotResearchSlot
-                ? (record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100
-                : 0
-            }
-            strokeColor={(record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100 > 50 ? '#52c41a' : (record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100 > 20 ? '#faad14' : '#f5222d'}
-              showInfo={false}
-          />
-        </div>
+      title: "Nền Tảng",
+      dataIndex: "last_seen_platform",
+      key: "platform",
+      width: 120,
+      render: (platform) => {
+        const isIOS = platform?.toLowerCase() === "ios";
+        const isAndroid = platform?.toLowerCase() === "android";
+        return (
+          <Tag
+            color={isIOS ? "blue" : isAndroid ? "green" : "default"}
+            icon={isIOS ? <AppleOutlined /> : <MobileOutlined />}
+          >
+            {platform || "Không có"}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Quốc Gia",
+      dataIndex: "last_seen_country",
+      key: "country",
+      width: 100,
+      render: (country) => (
+        <Tag icon={<GlobalOutlined />}>{country || "Không có"}</Tag>
       ),
     },
     {
-      title: "Giá",
-      dataIndex: "serviceCharge",
-      key: "serviceCharge",
-      align: "center",
-      sorter: (a, b) => (a.serviceCharge || 0) - (b.serviceCharge || 0),
-      render: (price) => (
-        <div className="font-semibold text-green-600 text-lg">
-          {formatCurrency(price)}
-        </div>
+      title: "Phiên Bản App",
+      dataIndex: "last_seen_app_version",
+      key: "appVersion",
+      width: 120,
+      render: (version) => (
+        <span className="text-sm">{version || "Không có"}</span>
+      ),
+    },
+    {
+      title: "Lần Đầu Thấy",
+      dataIndex: "first_seen_at",
+      key: "firstSeen",
+      width: 150,
+      render: (timestamp) => (
+        <span className="text-sm">{formatDate(timestamp)}</span>
+      ),
+    },
+    {
+      title: "Lần Cuối Thấy",
+      dataIndex: "last_seen_at",
+      key: "lastSeen",
+      width: 150,
+      render: (timestamp) => (
+        <span className="text-sm">{formatDate(timestamp)}</span>
       ),
     },
     {
       title: "Thao Tác",
-      key: "actions",
-      align: "center",
+      key: "action",
+      width: 100,
+      fixed: "right",
       render: (_, record) => (
-        <Space>
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              className="text-blue-600 hover:bg-blue-50"
-              onClick={() => {
-                Modal.info({
-                  title: `Chi tiết gói: ${record.serviceName}`,
-                  content: (
-                    <div className="mt-4">
-                      <p>
-                        <strong>Tên gói:</strong> {record.serviceName}
-                      </p>
-                      <p>
-                        <strong>Giá:</strong> {formatCurrency(record.serviceCharge)}
-                      </p>
-                      <p>
-                        <strong>Slot Hot Research tối đa:</strong> {record.maximumHotResearchSlot}
-                      </p>
-                      <p>
-                        <strong>Slot Hot Research có sẵn:</strong> {record.availableHotResearchSlot}
-                      </p>
-                      <p>
-                        <strong>ID:</strong> {record.id}
-                      </p>
-                    </div>
-                  ),
-                  width: 500,
-                });
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              className="text-orange-600 hover:bg-orange-50"
-              onClick={() => handleEditPackage(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              className="text-red-600 hover:bg-red-50"
-              onClick={() => handleDeletePackage(record)}
-            />
-          </Tooltip>
-        </Space>
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => fetchCustomerDetails(record.id)}
+        >
+          Chi Tiết
+        </Button>
       ),
     },
   ];
 
-  const filteredData = premiumPackages.filter((item) => {
-    const matchesSearch = searchText
-      ? (item.serviceName?.toLowerCase() || "").includes(searchText.toLowerCase())
-      : true;
+  // Handle table pagination
+  const handleTableChange = (pagination) => {
+    fetchCustomers(pagination.current, pagination.pageSize, searchTerm);
+  };
 
-    return matchesSearch;
-  });
+  // Handle search
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    fetchCustomers(1, pagination.pageSize, value);
+  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spin
-          indicator={
-            <LoadingOutlined style={{ fontSize: 48, color: "#FF914D" }} spin />
-          }
-          tip="Đang tải dữ liệu..."
-          size="large"
+  // Format subscription status
+  const formatSubscriptionStatus = (status) => {
+    const statusMap = {
+      active: { text: "Đang Hoạt Động", color: "success" },
+      expired: { text: "Đã Hết Hạn", color: "error" },
+      canceled: { text: "Đã Hủy", color: "default" },
+      trial: { text: "Dùng Thử", color: "processing" },
+      grace_period: { text: "Gia Hạn", color: "warning" },
+      billing_issue: { text: "Lỗi Thanh Toán", color: "error" },
+    };
+    const statusInfo = statusMap[status] || { text: status, color: "default" };
+    return <Badge status={statusInfo.color} text={statusInfo.text} />;
+  };
+
+  // Format entitlement status
+  const formatEntitlementStatus = (status) => {
+    const statusMap = {
+      active: { text: "Đang Hoạt Động", color: "success" },
+      expired: { text: "Đã Hết Hạn", color: "error" },
+      revoked: { text: "Đã Thu Hồi", color: "error" },
+    };
+    const statusInfo = statusMap[status] || { text: status, color: "default" };
+    return <Badge status={statusInfo.color} text={statusInfo.text} />;
+  };
+
+  // Customer details modal tabs
+  const customerDetailsTabs = [
+    {
+      key: "info",
+      label: "Thông Tin",
+      children: selectedCustomer ? (
+        <Descriptions column={2} bordered>
+          <Descriptions.Item label="Mã Khách Hàng">
+            {selectedCustomer.id}
+          </Descriptions.Item>
+          <Descriptions.Item label="Nền Tảng">
+            {selectedCustomer.last_seen_platform || "Không có"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Quốc Gia">
+            {selectedCustomer.last_seen_country || "Không có"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Phiên Bản App">
+            {selectedCustomer.last_seen_app_version || "Không có"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Phiên Bản Nền Tảng">
+            {selectedCustomer.last_seen_platform_version || "Không có"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Lần Đầu Thấy">
+            {formatDate(selectedCustomer.first_seen_at)}
+          </Descriptions.Item>
+          <Descriptions.Item label="Lần Cuối Thấy" span={2}>
+            {formatDate(selectedCustomer.last_seen_at)}
+          </Descriptions.Item>
+          {selectedCustomer.attributes?.map((attr) => (
+            <Descriptions.Item
+              key={attr.name}
+              label={attr.name}
+              span={attr.name === "$email" ? 2 : 1}
+            >
+              {attr.value || "Không có"}
+            </Descriptions.Item>
+          ))}
+        </Descriptions>
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          Không có thông tin khách hàng
+        </div>
+      ),
+    },
+    {
+      key: "subscriptions",
+      label: `Đăng Ký (${customerSubscriptions.length})`,
+      children: (
+        <Table
+          dataSource={customerSubscriptions}
+          rowKey="id"
+          columns={[
+            {
+              title: "ID Đăng Ký",
+              dataIndex: "id",
+              key: "id",
+              render: (id) => <span className="font-mono text-xs">{id}</span>,
+            },
+            {
+              title: "Trạng Thái",
+              dataIndex: "status",
+              key: "status",
+              render: formatSubscriptionStatus,
+            },
+            {
+              title: "Sản Phẩm",
+              dataIndex: ["product", "store_identifier"],
+              key: "product",
+            },
+            {
+              title: "Bắt Đầu",
+              dataIndex: "starts_at",
+              key: "starts_at",
+              render: formatDate,
+            },
+            {
+              title: "Hết Hạn",
+              dataIndex: "expires_at",
+              key: "expires_at",
+              render: formatDate,
+            },
+            {
+              title: "Gia Hạn Tự Động",
+              dataIndex: "will_renew",
+              key: "will_renew",
+              render: (willRenew) =>
+                willRenew ? (
+                  <Tag color="green" icon={<CheckCircleOutlined />}>
+                    Có
+                  </Tag>
+                ) : (
+                  <Tag color="red" icon={<CloseCircleOutlined />}>
+                    Không
+                  </Tag>
+                ),
+            },
+          ]}
+          pagination={false}
+          size="small"
         />
-      </div>
-    );
-  }
+      ),
+    },
+    {
+      key: "entitlements",
+      label: `Quyền Truy Cập (${customerEntitlements.length})`,
+      children: (
+        <Table
+          dataSource={customerEntitlements}
+          rowKey="id"
+          columns={[
+            {
+              title: "ID Quyền",
+              dataIndex: "id",
+              key: "id",
+              render: (id) => <span className="font-mono text-xs">{id}</span>,
+            },
+            {
+              title: "Trạng Thái",
+              dataIndex: "status",
+              key: "status",
+              render: formatEntitlementStatus,
+            },
+            {
+              title: "Hết Hạn",
+              dataIndex: "expires_at",
+              key: "expires_at",
+              render: formatDate,
+            },
+            {
+              title: "Sản Phẩm",
+              dataIndex: ["product", "store_identifier"],
+              key: "product",
+            },
+          ]}
+          pagination={false}
+          size="small"
+        />
+      ),
+    },
+    {
+      key: "purchases",
+      label: `Giao Dịch (${customerPurchases.length})`,
+      children: (
+        <Table
+          dataSource={customerPurchases}
+          rowKey="id"
+          columns={[
+            {
+              title: "ID Giao Dịch",
+              dataIndex: "id",
+              key: "id",
+              render: (id) => <span className="font-mono text-xs">{id}</span>,
+            },
+            {
+              title: "Sản Phẩm",
+              dataIndex: ["product", "store_identifier"],
+              key: "product",
+            },
+            {
+              title: "Giá",
+              dataIndex: ["price", "amount"],
+              key: "price",
+              render: (amount, record) =>
+                amount
+                  ? formatCurrency(
+                      amount / 100,
+                      record.price?.currency_code || "$"
+                    )
+                  : "Không có",
+            },
+            {
+              title: "Ngày Mua",
+              dataIndex: "purchased_at",
+              key: "purchased_at",
+              render: formatDate,
+            },
+            {
+              title: "Trạng Thái",
+              dataIndex: "status",
+              key: "status",
+              render: (status) => (
+                <Tag color={status === "completed" ? "green" : "default"}>
+                  {status === "completed" ? "Hoàn Thành" : status}
+                </Tag>
+              ),
+            },
+          ]}
+          pagination={false}
+          size="small"
+        />
+      ),
+    },
+  ];
 
   return (
-    <div className="">
-      <div className="">
+    <div className="min-h-screen p-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Quản Lý Gói Membership
+            Bảng Điều Khiển Quản Lý Premium
           </h1>
           <p className="text-gray-600">
-            Quản lý các gói membership có sẵn trong hệ thống
+            Theo dõi chỉ số doanh thu và quản lý khách hàng premium
           </p>
         </div>
 
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]} className="mb-8">
+        {/* Key Metrics Cards */}
+        <Row gutter={[16, 16]} className="mb-6">
           <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Card>
               <Statistic
-                title="Tổng Số Gói"
-                value={statistics.totalPackages}
-                prefix={<StarOutlined style={{ color: "#FFD700" }} />}
-                valueStyle={{
-                  color: "#FFD700",
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                }}
+                title="Đăng Ký Đang Hoạt Động"
+                value={activeSubscriptions}
+                prefix={<ShoppingCartOutlined />}
+                valueStyle={{ color: "#ed2a47c9" }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Card>
               <Statistic
-                title="Giá Trung Bình"
-                value={statistics.averagePrice}
-                prefix={<StarOutlined style={{ color: "#fa8c16" }} />}
-                formatter={(value) => formatCurrency(value)}
-                valueStyle={{
-                  color: "#fa8c16",
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                }}
+                title="Dùng Thử Đang Hoạt Động"
+                value={activeTrials}
+                prefix={<UserOutlined />}
+                valueStyle={{ color: "#FF914D" }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Card>
               <Statistic
-                title="Giá Cao Nhất"
-                value={statistics.highestPrice}
-                prefix={<DollarOutlined style={{ color: "#52c41a" }} />}
-                formatter={(value) => formatCurrency(value)}
-                valueStyle={{
-                  color: "#52c41a",
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                }}
+                title="Doanh Thu Định Kỳ Hàng Tháng"
+                value={formatCurrency(mrr)}
+                prefix={<DollarOutlined />}
+                valueStyle={{ color: "#3f8600" }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Card>
               <Statistic
-                title="Giá Thấp Nhất"
-                value={statistics.lowestPrice}
-                prefix={<DollarOutlined style={{ color: "#FF914D" }} />}
-                formatter={(value) => formatCurrency(value)}
-                valueStyle={{
-                  color: "#FF914D",
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                }}
+                title="Doanh Thu (28 ngày)"
+                value={formatCurrency(revenue)}
+                prefix={<DollarOutlined />}
+                valueStyle={{ color: "#1890ff" }}
               />
             </Card>
           </Col>
         </Row>
 
-        {/* Main Content Card */}
-        <Card className="border-0 shadow-lg">
-          {/* Filters and Actions */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Input
-                placeholder="Tìm kiếm theo tên gói..."
-                prefix={<SearchOutlined className="text-gray-400" />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: 300 }}
-                allowClear
-                className="rounded-lg"
+        {/* Additional Metrics */}
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Khách Hàng Mới (28 ngày)"
+                value={newCustomers}
+                prefix={<UserOutlined />}
+                valueStyle={{ color: "#722ed1" }}
               />
-            </div>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              className="bg-orange-500 hover:bg-orange-600 border-orange-500"
-              onClick={handleAddPackage}
-            >
-              Thêm Gói Membership
-            </Button>
-          </div>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Người Dùng Hoạt Động (28 ngày)"
+                value={activeUsers}
+                prefix={<UserOutlined />}
+                valueStyle={{ color: "#13c2c2" }}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-          {/* Results Summary */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <span className="text-gray-600">
-              Hiển thị{" "}
-              <span className="font-semibold text-orange-600">
-                {filteredData.length}
-              </span>{" "}
-              trong tổng số{" "}
-              <span className="font-semibold">{statistics.totalPackages}</span>{" "}
-              gói membership
-              {searchText && (
-                <span>
-                  {" "}
-                  | Tìm kiếm: "
-                  <span className="font-semibold text-blue-600">
-                    {searchText}
-                  </span>
-                  "
-                </span>
-              )}
+        {/* Charts Section */}
+        {loading ? (
+          <div className="flex items-center justify-center h-64 mb-6">
+            <Spin
+              indicator={
+                <LoadingOutlined
+                  style={{ fontSize: 48, color: "#ed2a47c9" }}
+                  spin
+                />
+              }
+              tip="Đang tải dữ liệu..."
+              size="large"
+            />
+          </div>
+        ) : (
+          <Row gutter={[16, 16]} className="mb-6">
+            {/* Revenue Comparison Chart */}
+            <Col xs={24} lg={12}>
+              <Card
+                title="Tổng Quan Doanh Thu"
+                className="shadow-sm"
+                style={{ height: "100%" }}
+              >
+                <div style={{ height: "300px" }}>
+                  <Bar
+                    data={revenuePeriodData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: false,
+                        },
+                        title: {
+                          display: false,
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: function (context) {
+                              return formatCurrency(context.parsed.y);
+                            },
+                          },
+                        },
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            callback: function (value) {
+                              return formatCurrency(value);
+                            },
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </Card>
+            </Col>
+
+            {/* Subscriptions Doughnut Chart */}
+            <Col xs={24} lg={12}>
+              <Card
+                title="Tổng Quan Đăng Ký"
+                className="shadow-sm"
+                style={{ height: "100%" }}
+              >
+                <div style={{ height: "300px" }}>
+                  <Doughnut
+                    data={subscriptionData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: "bottom",
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: function (context) {
+                              return `${context.label}: ${context.parsed}`;
+                            },
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </Card>
+            </Col>
+
+            {/* MRR by Currency Chart */}
+            {revenueMetrics.length > 0 && (
+              <Col xs={24}>
+                <Card
+                  title="Doanh Thu Định Kỳ Hàng Tháng Theo Loại Tiền Tệ"
+                  className="shadow-sm"
+                >
+                  <div style={{ height: "400px" }}>
+                    <Bar
+                      data={revenueChartData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false,
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function (context) {
+                                return formatCurrency(context.parsed.y);
+                              },
+                            },
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            ticks: {
+                              callback: function (value) {
+                                return formatCurrency(value);
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+              </Col>
+            )}
+          </Row>
+        )}
+
+        {/* Customers Table */}
+        <Card
+          title={
+            <span className="flex items-center gap-2">
+              <UserOutlined />
+              Khách Hàng Premium
             </span>
-          </div>
-
-          {/* Table */}
+          }
+          className="shadow-sm"
+          extra={
+            <Space>
+              <Input.Search
+                placeholder="Tìm kiếm theo email..."
+                allowClear
+                onSearch={handleSearch}
+                style={{ width: 250 }}
+                prefix={<SearchOutlined />}
+              />
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() =>
+                  fetchCustomers(
+                    pagination.current,
+                    pagination.pageSize,
+                    searchTerm
+                  )
+                }
+              >
+                Làm Mới
+              </Button>
+            </Space>
+          }
+        >
           <ConfigProvider
             theme={{
               components: {
                 Table: {
-                  headerBg: "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
-                  headerColor: "#333",
-                  rowHoverBg: "#FFF9FA",
+                  headerBg: "#FFE5E9",
                 },
               },
             }}
           >
             <Table
-              dataSource={filteredData}
-              columns={columns}
+              columns={customerColumns}
+              dataSource={customers}
+              rowKey="id"
+              loading={customersLoading}
               pagination={{
                 current: pagination.current,
                 pageSize: pagination.pageSize,
                 total: pagination.total,
                 showSizeChanger: true,
                 showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} của ${total} mục`,
                 position: ["bottomCenter"],
-                className: "custom-pagination",
+                size: "middle",
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} trong tổng ${total} khách hàng`,
               }}
               onChange={handleTableChange}
-              className="rounded-lg overflow-hidden"
-              scroll={{ x: 800 }}
-              rowKey="id"
+              scroll={{ x: 1200 }}
+              size="middle"
             />
           </ConfigProvider>
         </Card>
 
-        {/* Add/Edit Modal */}
+        {/* Customer Details Modal */}
         <Modal
           title={
-            editingPackage ? "Chỉnh Sửa Gói Membership" : "Thêm Gói Membership Mới"
+            <span>
+              <UserOutlined /> Chi Tiết Khách Hàng
+            </span>
           }
-          open={modalVisible}
-          onCancel={() => {
-            setModalVisible(false);
-            setEditingPackage(null);
-            form.resetFields();
-          }}
+          open={customerDetailsModalVisible}
+          onCancel={() => setCustomerDetailsModalVisible(false)}
           footer={null}
-          width={600}
+          width={1000}
         >
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            <Form.Item
-              label="Tên Gói"
-              name="serviceName"
-              rules={[
-                { required: true, message: "Vui lòng nhập tên gói!" },
-                { min: 2, message: "Tên gói phải có ít nhất 2 ký tự!" },
-              ]}
-            >
-              <Input
-                placeholder="Nhập tên gói membership"
-                prefix={<CrownOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Giá (VND)"
-              name="serviceCharge"
-              rules={[
-                { required: true, message: "Vui lòng nhập giá!" },
-                {
-                  type: "number",
-                  min: 1000,
-                  message: "Giá phải lớn hơn 1,000 VND!",
-                },
-              ]}
-            >
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Nhập giá gói membership"
-                formatter={(value) =>
-                  `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                }
-                parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                prefix={<DollarOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Slot Hot Research Tối Đa"
-              name="maximumHotResearchSlot"
-              rules={[
-                { required: true, message: "Vui lòng nhập số slot tối đa!" },
-                {
-                  type: "number",
-                  min: 0,
-                  message: "Số slot phải lớn hơn hoặc bằng 0!",
-                },
-              ]}
-            >
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Nhập số slot tối đa"
-                min={0}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Slot Hot Research Có Sẵn"
-              name="availableHotResearchSlot"
-              rules={[
-                { required: true, message: "Vui lòng nhập số slot có sẵn!" },
-                {
-                  type: "number",
-                  min: 0,
-                  message: "Số slot phải lớn hơn hoặc bằng 0!",
-                },
-              ]}
-            >
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Nhập số slot có sẵn"
-                min={0}
-              />
-            </Form.Item>
-
-            <div className="flex justify-end gap-2 mt-6">
-              <Button
-                onClick={() => {
-                  setModalVisible(false);
-                  setEditingPackage(null);
-                  form.resetFields();
-                }}
-              >
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                className="bg-orange-500 hover:bg-orange-600 border-orange-500"
-              >
-                {editingPackage ? "Cập Nhật" : "Tạo Mới"}
-              </Button>
+          {loadingCustomerDetails ? (
+            <div className="flex items-center justify-center py-8">
+              <Spin size="large" tip="Đang tải thông tin..." />
             </div>
-          </Form>
+          ) : (
+            <Tabs items={customerDetailsTabs} />
+          )}
         </Modal>
       </div>
-
-      <style jsx>{`
-        .custom-pagination .ant-pagination-item-active {
-          background: #ff914d;
-          border-color: #ff914d;
-        }
-        .custom-pagination .ant-pagination-item-active a {
-          color: white;
-        }
-        .custom-pagination .ant-pagination-item:hover {
-          border-color: #ff914d;
-        }
-        .custom-pagination .ant-pagination-item:hover a {
-          color: #ff914d;
-        }
-      `}</style>
     </div>
   );
 }
