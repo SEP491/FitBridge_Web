@@ -59,7 +59,9 @@ export default function DashboardPage() {
     try {
       const response = await adminService.getRevenueData(params);
       console.log(response.data);
-      setData(response.data);
+      // Ensure data is always an array
+      const responseData = Array.isArray(response.data) ? response.data : [];
+      setData(responseData);
     } catch (error) {
       console.error("Error fetching revenue data:", error);
       setData([]); // Set empty array on error
@@ -75,16 +77,17 @@ export default function DashboardPage() {
       const endDate = dateRange[1].format("YYYY-MM-DD");
       fetchRevenueData(startDate, endDate);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array for initial load only
 
   // Filter data when data or dateRange changes
   useEffect(() => {
-    if (dateRange && dateRange[0] && dateRange[1] && data.length > 0) {
+    if (dateRange && dateRange[0] && dateRange[1] && Array.isArray(data) && data.length > 0) {
       const startDate = dateRange[0].format("YYYY-MM-DD");
       const endDate = dateRange[1].format("YYYY-MM-DD");
 
       const filtered = data.filter(
-        (item) => item.date >= startDate && item.date <= endDate
+        (item) => item && item.date && item.date >= startDate && item.date <= endDate
       );
       setFilteredData(filtered);
     } else {
@@ -102,30 +105,32 @@ export default function DashboardPage() {
   };
 
   // Calculate metrics
-  const totalRevenue = filteredData.reduce(
-    (sum, item) => sum + (item.totalRevenue || 0),
+  const totalRevenue = Array.isArray(filteredData) ? filteredData.reduce(
+    (sum, item) => sum + (item?.totalRevenue || 0),
     0
-  );
-  const totalProfit = filteredData.reduce(
-    (sum, item) => sum + (item.profit || 0),
+  ) : 0;
+  const totalProfit = Array.isArray(filteredData) ? filteredData.reduce(
+    (sum, item) => sum + (item?.profit || 0),
     0
-  );
-  const totalSubscriptionIncome = filteredData.reduce(
-    (sum, item) => sum + (item.subscriptionIncome || 0),
+  ) : 0;
+  const totalSubscriptionIncome = Array.isArray(filteredData) ? filteredData.reduce(
+    (sum, item) => sum + (item?.subscriptionIncome || 0),
     0
-  );
-  const totalTransactionIncome = filteredData.reduce(
-    (sum, item) => sum + (item.transactionIncome || 0),
+  ) : 0;
+  const totalTransactionIncome = Array.isArray(filteredData) ? filteredData.reduce(
+    (sum, item) => sum + (item?.transactionIncome || 0),
     0
-  );
+  ) : 0;
 
   // Chart configuration
   const chartData = {
-    labels: filteredData.map((item) => dayjs(item.date).format("DD/MM")),
+    labels: Array.isArray(filteredData) ? filteredData.map((item) => 
+      item?.date ? dayjs(item.date).format("DD/MM") : ""
+    ) : [],
     datasets: [
       {
         label: "Tổng Doanh Thu",
-        data: filteredData.map((item) => item.totalRevenue || 0),
+        data: Array.isArray(filteredData) ? filteredData.map((item) => item?.totalRevenue || 0) : [],
         borderColor: "#ed2a47c9",
         backgroundColor: "rgba(237, 42, 71, 0.1)",
         tension: 0.4,
@@ -133,7 +138,7 @@ export default function DashboardPage() {
       },
       {
         label: "Lợi Nhuận",
-        data: filteredData.map((item) => item.profit || 0),
+        data: Array.isArray(filteredData) ? filteredData.map((item) => item?.profit || 0) : [],
         borderColor: "#FF914D",
         backgroundColor: "rgba(255, 145, 77, 0.1)",
         tension: 0.4,
@@ -345,28 +350,36 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredData.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {dayjs(item.date).format("DD/MM/YYYY")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.totalTransactions}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatVND(item.subscriptionIncome || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatVND(item.transactionIncome || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatVND(item.totalRevenue || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                      {formatVND(item.profit || 0)}
+                {Array.isArray(filteredData) && filteredData.length > 0 ? (
+                  filteredData.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item?.date ? dayjs(item.date).format("DD/MM/YYYY") : "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item?.totalTransactions || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatVND(item?.subscriptionIncome || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatVND(item?.transactionIncome || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {formatVND(item?.totalRevenue || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                        {formatVND(item?.profit || 0)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      Không có dữ liệu
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Modal,
   Form,
@@ -13,6 +13,8 @@ import {
   Button,
   Upload,
   Image,
+  Divider,
+  Space,
 } from "antd";
 import {
   PlusOutlined,
@@ -25,7 +27,9 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
 import FitBridgeModal from "../../../components/FitBridgeModal";
+import adminService from "../../../services/adminServices";
 
 const { Option } = Select;
 
@@ -40,10 +44,100 @@ export default function CreateProductDetailModal({
   imageFile,
   onImageUpload,
   onImageRemove,
+  onRefreshWeights,
+  onRefreshFlavours,
 }) {
+  const [newWeightValue, setNewWeightValue] = useState(null);
+  const [newWeightUnit, setNewWeightUnit] = useState("g");
+  const [newFlavourName, setNewFlavourName] = useState("");
+  const [addingWeight, setAddingWeight] = useState(false);
+  const [addingFlavour, setAddingFlavour] = useState(false);
+
   const handleCancel = () => {
     form.resetFields();
+    setNewWeightValue(null);
+    setNewWeightUnit("g");
+    setNewFlavourName("");
     onClose();
+  };
+
+  const handleAddWeight = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Check if value is provided (can be 0, null, undefined, or empty string)
+    if (newWeightValue === null || newWeightValue === undefined || newWeightValue === "" || !newWeightUnit || !newWeightUnit.trim()) {
+      toast.error("Vui lòng nhập đầy đủ giá trị và đơn vị trọng lượng");
+      return;
+    }
+
+    const value = typeof newWeightValue === 'number' ? newWeightValue : parseFloat(newWeightValue);
+    if (isNaN(value) || value <= 0) {
+      toast.error("Giá trị trọng lượng phải là số dương");
+      return;
+    }
+
+    setAddingWeight(true);
+    try {
+      const response = await adminService.createWeight({
+        value: value,
+        unit: newWeightUnit.trim(),
+      });
+      
+      toast.success("Thêm trọng lượng thành công");
+      setNewWeightValue(null);
+      setNewWeightUnit("Gram");
+      
+      // Refresh weights list
+      if (onRefreshWeights) {
+        await onRefreshWeights();
+      }
+      
+      // Set the newly created weight as selected
+      if (response.data?.id) {
+        form.setFieldsValue({ weightId: response.data.id });
+      }
+    } catch (error) {
+      console.error("Error creating weight:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi tạo trọng lượng");
+    } finally {
+      setAddingWeight(false);
+    }
+  };
+
+  const handleAddFlavour = async (e) => {
+    e.preventDefault();
+    if (!newFlavourName.trim()) {
+      toast.error("Vui lòng nhập tên hương vị");
+      return;
+    }
+
+    setAddingFlavour(true);
+    try {
+      const response = await adminService.createNewFlavour({
+        name: newFlavourName.trim(),
+      });
+      
+      toast.success("Thêm hương vị thành công");
+      setNewFlavourName("");
+      
+      // Refresh flavours list
+      if (onRefreshFlavours) {
+        await onRefreshFlavours();
+      }
+      
+      // Set the newly created flavour as selected
+      if (response.data?.id) {
+        form.setFieldsValue({ flavourId: response.data.id });
+      }
+    } catch (error) {
+      console.error("Error creating flavour:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi tạo hương vị");
+    } finally {
+      setAddingFlavour(false);
+    }
   };
 
   // Disable dates in the past (before today)
@@ -175,6 +269,63 @@ export default function CreateProductDetailModal({
                       suffixIcon={
                         <AppstoreOutlined className="text-purple-500" />
                       }
+                      dropdownRender={(menu) => (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          {menu}
+                          <Divider style={{ margin: "8px 0" }} />
+                          <Space style={{ padding: "0 8px 4px" }} direction="vertical" size="small" className="w-full">
+                            <Space size="small" className="w-full">
+                              <InputNumber
+                                placeholder="Giá trị"
+                                value={newWeightValue}
+                                onChange={(value) => setNewWeightValue(value ?? null)}
+                                min={0}
+                                step={1}
+                                style={{ width: "100%" }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleAddWeight(e);
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onPressEnter={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleAddWeight(e);
+                                }}
+                              />
+                              <Select
+                                value={newWeightUnit}
+                                onChange={setNewWeightUnit}
+                                style={{ width: "100%" }}
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                getPopupContainer={(triggerNode) => triggerNode.parentElement}
+                                options={[
+                                  { value: "Gram", label: "g" },
+                                  { value: "kg", label: "kg" },
+                                  { value: "lb", label: "lb" },
+                                  { value: "oz", label: "oz" },
+                                ]}
+                              />
+                              <Button
+                                type="text"
+                                icon={<PlusOutlined />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddWeight(e);
+                                }}
+                                loading={addingWeight}
+                                className="text-purple-600 hover:text-purple-700"
+                              >
+                                Thêm
+                              </Button>
+                            </Space>
+                          </Space>
+                        </div>
+                      )}
                     >
                       {weights.map((weight) => (
                         <Option key={weight.id} value={weight.id}>
@@ -201,6 +352,33 @@ export default function CreateProductDetailModal({
                       suffixIcon={
                         <AppstoreOutlined className="text-purple-500" />
                       }
+                      dropdownRender={(menu) => (
+                        <>
+                          {menu}
+                          <Divider style={{ margin: "8px 0" }} />
+                          <Space style={{ padding: "0 8px 4px" }}>
+                            <Input
+                              placeholder="Tên hương vị mới"
+                              value={newFlavourName}
+                              onChange={(e) => setNewFlavourName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleAddFlavour(e);
+                                }
+                              }}
+                            />
+                            <Button
+                              type="text"
+                              icon={<PlusOutlined />}
+                              onClick={handleAddFlavour}
+                              loading={addingFlavour}
+                              className="text-purple-600 hover:text-purple-700"
+                            >
+                              Thêm
+                            </Button>
+                          </Space>
+                        </>
+                      )}
                     >
                       {flavours.map((flavour) => (
                         <Option key={flavour.id} value={flavour.id}>

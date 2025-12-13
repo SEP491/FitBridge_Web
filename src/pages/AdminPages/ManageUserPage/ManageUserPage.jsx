@@ -280,7 +280,6 @@ export default function ManageUserPage() {
               form.setFieldsValue({
                 address: addressToDisplay,
               });
-              toast.success("Đã lấy địa chỉ từ tọa độ thành công!");
             } else {
               form.setFieldsValue({
                 address: "Không tìm thấy địa chỉ",
