@@ -497,6 +497,7 @@ export default function ManageReportPage() {
             >
               Đóng
             </Button>
+            {selectedReport.status !== "FraudConfirmed" && (
             <Button
               type="primary"
               size="large"
@@ -506,6 +507,8 @@ export default function ManageReportPage() {
             >
               Phản Hồi
             </Button>
+            )
+            }
           </div>
         }
       >
@@ -758,18 +761,22 @@ export default function ManageReportPage() {
                 }
               }}
             >
+            {selectedReport.status !== "Processing" && selectedReport.status !== "Resolved" && (
               <Select.Option value="Processing">
                 <span className="flex items-center gap-2">
                   <LoadingOutlined className="text-blue-500" />
                   Đang xử lý
                 </span>
               </Select.Option>
+            )}
+            {selectedReport.status !== "Resolved" && (
               <Select.Option value="Resolved">
                 <span className="flex items-center gap-2">
                   <CheckCircleOutlined className="text-green-500" />
                   Đã xử lý
                 </span>
               </Select.Option>
+            )}
               <Select.Option value="FraudConfirmed">
                 <span className="flex items-center gap-2">
                   <CloseCircleOutlined className="text-red-700" />
