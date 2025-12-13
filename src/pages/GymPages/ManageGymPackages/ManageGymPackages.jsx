@@ -852,12 +852,10 @@ export default function ManageGymPackages() {
                   <div className="mt-2 text-sm text-gray-600">
                     Tải lên hình ảnh
                   </div>
-                  <div className="text-xs text-gray-400">
-                    JPG, PNG, WEBP &lt; 2MB
-                  </div>
                 </div>
               )}
             </Upload>
+            <div className="text-xs text-gray-400">JPG, PNG, WEBP &lt; 2MB</div>
           </Form.Item>
 
           <div className="text-center pt-4">
