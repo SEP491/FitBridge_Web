@@ -71,8 +71,21 @@ This refactoring combines Apple App Store Connect API and RevenueCat API to crea
 
 ## Next Steps
 
-1. Complete wizard step handlers for App Store Connect steps
-2. Create UI forms for each wizard step
-3. Add error handling and validation
-4. Enhance statistics display
-5. Add subscription management features
+1. ✅ Complete wizard step handlers for App Store Connect steps
+2. ✅ Create UI forms for each wizard step
+3. ✅ Add error handling and validation
+4. ⏳ Enhance statistics display
+5. ⏳ Add subscription management features
+6. ⏳ Implement backend endpoints (see BACKEND_API_DOCUMENTATION.md)
+
+## Backend Integration Required
+
+Since JWT token generation for App Store Connect API should be done securely on the backend, see **BACKEND_API_DOCUMENTATION.md** for:
+
+- Complete endpoint specifications
+- Request/response formats
+- JWT token generation examples
+- Error handling guidelines
+- Security best practices
+
+The frontend is ready and will call these backend endpoints to complete the subscription creation flow.
