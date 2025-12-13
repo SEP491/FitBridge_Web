@@ -730,6 +730,7 @@ export default function ManageProductPage() {
                 onClick={handleOpenCreateProductModal}
                 className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                 size="large"
+                loading={creating}
               >
                 Thêm Sản Phẩm
               </Button>
@@ -904,6 +905,8 @@ export default function ManageProductPage() {
         onImageUpload={handleDetailImageUpload}
         onImageRemove={handleDetailImageRemove}
         onRefreshCategories={fetchMainCategories}
+        onRefreshWeights={fetchWeightsAndFlavours}
+        onRefreshFlavours={fetchWeightsAndFlavours}
       />
 
       {/* Create Product Modal */}
