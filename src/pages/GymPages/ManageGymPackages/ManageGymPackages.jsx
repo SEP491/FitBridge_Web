@@ -64,12 +64,16 @@ export default function ManageGymPackages() {
   const [pts, setPts] = useState([]);
   const [isModalAddGymCoursePTOpen, setIsModalAddGymCoursePTOpen] =
     useState(false);
+  const [isModalEditCourseOpen, setIsModalEditCourseOpen] = useState(false);
 
   const [formAdd] = Form.useForm();
   const [formAddGymCourse] = Form.useForm();
+  const [formEdit] = Form.useForm();
 
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [loadingAddGymCoursePT, setLoadingAddGymCoursePT] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null);
   const [ptsInCourse, setPtsInCourse] = useState([]);
   const [fileList, setFileList] = useState([]);
 
@@ -176,7 +180,7 @@ export default function ManageGymPackages() {
       okType: "danger",
       onOk: async () => {
         try {
-          await gymService.deleteGym(id);
+          await gymService.deleteCourse(id);
           fetchCoursesGym();
           toast.success("Xoá gói tập thành công");
         } catch (error) {
@@ -293,7 +297,10 @@ export default function ManageGymPackages() {
               onClick={() => {
                 setIsModalGymCouseDetailOpen(true);
                 setSelectedCourse(record);
-                fetchPTInCourse(record.id);
+                // Only fetch PTs if it's a WithPT package
+                if (record.type === "WithPT" || record.type === "WithPt") {
+                  fetchPTInCourse(record.id);
+                }
               }}
             />
           </Tooltip>
@@ -304,9 +311,13 @@ export default function ManageGymPackages() {
                 type="text"
                 icon={<UserAddOutlined />}
                 className="text-green-600 hover:bg-green-50"
-                onClick={() => {
+                onClick={async () => {
                   setIsModalAddGymCoursePTOpen(true);
                   setSelectedCourse(record);
+                  // Fetch PTs already in this course to filter them out
+                  await fetchPTInCourse(record.id);
+                  // Reset form when opening modal
+                  formAddGymCourse.resetFields();
                 }}
               />
             </Tooltip>
@@ -317,6 +328,7 @@ export default function ManageGymPackages() {
               type="text"
               icon={<EditOutlined />}
               className="text-orange-600 hover:bg-orange-50"
+              onClick={() => handleEdit(record)}
             />
           </Tooltip>
           <Tooltip title="Xóa">
@@ -379,27 +391,16 @@ export default function ManageGymPackages() {
   const handleAddCourseGym = async (values) => {
     setLoadingAdd(true);
 
-    // // Get image URL from uploaded files
-    // let imageUrl = "https://via.placeholder.com/400x300?text=Gym+Package";
-    // if (fileList.length > 0 && fileList[0].response) {
-    //   imageUrl = fileList[0].response.url; // Assuming your upload returns { url: "..." }
-    // } else if (fileList.length > 0 && fileList[0].url) {
-    //   imageUrl = fileList[0].url;
-    // }
-
     const requestData = {
       name: values.name,
       price: values.price,
       duration: values.duration,
       type: values.type,
       description: values.description,
-      imageUrl:
-        "https://ztltswmqxsfoobwvbynz.supabase.co/storage/v1/object/public/Image/LogoColor.png",
     };
 
     try {
       await gymService.addCourse(requestData);
-      ``;
       toast.success("Thêm gói tập thành công");
       fetchCoursesGym();
       setIsModalAddCourseOpen(false);
@@ -425,12 +426,56 @@ export default function ManageGymPackages() {
       toast.success("Thêm PT vào gói tập thành công");
       setIsModalAddGymCoursePTOpen(false);
       formAddGymCourse.resetFields();
+      // Refresh the PTs in course list to update the filter
+      if (selectedCourse?.id) {
+        await fetchPTInCourse(selectedCourse.id);
+      }
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Lỗi thêm PT vào gói tập thất bại"
       );
     } finally {
       setLoadingAddGymCoursePT(false);
+    }
+  };
+
+  const handleEdit = (record) => {
+    setEditingCourse(record);
+    formEdit.setFieldsValue({
+      name: record.name,
+      price: record.price,
+      duration: record.duration,
+      description: record.description,
+      imageUrl: record.imageUrl,
+    });
+    setIsModalEditCourseOpen(true);
+  };
+
+  const handleUpdateCourse = async (values) => {
+    if (!editingCourse?.id) return;
+
+    setLoadingEdit(true);
+    const requestData = {
+      name: values.name,
+      price: values.price,
+      duration: values.duration,
+      description: values.description,
+      imageUrl: values.imageUrl || editingCourse.imageUrl,
+    };
+
+    try {
+      await gymService.updateCourse(editingCourse.id, requestData);
+      toast.success("Cập nhật gói tập thành công");
+      fetchCoursesGym(pagination.current, pagination.pageSize);
+      setIsModalEditCourseOpen(false);
+      formEdit.resetFields();
+      setEditingCourse(null);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Lỗi cập nhật gói tập thất bại"
+      );
+    } finally {
+      setLoadingEdit(false);
     }
   };
 
@@ -834,7 +879,10 @@ export default function ManageGymPackages() {
       {/* Add PT to Course Modal */}
       <Modal
         open={isModalAddGymCoursePTOpen}
-        onCancel={() => setIsModalAddGymCoursePTOpen(false)}
+        onCancel={() => {
+          setIsModalAddGymCoursePTOpen(false);
+          formAddGymCourse.resetFields();
+        }}
         title={
           <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
             <UserAddOutlined />
@@ -875,15 +923,41 @@ export default function ManageGymPackages() {
             name="ptid"
             rules={[{ required: true, message: "Vui lòng chọn PT" }]}
           >
-            <Select placeholder="Chọn PT phù hợp" className="rounded-lg">
-              {pts.map((pt) => (
-                <Select.Option key={pt.id} value={pt.id}>
-                  <div className="flex items-center gap-2">
-                    <Avatar size="small" icon={<UserOutlined />} />
-                    {pt.fullName}
+            <Select
+              placeholder="Chọn PT phù hợp"
+              className="rounded-lg"
+              notFoundContent={
+                pts.filter((pt) => {
+                  const assignedPTIds = ptsInCourse.map(
+                    (assignedPT) => assignedPT.id
+                  );
+                  return !assignedPTIds.includes(pt.id);
+                }).length === 0 ? (
+                  <div className="text-center py-2 text-gray-500">
+                    Tất cả PT đã được gán cho gói tập này
                   </div>
-                </Select.Option>
-              ))}
+                ) : (
+                  <div className="text-center py-2 text-gray-500">
+                    Không tìm thấy PT
+                  </div>
+                )
+              }
+            >
+              {pts
+                .filter((pt) => {
+                  const assignedPTIds = ptsInCourse.map(
+                    (assignedPT) => assignedPT.id
+                  );
+                  return !assignedPTIds.includes(pt.id);
+                })
+                .map((pt) => (
+                  <Select.Option key={pt.id} value={pt.id}>
+                    <div className="flex items-center gap-2">
+                      <Avatar size="small" icon={<UserOutlined />} />
+                      {pt.fullName}
+                    </div>
+                  </Select.Option>
+                ))}
             </Select>
           </Form.Item>
 
@@ -909,8 +983,18 @@ export default function ManageGymPackages() {
         onCancel={() => setIsModalGymCouseDetailOpen(false)}
         title={
           <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <TeamOutlined />
-            Personal Trainers - {selectedCourse?.name}
+            {selectedCourse?.type === "WithPT" ||
+            selectedCourse?.type === "WithPt" ? (
+              <>
+                <TeamOutlined />
+                Personal Trainers - {selectedCourse?.name}
+              </>
+            ) : (
+              <>
+                <IoBarbell />
+                Chi tiết Gói Tập - {selectedCourse?.name}
+              </>
+            )}
           </p>
         }
         footer={null}
@@ -918,14 +1002,24 @@ export default function ManageGymPackages() {
       >
         <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
           <Row gutter={16}>
-            <Col span={8}>
-              <Statistic
-                title="Tổng số PT"
-                value={ptsInCourse.length}
-                prefix={<TeamOutlined />}
-              />
-            </Col>
-            <Col span={8}>
+            {(selectedCourse?.type === "WithPT" ||
+              selectedCourse?.type === "WithPt") && (
+              <Col span={8}>
+                <Statistic
+                  title="Tổng số PT"
+                  value={ptsInCourse.length}
+                  prefix={<TeamOutlined />}
+                />
+              </Col>
+            )}
+            <Col
+              span={
+                selectedCourse?.type === "WithPT" ||
+                selectedCourse?.type === "WithPt"
+                  ? 8
+                  : 12
+              }
+            >
               <Statistic
                 title="Thời lượng gói"
                 value={selectedCourse?.duration}
@@ -933,7 +1027,14 @@ export default function ManageGymPackages() {
                 prefix={<ClockCircleOutlined />}
               />
             </Col>
-            <Col span={8}>
+            <Col
+              span={
+                selectedCourse?.type === "WithPT" ||
+                selectedCourse?.type === "WithPt"
+                  ? 8
+                  : 12
+              }
+            >
               <Statistic
                 title="Giá gói"
                 value={selectedCourse?.price}
@@ -944,14 +1045,123 @@ export default function ManageGymPackages() {
           </Row>
         </div>
 
-        <Table
-          dataSource={ptsInCourse}
-          columns={ptInCourseColumns}
-          pagination={false}
-          bordered
-          size="middle"
-          className="rounded-lg overflow-hidden"
-        />
+        {(selectedCourse?.type === "WithPT" ||
+          selectedCourse?.type === "WithPt") && (
+          <Table
+            dataSource={ptsInCourse}
+            columns={ptInCourseColumns}
+            pagination={false}
+            bordered
+            size="middle"
+            className="rounded-lg overflow-hidden"
+          />
+        )}
+      </Modal>
+
+      {/* Edit Course Modal */}
+      <Modal
+        open={isModalEditCourseOpen}
+        onCancel={() => {
+          setIsModalEditCourseOpen(false);
+          formEdit.resetFields();
+          setEditingCourse(null);
+        }}
+        title={
+          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
+            <IoBarbell />
+            Cập nhật Gói Tập
+          </p>
+        }
+        footer={null}
+        width={700}
+      >
+        <Form
+          form={formEdit}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={handleUpdateCourse}
+          className="max-h-[65vh] overflow-y-auto !py-5 !px-5"
+        >
+          <Form.Item
+            label={
+              <p className="text-xl font-bold text-[#ED2A46]">Tên gói tập</p>
+            }
+            name="name"
+            rules={[{ required: true, message: "Vui lòng nhập tên gói" }]}
+          >
+            <Input placeholder="Gói 1 tháng" className="rounded-lg" />
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <p className="text-xl font-bold text-[#ED2A46]">Mô tả gói tập</p>
+            }
+            name="description"
+            rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
+          >
+            <Input.TextArea
+              placeholder="Mô tả chi tiết về gói tập..."
+              autoSize={{ minRows: 3, maxRows: 5 }}
+              className="rounded-lg"
+            />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <p className="text-xl font-bold text-[#ED2A46]">
+                    Giá tiền (VNĐ)
+                  </p>
+                }
+                name="price"
+                rules={[{ required: true, message: "Vui lòng nhập giá tiền" }]}
+              >
+                <InputNumber
+                  min={1000}
+                  placeholder="100,000"
+                  className="!w-full rounded-lg"
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                  parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <p className="text-xl font-bold text-[#ED2A46]">
+                    Thời lượng (Ngày)
+                  </p>
+                }
+                name="duration"
+                rules={[
+                  { required: true, message: "Vui lòng nhập thời lượng" },
+                ]}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="30"
+                  className="!w-full rounded-lg"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <div className="text-center pt-4">
+            <Button
+              onClick={() => formEdit.submit()}
+              loading={loadingEdit}
+              className="!w-[60%] !h-12 !rounded-full !font-medium !border-0 shadow-lg"
+              style={{
+                background: "linear-gradient(135deg, #FF914D 0%, #ED2A46 100%)",
+                color: "white",
+              }}
+            >
+              Cập nhật Gói Tập
+            </Button>
+          </div>
+        </Form>
       </Modal>
 
       <style jsx>{`
