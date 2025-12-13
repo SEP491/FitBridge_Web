@@ -9,19 +9,25 @@ import {
   Card,
   Row,
   Col,
-  Pagination,
   message,
   Descriptions,
   Input,
   Select,
   Spin,
+  ConfigProvider,
+  Statistic,
+  Typography,
 } from "antd";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   EyeOutlined,
   SearchOutlined,
+  LoadingOutlined,
+  FileProtectOutlined,
+  ClockCircleOutlined as ClockIcon,
 } from "@ant-design/icons";
+import { FaCertificate } from "react-icons/fa";
 import certificateService from "../../../services/certificateServices";
 
 const { TextArea } = Input;
@@ -38,31 +44,65 @@ export default function ManageCerPage() {
   const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [total, setTotal] = useState(0);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   // Filter state
   const [filterStatus, setFilterStatus] = useState("");
   const [searchText, setSearchText] = useState("");
 
+  // Statistics state
+  const [statistics, setStatistics] = useState({
+    totalCertificates: 0,
+    pendingCertificates: 0,
+    approvedCertificates: 0,
+    rejectedCertificates: 0,
+  });
+
   const fetchCertificates = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
-        page: currentPage,
-        size: pageSize,
+        page: pagination.current,
+        size: pagination.pageSize,
       };
-
-      if (filterStatus) {
-        params.status = filterStatus;
-      }
 
       const response = await certificateService.getCertificates(params);
 
       if (response.data) {
-        setCertificates(response.data.items || []);
-        setTotal(response.data.total || 0);
+        const items = response.data.items || [];
+        setCertificates(items);
+
+        setPagination((prev) => ({
+          ...prev,
+          total: response.data.total || 0,
+          current: response.data.page || prev.current,
+        }));
+
+        // Calculate statistics from all items
+        const pending = items.filter(
+          (cert) =>
+            cert.certificateStatus === "WaitingForReview" ||
+            cert.certificateStatus === "Pending"
+        ).length;
+        const approved = items.filter(
+          (cert) =>
+            cert.certificateStatus === "Approved" ||
+            cert.certificateStatus === "Active"
+        ).length;
+        const rejected = items.filter(
+          (cert) => cert.certificateStatus === "Rejected"
+        ).length;
+
+        setStatistics({
+          totalCertificates: response.data.total || 0,
+          pendingCertificates: pending,
+          approvedCertificates: approved,
+          rejectedCertificates: rejected,
+        });
       }
     } catch (error) {
       message.error("Không thể tải danh sách chứng chỉ");
@@ -70,7 +110,8 @@ export default function ManageCerPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageSize, filterStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.current, pagination.pageSize]);
 
   useEffect(() => {
     fetchCertificates();
@@ -161,9 +202,42 @@ export default function ManageCerPage() {
     }
   };
 
-  const handleSearch = () => {
-    setCurrentPage(1);
-    fetchCertificates();
+  // Frontend filtering
+  const filteredCertificates = certificates.filter((cert) => {
+    const matchesSearch = searchText
+      ? (cert.ptName?.toLowerCase() || "").includes(searchText.toLowerCase()) ||
+        (cert.certificateMetadata?.certName?.toLowerCase() || "").includes(
+          searchText.toLowerCase()
+        ) ||
+        (cert.certificateMetadata?.certCode?.toLowerCase() || "").includes(
+          searchText.toLowerCase()
+        )
+      : true;
+
+    let matchesStatus = true;
+    if (filterStatus) {
+      if (filterStatus === "Pending") {
+        matchesStatus =
+          cert.certificateStatus === "Pending" ||
+          cert.certificateStatus === "WaitingForReview";
+      } else if (filterStatus === "Approved") {
+        matchesStatus =
+          cert.certificateStatus === "Approved" ||
+          cert.certificateStatus === "Active";
+      } else {
+        matchesStatus = cert.certificateStatus === filterStatus;
+      }
+    }
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleTableChange = (paginationConfig) => {
+    setPagination({
+      current: paginationConfig.current,
+      pageSize: paginationConfig.pageSize,
+      total: pagination.total,
+    });
   };
 
   const columns = [
@@ -273,77 +347,188 @@ export default function ManageCerPage() {
     },
   ];
 
-  return (
-    <div style={{ padding: "24px" }}>
-      <Card>
-        <h1 style={{ marginBottom: "24px" }}>Quản lý chứng chỉ</h1>
-
-        {/* Filters */}
-        <Row gutter={16} style={{ marginBottom: "16px" }}>
-          <Col span={6}>
-            <Input
-              placeholder="Tìm kiếm theo tên PT..."
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onPressEnter={handleSearch}
-            />
-          </Col>
-          <Col span={6}>
-            <Select
-              placeholder="Lọc theo trạng thái"
-              style={{ width: "100%" }}
-              value={filterStatus}
-              onChange={(value) => {
-                setFilterStatus(value);
-                setCurrentPage(1);
-              }}
-              allowClear
-            >
-              <Option value="">Tất cả trạng thái</Option>
-              <Option value="Pending">Chờ duyệt</Option>
-              <Option value="WaitingForReview">Chờ duyệt</Option>
-              <Option value="Approved">Đã duyệt</Option>
-              <Option value="Active">Đã duyệt</Option>
-              <Option value="Rejected">Từ chối</Option>
-              <Option value="Expired">Hết hạn</Option>
-            </Select>
-          </Col>
-          <Col span={4}>
-            <Button
-              type="primary"
-              icon={<SearchOutlined />}
-              onClick={handleSearch}
-            >
-              Tìm kiếm
-            </Button>
-          </Col>
-        </Row>
-
-        {/* Table */}
-        <Table
-          columns={columns}
-          dataSource={certificates}
-          rowKey="id"
-          loading={loading}
-          pagination={false}
-          scroll={{ x: 1200 }}
+  if (loading && certificates.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spin
+          indicator={
+            <LoadingOutlined style={{ fontSize: 48, color: "#FF914D" }} spin />
+          }
+          tip="Đang tải dữ liệu..."
+          size="large"
         />
+      </div>
+    );
+  }
 
-        {/* Pagination */}
-        <div style={{ marginTop: "16px", textAlign: "right" }}>
-          <Pagination
-            current={currentPage}
-            pageSize={pageSize}
-            total={total}
-            onChange={(page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <Typography.Title
+          level={2}
+          className="text-gray-900 mb-2 flex items-center gap-3"
+        >
+          <FaCertificate className="text-orange-500" />
+          Quản Lý Chứng Chỉ
+        </Typography.Title>
+        <Typography.Text className="text-gray-600 text-base">
+          Quản lý và xét duyệt chứng chỉ của Personal Trainer
+        </Typography.Text>
+      </div>
+
+      {/* Statistics Cards */}
+      <Row gutter={[20, 20]} className="mb-8">
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100">
+            <Statistic
+              title={
+                <span className="text-gray-600 font-medium">
+                  Tổng Số Chứng Chỉ
+                </span>
+              }
+              value={statistics.totalCertificates}
+              prefix={<FileProtectOutlined className="text-blue-500" />}
+              valueStyle={{
+                color: "#1890ff",
+                fontSize: "28px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-orange-50 to-orange-100">
+            <Statistic
+              title={
+                <span className="text-gray-600 font-medium">Chờ Duyệt</span>
+              }
+              value={statistics.pendingCertificates}
+              prefix={<ClockIcon className="text-orange-500" />}
+              valueStyle={{
+                color: "#fa8c16",
+                fontSize: "28px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100">
+            <Statistic
+              title={
+                <span className="text-gray-600 font-medium">Đã Duyệt</span>
+              }
+              value={statistics.approvedCertificates}
+              prefix={<CheckCircleOutlined className="text-green-500" />}
+              valueStyle={{
+                color: "#52c41a",
+                fontSize: "28px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100">
+            <Statistic
+              title={<span className="text-gray-600 font-medium">Từ Chối</span>}
+              value={statistics.rejectedCertificates}
+              prefix={<CloseCircleOutlined className="text-red-500" />}
+              valueStyle={{
+                color: "#ff4d4f",
+                fontSize: "28px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Main Content */}
+      <Card className="border-0 shadow-xl">
+        <ConfigProvider
+          theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
+        >
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <Input
+                placeholder="Tìm kiếm theo tên PT..."
+                prefix={<SearchOutlined className="text-gray-400" />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                allowClear
+                size="large"
+                className="rounded-lg shadow-sm"
+                style={{ maxWidth: "300px" }}
+              />
+              <Select
+                placeholder="Lọc theo trạng thái"
+                style={{ width: "200px" }}
+                size="large"
+                value={filterStatus || undefined}
+                onChange={(value) => setFilterStatus(value || "")}
+                allowClear
+                className="rounded-lg"
+              >
+                <Option value="Pending">Chờ duyệt</Option>
+                <Option value="Approved">Đã duyệt</Option>
+                <Option value="Rejected">Từ chối</Option>
+                <Option value="Expired">Hết hạn</Option>
+              </Select>
+            </div>
+          </div>
+
+          {/* Results Summary */}
+          <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
+            <Typography.Text className="text-gray-600">
+              Hiển thị{" "}
+              <span className="font-semibold text-orange-600">
+                {filteredCertificates.length}
+              </span>{" "}
+              trong tổng số{" "}
+              <span className="font-semibold">{pagination.total}</span> chứng
+              chỉ
+              {searchText && (
+                <span className="ml-2">
+                  | Tìm kiếm: "
+                  <span className="font-semibold text-blue-600">
+                    {searchText}
+                  </span>
+                  "
+                </span>
+              )}
+              {filterStatus && (
+                <span className="ml-2">
+                  | Trạng thái: {getStatusTag(filterStatus)}
+                </span>
+              )}
+            </Typography.Text>
+          </div>
+
+          {/* Table */}
+          <Table
+            columns={columns}
+            dataSource={filteredCertificates}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} của ${total} mục`,
+              position: ["bottomCenter"],
             }}
-            showSizeChanger
-            showTotal={(total) => `Tổng ${total} chứng chỉ`}
+            onChange={handleTableChange}
+            scroll={{ x: 1200 }}
+            className="rounded-lg overflow-hidden"
+            size="middle"
           />
-        </div>
+        </ConfigProvider>
       </Card>
 
       {/* Detail Modal */}

@@ -19,6 +19,11 @@ import {
   Space,
   Tag,
 } from "antd";
+import { APIProvider } from "@vis.gl/react-google-maps";
+import usePlacesAutocomplete, {
+  getGeocode,
+  getLatLng,
+} from "use-places-autocomplete";
 import {
   UserOutlined,
   MailOutlined,
@@ -47,6 +52,97 @@ import dayjs from "dayjs";
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
+// Custom Places Autocomplete Component for Profile
+function PlacesAutocomplete({
+  onSelect,
+  formInstance,
+  disabled,
+  initialValue,
+}) {
+  const {
+    ready,
+    value,
+    suggestions: { status, data },
+    setValue,
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: {
+      componentRestrictions: { country: "vn" },
+    },
+    debounce: 300,
+    initOnMount: true,
+    defaultValue: initialValue || "",
+  });
+
+  useEffect(() => {
+    if (initialValue) {
+      setValue(initialValue, false);
+    }
+  }, [initialValue, setValue]);
+
+  const handleSelect = async (address) => {
+    setValue(address, false);
+    clearSuggestions();
+
+    try {
+      const results = await getGeocode({ address });
+      const { lat, lng } = await getLatLng(results[0]);
+
+      onSelect({
+        address: address,
+        lat: lat,
+        lng: lng,
+      });
+
+      formInstance.setFieldsValue({
+        businessAddress: address,
+        latitude: lat,
+        longitude: lng,
+      });
+
+      message.success("Đã chọn địa chỉ và tọa độ thành công!");
+    } catch (error) {
+      console.error("Error: ", error);
+      message.error("Không thể lấy tọa độ cho địa chỉ này");
+    }
+  };
+
+  const options = data.map(({ place_id, description }) => ({
+    value: description,
+    label: description,
+    key: place_id,
+  }));
+
+  return (
+    <Select
+      showSearch
+      value={value || undefined}
+      placeholder={
+        ready ? "Nhập địa chỉ để tìm kiếm..." : "Đang tải Google Maps..."
+      }
+      size="large"
+      style={{ width: "100%", borderRadius: "8px" }}
+      defaultActiveFirstOption={false}
+      suffixIcon={<EnvironmentOutlined />}
+      filterOption={false}
+      onSearch={(val) => setValue(val)}
+      onSelect={handleSelect}
+      notFoundContent={
+        !ready ? (
+          <div style={{ padding: "8px", color: "#999" }}>Đang tải...</div>
+        ) : status === "OK" && data.length === 0 ? (
+          <div style={{ padding: "8px", color: "#999" }}>
+            Không tìm thấy địa chỉ
+          </div>
+        ) : null
+      }
+      disabled={disabled || !ready}
+      options={options}
+      loading={!ready}
+    />
+  );
+}
+
 export default function ProfilePage() {
   const user = useSelector(selectUser);
   const [form] = Form.useForm();
@@ -64,6 +160,7 @@ export default function ProfilePage() {
   const [imagesToAdd, setImagesToAdd] = useState([]);
   const [imagesToRemove, setImagesToRemove] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
+  const [position, setPosition] = useState({ lat: null, lng: null });
 
   useEffect(() => {
     fetchProfile();
@@ -112,7 +209,13 @@ export default function ProfilePage() {
           openTime: data.openTime ? dayjs(data.openTime, "HH:mm:ss") : null,
           closeTime: data.closeTime ? dayjs(data.closeTime, "HH:mm:ss") : null,
           businessAddress: data.businessAddress,
+          latitude: data.latitude,
+          longitude: data.longitude,
         });
+        // Set position state for GymOwner
+        if (data.latitude && data.longitude) {
+          setPosition({ lat: data.latitude, lng: data.longitude });
+        }
       } else if (user?.role === "FreelancePT") {
         form.setFieldsValue({
           fullName: data.fullName,
@@ -132,7 +235,13 @@ export default function ProfilePage() {
             ? dayjs(data.identityCardDate)
             : null,
           businessAddress: data.businessAddress,
+          latitude: data.latitude,
+          longitude: data.longitude,
         });
+        // Set position state for FreelancePT
+        if (data.latitude && data.longitude) {
+          setPosition({ lat: data.latitude, lng: data.longitude });
+        }
       }
     } catch (error) {
       message.error("Không thể tải thông tin cá nhân");
@@ -204,6 +313,9 @@ export default function ProfilePage() {
           "closeTime",
           values.closeTime ? values.closeTime.format("HH:mm:ss") : null
         );
+        appendIfPresent("businessAddress", values.businessAddress);
+        appendIfPresent("latitude", values.latitude);
+        appendIfPresent("longitude", values.longitude);
       } else if (user?.role === "FreelancePT") {
         appendIfPresent("fullName", values.fullName);
         appendIfPresent("email", values.email);
@@ -215,6 +327,9 @@ export default function ProfilePage() {
         appendIfPresent("height", values.height || 0);
         appendIfPresent("ptMaxCourse", values.ptMaxCourse);
         appendIfPresent("ptCurrentCourse", values.ptCurrentCourse);
+        appendIfPresent("businessAddress", values.businessAddress);
+        appendIfPresent("latitude", values.latitude);
+        appendIfPresent("longitude", values.longitude);
       }
 
       await profileService.updateProfile(formData);
@@ -740,14 +855,54 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input
-            disabled={!isEditMode}
-            size="large"
-            style={{ borderRadius: "8px" }}
-            placeholder="Nhập địa chỉ kinh doanh"
-          />
+          {isEditMode ? (
+            <PlacesAutocomplete
+              onSelect={(location) => {
+                setPosition({ lat: location.lat, lng: location.lng });
+              }}
+              formInstance={form}
+              disabled={!isEditMode}
+              initialValue={form.getFieldValue("businessAddress")}
+            />
+          ) : (
+            <Input
+              disabled
+              size="large"
+              style={{ borderRadius: "8px" }}
+              value={form.getFieldValue("businessAddress")}
+            />
+          )}
         </Form.Item>
       </Col>
+
+      {/* Hidden fields for latitude and longitude */}
+      <Form.Item name="latitude" hidden>
+        <Input type="hidden" />
+      </Form.Item>
+      <Form.Item name="longitude" hidden>
+        <Input type="hidden" />
+      </Form.Item>
+
+      {/* Display coordinates when available */}
+      {/* {position.lat && position.lng && (
+        <Col xs={24}>
+          <Card
+            size="small"
+            style={{
+              background: "#f6ffed",
+              borderColor: "#b7eb8f",
+              marginBottom: "16px",
+            }}
+          >
+            <Space>
+              <EnvironmentOutlined style={{ color: "#52c41a" }} />
+              <Text type="secondary">
+                Toạ độ: {position.lat?.toFixed(6)}, {position.lng?.toFixed(6)}
+              </Text>
+            </Space>
+          </Card>
+        </Col>
+      )} */}
 
       <Col xs={24} md={12}>
         <Form.Item
@@ -1091,9 +1246,54 @@ export default function ProfilePage() {
             </Text>
           }
         >
-          <Input disabled size="large" style={{ borderRadius: "8px" }} />
+          {isEditMode ? (
+            <PlacesAutocomplete
+              onSelect={(location) => {
+                setPosition({ lat: location.lat, lng: location.lng });
+              }}
+              formInstance={form}
+              disabled={!isEditMode}
+              initialValue={form.getFieldValue("businessAddress")}
+            />
+          ) : (
+            <Input
+              disabled
+              size="large"
+              style={{ borderRadius: "8px" }}
+              value={form.getFieldValue("businessAddress")}
+            />
+          )}
         </Form.Item>
       </Col>
+
+      {/* Hidden fields for latitude and longitude */}
+      <Form.Item name="latitude" hidden>
+        <Input type="hidden" />
+      </Form.Item>
+      <Form.Item name="longitude" hidden>
+        <Input type="hidden" />
+      </Form.Item>
+
+      {/* Display coordinates when available */}
+      {position.lat && position.lng && (
+        <Col xs={24}>
+          <Card
+            size="small"
+            style={{
+              background: "#f6ffed",
+              borderColor: "#b7eb8f",
+              marginBottom: "16px",
+            }}
+          >
+            <Space>
+              <EnvironmentOutlined style={{ color: "#52c41a" }} />
+              <Text type="secondary">
+                Tọa độ: {position.lat?.toFixed(6)}, {position.lng?.toFixed(6)}
+              </Text>
+            </Space>
+          </Card>
+        </Col>
+      )}
 
       <Col xs={24}>
         <Card
@@ -1227,210 +1427,217 @@ export default function ProfilePage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-      }}
-    >
-      <div>
-        <div style={{}}>
-          {/* Header Section */}
-          <div
-            style={{
-              marginBottom: "32px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "16px",
-            }}
-          >
-            <div>
-              <Title level={2} style={{ margin: 0, marginBottom: "8px" }}>
-                Thông tin cá nhân
-              </Title>
-              <Text type="secondary" style={{ fontSize: "15px" }}>
-                Quản lý thông tin cá nhân và cập nhật hồ sơ của bạn
-              </Text>
-            </div>
-            <Button
-              type="primary"
-              size="large"
-              icon={isEditMode ? <SaveOutlined /> : <EditOutlined />}
-              onClick={() => {
-                if (isEditMode) {
-                  form.submit();
-                } else {
-                  setIsEditMode(true);
-                }
-              }}
-              loading={saving}
-              style={{
-                borderRadius: "8px",
-                height: "44px",
-                paddingLeft: "24px",
-                paddingRight: "24px",
-                fontSize: "15px",
-                fontWeight: "500",
-              }}
-            >
-              {isEditMode ? "Lưu thay đổi" : "Chỉnh sửa"}
-            </Button>
-          </div>
-
-          {/* Avatar Section */}
-          <Card
-            style={{
-              background: "linear-gradient(135deg, #FF914D 0%, #FF3A50 100%)",
-              marginBottom: "32px",
-              borderRadius: "12px",
-              border: "none",
-            }}
-          >
+    <APIProvider apiKey={import.meta.env.VITE_API_KEY_GOOGLE}>
+      <div
+        style={{
+          minHeight: "100vh",
+        }}
+      >
+        <div>
+          <div style={{}}>
+            {/* Header Section */}
             <div
               style={{
+                marginBottom: "32px",
                 display: "flex",
+                justifyContent: "space-between",
                 alignItems: "center",
-                gap: "24px",
                 flexWrap: "wrap",
+                gap: "16px",
               }}
             >
-              <div style={{ position: "relative" }}>
-                <Badge
-                  count={
-                    <div
+              <div>
+                <Title level={2} style={{ margin: 0, marginBottom: "8px" }}>
+                  Thông tin cá nhân
+                </Title>
+                <Text type="secondary" style={{ fontSize: "15px" }}>
+                  Quản lý thông tin cá nhân và cập nhật hồ sơ của bạn
+                </Text>
+              </div>
+              <Button
+                type="primary"
+                size="large"
+                icon={isEditMode ? <SaveOutlined /> : <EditOutlined />}
+                onClick={() => {
+                  if (isEditMode) {
+                    form.submit();
+                  } else {
+                    setIsEditMode(true);
+                  }
+                }}
+                loading={saving}
+                style={{
+                  borderRadius: "8px",
+                  height: "44px",
+                  paddingLeft: "24px",
+                  paddingRight: "24px",
+                  fontSize: "15px",
+                  fontWeight: "500",
+                }}
+              >
+                {isEditMode ? "Lưu thay đổi" : "Chỉnh sửa"}
+              </Button>
+            </div>
+
+            {/* Avatar Section */}
+            <Card
+              style={{
+                background: "linear-gradient(135deg, #FF914D 0%, #FF3A50 100%)",
+                marginBottom: "32px",
+                borderRadius: "12px",
+                border: "none",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "24px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ position: "relative" }}>
+                  <Badge
+                    count={
+                      <div
+                        style={{
+                          background: "white",
+                          borderRadius: "50%",
+                          padding: "8px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <Upload
+                          beforeUpload={handleAvatarUpload}
+                          showUploadList={false}
+                          accept="image/*"
+                        >
+                          <CameraOutlined
+                            style={{ fontSize: "20px", color: "#1890ff" }}
+                          />
+                        </Upload>
+                      </div>
+                    }
+                    offset={[-8, 100]}
+                  >
+                    <Avatar
+                      size={120}
+                      src={avatarUrl}
+                      icon={!avatarUrl && <UserOutlined />}
                       style={{
-                        background: "white",
-                        borderRadius: "50%",
-                        padding: "8px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
+                        border: "4px solid white",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                      }}
+                    />
+                  </Badge>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Title
+                    level={3}
+                    style={{ color: "white", margin: 0, marginBottom: "8px" }}
+                  >
+                    {profileData?.fullName || "Người dùng"}
+                  </Title>
+                  <Space direction="vertical" size={4}>
+                    <Text
+                      style={{
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: "15px",
                       }}
                     >
-                      <Upload
-                        beforeUpload={handleAvatarUpload}
-                        showUploadList={false}
-                        accept="image/*"
-                      >
-                        <CameraOutlined
-                          style={{ fontSize: "20px", color: "#1890ff" }}
-                        />
-                      </Upload>
+                      <MailOutlined /> {profileData?.email}
+                    </Text>
+                    <div>
+                      {profileData?.isActive === "True" ? (
+                        <Tag
+                          icon={<CheckCircleOutlined />}
+                          color="success"
+                          style={{ borderRadius: "6px" }}
+                        >
+                          Đang hoạt động
+                        </Tag>
+                      ) : (
+                        <Tag
+                          icon={<CloseCircleOutlined />}
+                          color="error"
+                          style={{ borderRadius: "6px" }}
+                        >
+                          Không hoạt động
+                        </Tag>
+                      )}
                     </div>
-                  }
-                  offset={[-8, 100]}
-                >
-                  <Avatar
-                    size={120}
-                    src={avatarUrl}
-                    icon={!avatarUrl && <UserOutlined />}
-                    style={{
-                      border: "4px solid white",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                    }}
-                  />
-                </Badge>
-              </div>
-              <div style={{ flex: 1 }}>
-                <Title
-                  level={3}
-                  style={{ color: "white", margin: 0, marginBottom: "8px" }}
-                >
-                  {profileData?.fullName || "Người dùng"}
-                </Title>
-                <Space direction="vertical" size={4}>
-                  <Text
-                    style={{ color: "rgba(255,255,255,0.9)", fontSize: "15px" }}
-                  >
-                    <MailOutlined /> {profileData?.email}
-                  </Text>
-                  <div>
-                    {profileData?.isActive === "True" ? (
-                      <Tag
-                        icon={<CheckCircleOutlined />}
-                        color="success"
-                        style={{ borderRadius: "6px" }}
-                      >
-                        Đang hoạt động
-                      </Tag>
-                    ) : (
-                      <Tag
-                        icon={<CloseCircleOutlined />}
-                        color="error"
-                        style={{ borderRadius: "6px" }}
-                      >
-                        Không hoạt động
-                      </Tag>
-                    )}
-                  </div>
-                </Space>
-              </div>
-            </div>
-          </Card>
-
-          {/* Form Section */}
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            autoComplete="off"
-          >
-            <Row gutter={[24, 8]}>
-              {/* Role-specific Fields */}
-              {user?.role === "GymOwner" && renderGymOwnerFields()}
-              {user?.role === "FreelancePT" && renderFreelancePTFields()}
-              {renderImagesSection()}
-            </Row>
-
-            {isEditMode && (
-              <>
-                <Divider style={{ marginTop: "32px", marginBottom: "24px" }} />
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: "12px",
-                  }}
-                >
-                  <Button
-                    size="large"
-                    onClick={() => {
-                      setIsEditMode(false);
-                      form.resetFields();
-                      fetchProfile();
-                    }}
-                    style={{
-                      borderRadius: "8px",
-                      height: "44px",
-                      paddingLeft: "24px",
-                      paddingRight: "24px",
-                    }}
-                  >
-                    Hủy
-                  </Button>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    size="large"
-                    icon={<SaveOutlined />}
-                    loading={saving}
-                    style={{
-                      borderRadius: "8px",
-                      height: "44px",
-                      paddingLeft: "24px",
-                      paddingRight: "24px",
-                    }}
-                  >
-                    Lưu thay đổi
-                  </Button>
+                  </Space>
                 </div>
-              </>
-            )}
-          </Form>
+              </div>
+            </Card>
+
+            {/* Form Section */}
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={handleSubmit}
+              autoComplete="off"
+            >
+              <Row gutter={[24, 8]}>
+                {/* Role-specific Fields */}
+                {user?.role === "GymOwner" && renderGymOwnerFields()}
+                {user?.role === "FreelancePT" && renderFreelancePTFields()}
+                {renderImagesSection()}
+              </Row>
+
+              {isEditMode && (
+                <>
+                  <Divider
+                    style={{ marginTop: "32px", marginBottom: "24px" }}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: "12px",
+                    }}
+                  >
+                    <Button
+                      size="large"
+                      onClick={() => {
+                        setIsEditMode(false);
+                        form.resetFields();
+                        fetchProfile();
+                      }}
+                      style={{
+                        borderRadius: "8px",
+                        height: "44px",
+                        paddingLeft: "24px",
+                        paddingRight: "24px",
+                      }}
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      size="large"
+                      icon={<SaveOutlined />}
+                      loading={saving}
+                      style={{
+                        borderRadius: "8px",
+                        height: "44px",
+                        paddingLeft: "24px",
+                        paddingRight: "24px",
+                      }}
+                    >
+                      Lưu thay đổi
+                    </Button>
+                  </div>
+                </>
+              )}
+            </Form>
+          </div>
         </div>
       </div>
-    </div>
+    </APIProvider>
   );
 }

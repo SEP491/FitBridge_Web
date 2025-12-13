@@ -10,15 +10,21 @@ const contractService = {
   getContractById: (contractId) =>
     request("GET", "/v1/contracts", null, {}, { contractId }),
 
-  getContractForCustomer: (customerId) =>
-    request("GET", "/v1/contracts", null, {}, { customerId }),
+  getContractForCustomer: (customerId, page = 1, size = 10) =>
+    request("GET", "/v1/contracts", null, {}, { customerId, page, size }),
 
   updateContract: (formData) => request("PUT", "/v1/contracts", formData),
 
   confirmContract: (contractId) =>
     request("PUT", `/v1/contracts/confirm/${contractId}`),
-  getCustomersToCreateContract: () =>
-    request("GET", `/v1/accounts/admin/expired-contract-users`),
+  getCustomersToCreateContract: (params) =>
+    request(
+      "GET",
+      `/v1/accounts/admin/expired-contract-users`,
+      null,
+      {},
+      params
+    ),
 };
 
 export default contractService;

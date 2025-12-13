@@ -11,7 +11,9 @@
   },
   "proxy": "http://localhost:5173",
   "dependencies": {
+    "@ant-design/charts": "^2.6.6",
     "@ant-design/icons": "^5.6.1",
+    "@microsoft/signalr": "^8.0.6",
     "@react-google-maps/api": "^2.20.6",
     "@react-pdf/renderer": "^4.3.1",
     "@reduxjs/toolkit": "^2.8.1",
@@ -42,8 +44,7 @@
     "redux": "^5.0.1",
     "redux-persist": "^6.0.0",
     "tailwindcss": "^4.1.6",
-    "use-places-autocomplete": "^4.0.1",
-    "@microsoft/signalr": "^8.0.6"
+    "use-places-autocomplete": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

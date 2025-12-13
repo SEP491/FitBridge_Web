@@ -88,10 +88,11 @@ const ContractTemplate = React.forwardRef(
                 <strong>Số CCCD:</strong> 077204000387
               </p>
               <p>
-                <strong>Ngày cấp:</strong> ___________________
+                <strong>Ngày cấp:</strong> 26/07/2022
               </p>
               <p>
-                <strong>Nơi cấp:</strong> ___________________
+                <strong>Nơi cấp:</strong> CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH
+                CHÍNH VỀ TRẬT TỰ XÃ HỘI
               </p>
               <p>
                 <strong>Điện thoại:</strong> 0973035305
@@ -462,20 +463,21 @@ const ContractTemplate = React.forwardRef(
               <strong>Chức vụ:</strong> Admin
             </p>
             <p>
-              <strong>Số CCCD:</strong> ___________________
+              <strong>Số CCCD:</strong> 077204000387
             </p>
             <p>
-              <strong>Ngày cấp:</strong> ___________________
+              <strong>Ngày cấp:</strong> 26/07/2022
             </p>
             <p>
-              <strong>Nơi cấp:</strong> ___________________
+              <strong>Nơi cấp:</strong> CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH
+              CHÍNH VỀ TRẬT TỰ XÃ HỘI
             </p>
             <p>
               <strong>Địa chỉ thường trú:</strong> 7 Đ. D1, Long Thạnh Mỹ, Thủ
               Đức, TP.HCM
             </p>
             <p>
-              <strong>Điện thoại:</strong> ___________________
+              <strong>Điện thoại:</strong> 0973035305
             </p>
             <p>
               <strong>Email:</strong> admin@fitbridge.vn

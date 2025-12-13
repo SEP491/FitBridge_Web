@@ -8,7 +8,9 @@ const assetsService = {
   updateGymAsset: (data) => request("PUT", `/v1/gym-assets`, data),
 
   deleteGymAsset: (assetId) => request("DELETE", `/v1/gym-assets/${assetId}`),
-  getGymAssetsMetadata: () => request("GET", `/v1/gym-assets/metadata`),
+
+  getGymAssetsMetadata: (params) =>
+    request("GET", `/v1/gym-assets/metadata`, null, {}, params),
 };
 
 export default assetsService;

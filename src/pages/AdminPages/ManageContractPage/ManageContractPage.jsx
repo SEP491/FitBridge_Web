@@ -54,16 +54,30 @@ const ManageContractPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [form] = Form.useForm();
   const contractRef = useRef();
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   useEffect(() => {
     fetchContracts();
   }, []);
 
-  const fetchContracts = async () => {
+  const fetchContracts = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await contractService.getAllContracts();
-      setContracts(response.data?.items || []);
+      const response = await contractService.getAllContracts({
+        page,
+        size: pageSize,
+      });
+      const { items, total, page: currentPage } = response.data || {};
+      setContracts(items || []);
+      setPagination({
+        current: currentPage || page,
+        pageSize,
+        total: total || 0,
+      });
     } catch (error) {
       message.error("Không thể tải danh sách hợp đồng");
       console.error(error);
@@ -72,10 +86,18 @@ const ManageContractPage = () => {
     }
   };
 
+  const handleTableChange = (paginationConfig) => {
+    fetchContracts(paginationConfig.current, paginationConfig.pageSize);
+  };
+
   const fetchUsers = async () => {
     setLoadingUsers(true);
     try {
-      const response = await contractService.getCustomersToCreateContract();
+      const response = await contractService.getCustomersToCreateContract({
+        page: 1,
+        size: 200,
+        doApplyPaging: false,
+      });
       setUsers(response.data?.items || []);
     } catch (error) {
       message.error("Không thể tải danh sách người dùng");
@@ -492,10 +514,16 @@ const ManageContractPage = () => {
           rowKey="id"
           scroll={{ x: 1200 }}
           pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => `Tổng ${total} hợp đồng`,
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} của ${total} hợp đồng`,
+            position: ["bottomCenter"],
           }}
+          onChange={handleTableChange}
         />
       </Card>
 
