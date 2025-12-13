@@ -130,6 +130,12 @@ const revenueCatService = {
       data
     ),
 
+  // Apps
+  getApps: (params = {}) =>
+    revenueCatAxios.get(`/projects/${REVENUECAT_PROJECT_ID}/apps`, {
+      params,
+    }),
+
   // Products
   getProducts: (params = {}) =>
     revenueCatAxios.get(`/projects/${REVENUECAT_PROJECT_ID}/products`, {
@@ -142,6 +148,11 @@ const revenueCatService = {
     ),
   createProduct: (data) =>
     revenueCatAxios.post(`/projects/${REVENUECAT_PROJECT_ID}/products`, data),
+  pushProductToStore: (productId, data = {}) =>
+    revenueCatAxios.post(
+      `/projects/${REVENUECAT_PROJECT_ID}/products/${productId}/create_in_store`,
+      data
+    ),
 
   // Entitlements
   getEntitlements: (params = {}) =>
@@ -152,16 +163,26 @@ const revenueCatService = {
     revenueCatAxios.get(
       `/projects/${REVENUECAT_PROJECT_ID}/entitlements/${entitlementId}`
     ),
+  createEntitlement: (data) =>
+    revenueCatAxios.post(
+      `/projects/${REVENUECAT_PROJECT_ID}/entitlements`,
+      data
+    ),
   getEntitlementProducts: (entitlementId, params = {}) =>
     revenueCatAxios.get(
       `/projects/${REVENUECAT_PROJECT_ID}/entitlements/${entitlementId}/products`,
       { params }
     ),
-  attachProductsToEntitlement: (entitlementId, data) =>
-    revenueCatAxios.post(
+  attachProductsToEntitlement: (entitlementId, data) => {
+    // Convert products array to product_ids array if needed
+    const requestData = data.product_ids
+      ? data
+      : { product_ids: data.products?.map((p) => p.product_id) || [] };
+    return revenueCatAxios.post(
       `/projects/${REVENUECAT_PROJECT_ID}/entitlements/${entitlementId}/actions/attach_products`,
-      data
-    ),
+      requestData
+    );
+  },
   detachProductsFromEntitlement: (entitlementId, data) =>
     revenueCatAxios.post(
       `/projects/${REVENUECAT_PROJECT_ID}/entitlements/${entitlementId}/actions/detach_products`,
@@ -177,6 +198,8 @@ const revenueCatService = {
     revenueCatAxios.get(
       `/projects/${REVENUECAT_PROJECT_ID}/offerings/${offeringId}`
     ),
+  createOffering: (data) =>
+    revenueCatAxios.post(`/projects/${REVENUECAT_PROJECT_ID}/offerings`, data),
   getOfferingPackages: (offeringId, params = {}) =>
     revenueCatAxios.get(
       `/projects/${REVENUECAT_PROJECT_ID}/offerings/${offeringId}/packages`,
@@ -192,6 +215,21 @@ const revenueCatService = {
     revenueCatAxios.get(
       `/projects/${REVENUECAT_PROJECT_ID}/packages/${packageId}/products`,
       { params }
+    ),
+  createPackage: (offeringId, data) =>
+    revenueCatAxios.post(
+      `/projects/${REVENUECAT_PROJECT_ID}/offerings/${offeringId}/packages`,
+      data
+    ),
+  attachProductsToPackage: (packageId, data) =>
+    revenueCatAxios.post(
+      `/projects/${REVENUECAT_PROJECT_ID}/packages/${packageId}/actions/attach_products`,
+      data
+    ),
+  detachProductsFromPackage: (packageId, data) =>
+    revenueCatAxios.post(
+      `/projects/${REVENUECAT_PROJECT_ID}/packages/${packageId}/actions/detach_products`,
+      data
     ),
 };
 
