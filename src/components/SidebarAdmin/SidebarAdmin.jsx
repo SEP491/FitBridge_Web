@@ -117,6 +117,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           `${route.admin}/${route.manageCertificate}`,
           <HiDocumentText className="text-lg" />
         ),
+        getItem(
+          "Quản Lý Cấu Hình Hệ Thống",
+          `${route.admin}/manage-system-config`,
+          <HiDocumentText className="text-lg" />
+        ),
       ]);
     } else if (user?.role === "GymOwner") {
       setItems([

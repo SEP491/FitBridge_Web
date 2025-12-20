@@ -46,6 +46,7 @@ import { NotificationProvider } from "./context/NotificationContext";
 import ChatBubble from "./components/Chat/ChatBubble";
 import ManageCerPage from "./pages/AdminPages/ManageCerPage/ManageCerPage";
 import ManageAssetsPage from "./pages/GymPages/ManageAssetsPage/ManageAssetsPage";
+import ManageSystemConfigPage from "./pages/AdminPages/ManageSystemConfigPage/ManageSystemConfigPage";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -391,6 +392,14 @@ function App() {
               element: (
                 <ProtectedRoute allowedRoles={["Admin"]}>
                   <ManageContractPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "manage-system-config",
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageSystemConfigPage />
                 </ProtectedRoute>
               ),
             },
