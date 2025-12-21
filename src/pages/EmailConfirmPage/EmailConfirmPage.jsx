@@ -11,6 +11,8 @@ const EmailConfirmPage = () => {
     height: window.innerHeight 
   });
 
+  const logoScale = windowSize.width < 480 ? 1 : windowSize.width < 640 ? 2.8 : 2.5;
+  const logoScaleAnimation = windowSize.width < 480 ? 0.8 : windowSize.width < 640 ? 0.9 : 1;
   useEffect(() => {
     const handleResize = () => {
       setWindowSize({ 
@@ -111,8 +113,8 @@ const EmailConfirmPage = () => {
           }}
         >
           <motion.div
-            initial={{ scale: 3 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: logoScale }}
+            animate={{ scale: logoScaleAnimation }}
             transition={{
               duration: 1,
               delay: 3.5,

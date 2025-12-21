@@ -95,7 +95,7 @@ export default function HomeLoginPage() {
               alt="FitBridge Logo"
               className="h-30 w-30 items-center justify-center mx-auto"
             /> */}
-            <div className="scale-75 sm:scale-90 md:scale-100">
+            <div className="scale-55 sm:scale-30 md:scale-100">
               <LoadingLogo />
             </div>
             <h1 className="text-[#FF3A50] font-bold text-2xl sm:text-3xl lg:text-4xl">
