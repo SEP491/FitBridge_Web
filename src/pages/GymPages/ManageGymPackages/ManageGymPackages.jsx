@@ -21,6 +21,8 @@ import {
   Tooltip,
   Progress,
   Upload,
+  Descriptions,
+  Image,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -41,13 +43,15 @@ import {
   UserAddOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
-import { FaEye, FaPlus, FaPlusCircle } from "react-icons/fa";
+import { FaEye, FaPlus, FaPlusCircle, FaInfoCircle, FaDumbbell } from "react-icons/fa";
 import gymService from "../../../services/gymServices";
+import uploadService from "../../../services/uploadService";
 import { ImBin } from "react-icons/im";
 import { MdEdit } from "react-icons/md";
 import { IoBarbell } from "react-icons/io5";
 import { selectUser } from "../../../redux/features/userSlice";
 import { useSelector } from "react-redux";
+import { IdcardOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
 
@@ -59,8 +63,7 @@ export default function ManageGymPackages() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isModalAddCourseOpen, setIsModalAddCourseOpen] = useState(false);
-  const [isModalGymCouseDetailOpen, setIsModalGymCouseDetailOpen] =
-    useState(false);
+  const [isModalCourseDetailOpen, setIsModalCourseDetailOpen] = useState(false);
   const [pts, setPts] = useState([]);
   const [isModalAddGymCoursePTOpen, setIsModalAddGymCoursePTOpen] =
     useState(false);
@@ -75,7 +78,9 @@ export default function ManageGymPackages() {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
   const [ptsInCourse, setPtsInCourse] = useState([]);
-  const [fileList, setFileList] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -151,6 +156,7 @@ export default function ManageGymPackages() {
   useEffect(() => {
     fetchCoursesGym();
     fetchPTGym();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTableChange = (pagination) => {
@@ -211,13 +217,17 @@ export default function ManageGymPackages() {
       dataIndex: "name",
       key: "name",
       align: "left",
+      width: 250,
       render: (text, record) => (
         <div className="flex items-center gap-3">
+
           <Avatar
             size={40}
             icon={<IoBarbell />}
             style={{ backgroundColor: "#FF914D" }}
+            src={record.image}
           />
+
           <div>
             <div className="font-medium text-gray-900">{text}</div>
             <div className="text-sm text-gray-500">{record.duration} ngày</div>
@@ -226,40 +236,11 @@ export default function ManageGymPackages() {
       ),
     },
     {
-      title: "Thời Lượng",
-      dataIndex: "duration",
-      key: "duration",
-      align: "center",
-      render: (duration) => (
-        <div className="flex flex-col items-center">
-          <ClockCircleOutlined style={{ fontSize: "16px", color: "#1890ff" }} />
-          <span className="text-sm font-medium">{duration}</span>
-          <span className="text-xs text-gray-500">ngày</span>
-        </div>
-      ),
-    },
-    {
-      title: "Giá Tiền",
-      dataIndex: "price",
-      key: "price",
-      align: "center",
-      render: (price) => (
-        <div className="flex flex-col items-center">
-          <DollarOutlined style={{ fontSize: "16px", color: "#52c41a" }} />
-          <span className="text-sm font-medium text-green-600">
-            {price?.toLocaleString("vi", {
-              style: "currency",
-              currency: "VND",
-            })}
-          </span>
-        </div>
-      ),
-    },
-    {
       title: "Loại Gói",
       dataIndex: "type",
       key: "type",
       align: "center",
+      width: 120,
       render: (type) => (
         <Tag
           icon={getTypeIcon(type)}
@@ -271,75 +252,34 @@ export default function ManageGymPackages() {
       ),
     },
     {
-      title: "Mô Tả",
-      dataIndex: "description",
-      key: "description",
+      title: "Thời Lượng",
+      dataIndex: "duration",
+      key: "duration",
       align: "center",
-      render: (description) => (
-        <Tooltip title={description}>
-          <span className="text-gray-600 max-w-xs truncate block">
-            {description || "Chưa có mô tả"}
-          </span>
-        </Tooltip>
+      width: 120,
+      sorter: (a, b) => (a.duration || 0) - (b.duration || 0),
+      render: (duration) => (
+        <div className="flex flex-col items-center">
+          <ClockCircleOutlined style={{ fontSize: "16px", color: "#1890ff" }} />
+          <span className="text-sm font-bold text-orange-600">{duration}</span>
+          <span className="text-xs text-gray-500">ngày</span>
+        </div>
       ),
     },
     {
-      title: "Thao Tác",
-      key: "actions",
+      title: "Giá Tiền",
+      dataIndex: "price",
+      key: "price",
       align: "center",
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              className="text-blue-600 hover:bg-blue-50"
-              onClick={() => {
-                setIsModalGymCouseDetailOpen(true);
-                setSelectedCourse(record);
-                // Only fetch PTs if it's a WithPT package
-                if (record.type === "WithPT" || record.type === "WithPt") {
-                  fetchPTInCourse(record.id);
-                }
-              }}
-            />
-          </Tooltip>
-
-          {(record.type === "WithPT" || record.type === "WithPt") && (
-            <Tooltip title="Thêm PT">
-              <Button
-                type="text"
-                icon={<UserAddOutlined />}
-                className="text-green-600 hover:bg-green-50"
-                onClick={async () => {
-                  setIsModalAddGymCoursePTOpen(true);
-                  setSelectedCourse(record);
-                  // Fetch PTs already in this course to filter them out
-                  await fetchPTInCourse(record.id);
-                  // Reset form when opening modal
-                  formAddGymCourse.resetFields();
-                }}
-              />
-            </Tooltip>
-          )}
-
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              className="text-orange-600 hover:bg-orange-50"
-              onClick={() => handleEdit(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              className="text-red-600 hover:bg-red-50"
-              onClick={() => handleDelete(record.id)}
-            />
-          </Tooltip>
-        </Space>
+      width: 150,
+      sorter: (a, b) => (a.price || 0) - (b.price || 0),
+      render: (price) => (
+        <div className="flex flex-col items-center">
+          <DollarOutlined style={{ fontSize: "16px", color: "#52c41a" }} />
+          <span className="text-sm font-bold text-green-600">
+            {price?.toLocaleString("vi-VN")}₫
+          </span>
+        </div>
       ),
     },
   ];
@@ -367,25 +307,25 @@ export default function ManageGymPackages() {
     return matchesSearch && matchesType;
   });
 
-  // Upload handlers
-  const handleUploadChange = ({ fileList: newFileList }) => {
-    setFileList(newFileList);
-    console.log("Updated fileList:", newFileList);
-  };
-
-  const beforeUpload = (file) => {
-    const isJpgOrPng =
-      file.type === "image/jpeg" ||
-      file.type === "image/png" ||
-      file.type === "image/webp";
-    if (!isJpgOrPng) {
-      toast.error("Chỉ có thể tải lên file JPG/PNG/WEBP!");
+  // Upload handlers - same pattern as ManageWithdrawalPage
+  const handleImageUpload = async (file) => {
+    setUploadingImage(true);
+    try {
+      const response = await uploadService.uploadFile(file);
+      // The API returns the URL directly in response.data as a string
+      const imageUrl = response.data;
+      setUploadedImageUrl(imageUrl);
+      setUploadedImage(file);
+      // Update form with image URL
+      formAdd.setFieldsValue({ imageUrl });
+      toast.success("Tải lên hình ảnh thành công!");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Không thể tải lên hình ảnh");
+    } finally {
+      setUploadingImage(false);
     }
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      toast.error("Hình ảnh phải nhỏ hơn 2MB!");
-    }
-    return isJpgOrPng && isLt2M;
+    return false; // Prevent default upload behavior
   };
 
   const handleAddCourseGym = async (values) => {
@@ -397,6 +337,7 @@ export default function ManageGymPackages() {
       duration: values.duration,
       type: values.type,
       description: values.description,
+      imageUrl: uploadedImageUrl // Include imageUrl if uploaded
     };
 
     try {
@@ -405,7 +346,8 @@ export default function ManageGymPackages() {
       fetchCoursesGym();
       setIsModalAddCourseOpen(false);
       formAdd.resetFields();
-      setFileList([]); // Reset file list
+      setUploadedImage(null);
+      setUploadedImageUrl("");
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi thêm gói tập thất bại");
     } finally {
@@ -491,6 +433,7 @@ export default function ManageGymPackages() {
             size={40}
             icon={<UserOutlined />}
             style={{ backgroundColor: "#FF914D" }}
+            src={record.avatarUrl}
           />
           <div>
             <div className="font-medium text-gray-900">{text}</div>
@@ -513,7 +456,7 @@ export default function ManageGymPackages() {
       render: (_, record) => (
         <div className="text-center">
           <div className="text-sm">
-            <span className="font-medium">{record.height}cm</span> /
+            <span className="font-medium">{record.height}cm</span>
             <span className="font-medium"> {record.weight}kg</span>
           </div>
         </div>
@@ -524,7 +467,23 @@ export default function ManageGymPackages() {
       dataIndex: "goalTraining",
       key: "goalTraining",
       align: "center",
-      render: (goal) => <Tag color="blue">{goal}</Tag>,
+      render: (goal) => (
+        <div className="flex flex-wrap gap-1 justify-center">
+          {goal ? (
+            goal
+              .split(",")
+              .map((item) => item.trim())
+              .filter((item) => item)
+              .map((item, index) => (
+                <Tag key={index} color="blue">
+                  {item}
+                </Tag>
+              ))
+          ) : (
+            <span className="text-gray-400">Chưa cập nhật</span>
+          )}
+        </div>
+      ),
     },
     {
       title: "Kinh nghiệm",
@@ -692,21 +651,33 @@ export default function ManageGymPackages() {
             <Table
               dataSource={filteredData}
               columns={columns}
+              loading={loading}
               pagination={{
                 current: pagination.current,
                 pageSize: pagination.pageSize,
                 total: pagination.total,
                 showSizeChanger: true,
                 showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} của ${total} mục`,
                 position: ["bottomCenter"],
-                className: "custom-pagination",
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} của ${total} gói tập`,
               }}
               onChange={handleTableChange}
               className="rounded-lg overflow-hidden"
-              scroll={{ x: 1200 }}
+              scroll={{ x: 900 }}
+              size="middle"
               rowKey="id"
+              onRow={(record) => ({
+                onClick: () => {
+                  setSelectedCourse(record);
+                  setIsModalCourseDetailOpen(true);
+                  // Only fetch PTs if it's a WithPT package
+                  if (record.type === "WithPT" || record.type === "WithPt") {
+                    fetchPTInCourse(record.id);
+                  }
+                },
+                style: { cursor: "pointer" },
+              })}
             />
           </ConfigProvider>
         </Card>
@@ -718,7 +689,8 @@ export default function ManageGymPackages() {
         onCancel={() => {
           setIsModalAddCourseOpen(false);
           formAdd.resetFields();
-          setFileList([]);
+          setUploadedImage(null);
+          setUploadedImageUrl("");
         }}
         title={
           <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
@@ -835,27 +807,49 @@ export default function ManageGymPackages() {
             name="imageUrl"
           >
             <Upload
-              action="https://68cd19feda4697a7f304bc9f.mockapi.io/upload" // Replace with your upload endpoint
               listType="picture-card"
-              fileList={fileList}
-              onChange={handleUploadChange}
-              beforeUpload={beforeUpload}
               maxCount={1}
+              beforeUpload={handleImageUpload}
+              customRequest={({ onSuccess }) => {
+                setTimeout(() => {
+                  onSuccess("ok");
+                }, 0);
+              }}
+              onRemove={() => {
+                setUploadedImageUrl("");
+                setUploadedImage(null);
+                formAdd.setFieldsValue({ imageUrl: undefined });
+              }}
+              fileList={
+                uploadedImage
+                  ? [
+                      {
+                        uid: "-1",
+                        name: uploadedImage.name,
+                        status: "done",
+                        url: uploadedImageUrl,
+                      },
+                    ]
+                  : []
+              }
               accept="image/*"
               className="upload-list-inline"
             >
-              {fileList.length < 1 && (
+              {!uploadedImage && (
                 <div className="flex flex-col items-center justify-center p-2">
                   <UploadOutlined
                     style={{ fontSize: "24px", color: "#FF914D" }}
                   />
                   <div className="mt-2 text-sm text-gray-600">
-                    Tải lên hình ảnh
+                    {uploadingImage ? "Đang tải..." : "Tải lên hình ảnh"}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    JPG, PNG, WEBP &lt; 20MB
                   </div>
                 </div>
               )}
             </Upload>
-            <div className="text-xs text-gray-400">JPG, PNG, WEBP &lt; 2MB</div>
+            <div className="text-xs text-gray-400">JPG, PNG, WEBP &lt; 20MB</div>
           </Form.Item>
 
           <div className="text-center pt-4">
@@ -975,86 +969,279 @@ export default function ManageGymPackages() {
         </Form>
       </Modal>
 
-      {/* Course Detail Modal */}
-      <Modal
-        open={isModalGymCouseDetailOpen}
-        onCancel={() => setIsModalGymCouseDetailOpen(false)}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            {selectedCourse?.type === "WithPT" ||
-            selectedCourse?.type === "WithPt" ? (
-              <>
-                <TeamOutlined />
-                Personal Trainers - {selectedCourse?.name}
-              </>
-            ) : (
-              <>
-                <IoBarbell />
-                Chi tiết Gói Tập - {selectedCourse?.name}
-              </>
-            )}
-          </p>
-        }
-        footer={null}
-        width={1000}
+      {/* Course Detail Modal - Enhanced UI */}
+      <FitBridgeModal
+        open={isModalCourseDetailOpen}
+        onCancel={() => setIsModalCourseDetailOpen(false)}
+        title="Chi Tiết Gói Tập"
+        titleIcon={<EyeOutlined />}
+        width={900}
+        logoSize="medium"
+        bodyStyle={{ padding: "0", maxHeight: "75vh", overflowY: "auto" }}
       >
-        <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
-          <Row gutter={16}>
-            {(selectedCourse?.type === "WithPT" ||
-              selectedCourse?.type === "WithPt") && (
-              <Col span={8}>
-                <Statistic
-                  title="Tổng số PT"
-                  value={ptsInCourse.length}
-                  prefix={<TeamOutlined />}
-                />
-              </Col>
-            )}
-            <Col
-              span={
-                selectedCourse?.type === "WithPT" ||
-                selectedCourse?.type === "WithPt"
-                  ? 8
-                  : 12
-              }
-            >
-              <Statistic
-                title="Thời lượng gói"
-                value={selectedCourse?.duration}
-                suffix="ngày"
-                prefix={<ClockCircleOutlined />}
-              />
-            </Col>
-            <Col
-              span={
-                selectedCourse?.type === "WithPT" ||
-                selectedCourse?.type === "WithPt"
-                  ? 8
-                  : 12
-              }
-            >
-              <Statistic
-                title="Giá gói"
-                value={selectedCourse?.price}
-                formatter={(value) => `${value?.toLocaleString("vi")}₫`}
-                prefix={<DollarOutlined />}
-              />
-            </Col>
-          </Row>
-        </div>
+        {selectedCourse && (
+          <div className="flex flex-col">
+            {/* Header Section with Key Info */}
+            <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
+              <div className="flex items-center gap-6">
+                {selectedCourse.imageUrl ? (
+                  <img
+                    src={selectedCourse.imageUrl}
+                    alt={selectedCourse.name}
+                    className="w-24 h-24 rounded-lg object-cover border-4 border-white shadow-lg"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center border-4 border-white shadow-lg">
+                    <IoBarbell className="text-white text-4xl" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h2 className="text-3xl font-bold text-[#ED2A46] mb-2">
+                    {selectedCourse.name || "N/A"}
+                  </h2>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <Tag
+                      icon={getTypeIcon(selectedCourse.type)}
+                      color={getTypeColor(selectedCourse.type)}
+                      className="text-sm px-3 py-1"
+                    >
+                      {selectedCourse.type === "WithPT" ||
+                      selectedCourse.type === "WithPt"
+                        ? "Có PT"
+                        : "Bình thường"}
+                    </Tag>
+                    <Tag color="orange" className="text-sm px-3 py-1">
+                      <ClockCircleOutlined /> {selectedCourse.duration} ngày
+                    </Tag>
+                    <Tag color="green" className="text-sm px-3 py-1">
+                      <DollarOutlined />{" "}
+                      {selectedCourse.price?.toLocaleString("vi-VN")}₫
+                    </Tag>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        {(selectedCourse?.type === "WithPT" ||
-          selectedCourse?.type === "WithPt") && (
-          <Table
-            dataSource={ptsInCourse}
-            columns={ptInCourseColumns}
-            pagination={false}
-            bordered
-            size="middle"
-            className="rounded-lg overflow-hidden"
-          />
+            {/* Main Content */}
+            <div className="p-6 flex-col gap-5 flex space-y-6">
+              {/* Package Info Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaDumbbell />
+                    Thông Tin Gói Tập
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <IdcardOutlined /> ID
+                      </span>
+                    }
+                    span={2}
+                  >
+                    <div className="font-mono text-xs bg-gray-50 p-2 rounded inline-block">
+                      {selectedCourse.id}
+                    </div>
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <IoBarbell className="inline mr-1" /> Tên Gói Tập
+                      </span>
+                    }
+                  >
+                    <div className="font-semibold p-2 text-gray-800">
+                      {selectedCourse.name || "N/A"}
+                    </div>
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <ClockCircleOutlined /> Thời Lượng
+                      </span>
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-bold text-orange-600">
+                        {selectedCourse.duration || 0}
+                      </span>
+                      <span className="text-gray-600">ngày</span>
+                    </div>
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <DollarOutlined /> Giá Tiền
+                      </span>
+                    }
+                  >
+                    <span className="text-xl font-bold text-green-600">
+                      {selectedCourse.price?.toLocaleString("vi-VN")}₫
+                    </span>
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <TrophyOutlined /> Loại Gói
+                      </span>
+                    }
+                  >
+                    <Tag
+                      icon={getTypeIcon(selectedCourse.type)}
+                      color={getTypeColor(selectedCourse.type)}
+                      className="px-3 py-1"
+                    >
+                      {selectedCourse.type === "WithPT" ||
+                      selectedCourse.type === "WithPt"
+                        ? "Có PT"
+                        : "Bình thường"}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Mô Tả" span={2}>
+                    <div className="text-gray-700 bg-gray-50 p-3 rounded">
+                      {selectedCourse.description || "Chưa có mô tả"}
+                    </div>
+                  </Descriptions.Item>
+                  {selectedCourse.imageUrl && (
+                    <Descriptions.Item label="Hình Ảnh" span={2}>
+                      <Image
+                        src={selectedCourse.imageUrl}
+                        alt={selectedCourse.name}
+                        className="rounded-lg"
+                        width={200}
+                      />
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
+              </Card>
+
+              {/* PT List Card (only for WithPT packages) */}
+              {(selectedCourse.type === "WithPT" ||
+                selectedCourse.type === "WithPt") && (
+                <Card
+                  size="small"
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                  title={
+                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                      <TeamOutlined />
+                      Danh Sách Personal Trainers ({ptsInCourse.length})
+                    </span>
+                  }
+                  bordered={true}
+                  style={{ borderColor: "#FFE5E9" }}
+                >
+                  {ptsInCourse.length > 0 ? (
+                    <Table
+                      dataSource={ptsInCourse}
+                      columns={ptInCourseColumns}
+                      pagination={false}
+                      size="small"
+                      className="rounded-lg overflow-hidden"
+                    />
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      Chưa có PT nào được gán cho gói tập này
+                    </div>
+                  )}
+                </Card>
+              )}
+
+              {/* Additional Info Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaInfoCircle />
+                    Thông Tin Bổ Sung
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={8}>
+                      <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                        <div className="text-3xl font-bold text-[#FF914D] mb-2">
+                          {selectedCourse.duration || 0}
+                        </div>
+                        <div className="text-sm text-gray-600">Ngày</div>
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                        <div className="text-3xl font-bold text-green-600 mb-2">
+                          {selectedCourse.price?.toLocaleString("vi-VN")}₫
+                        </div>
+                        <div className="text-sm text-gray-600">Giá Gói</div>
+                      </div>
+                    </Col>
+                    {(selectedCourse.type === "WithPT" ||
+                      selectedCourse.type === "WithPt") && (
+                      <Col xs={24} sm={8}>
+                        <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                          <div className="text-3xl font-bold text-blue-600 mb-2">
+                            {ptsInCourse.length}
+                          </div>
+                          <div className="text-sm text-gray-600">Số PT</div>
+                        </div>
+                      </Col>
+                    )}
+                  </Row>
+                </div>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                {(selectedCourse.type === "WithPT" ||
+                  selectedCourse.type === "WithPt") && (
+                  <Button
+                    icon={<UserAddOutlined />}
+                    onClick={() => {
+                      setIsModalCourseDetailOpen(false);
+                      setIsModalAddGymCoursePTOpen(true);
+                      // Fetch PTs already in this course to filter them out
+                      fetchPTInCourse(selectedCourse.id);
+                      formAddGymCourse.resetFields();
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white border-0"
+                  >
+                    Thêm PT
+                  </Button>
+                )}
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => {
+                    setIsModalCourseDetailOpen(false);
+                    handleEdit(selectedCourse);
+                  }}
+                  className="bg-orange-500 hover:bg-orange-600 text-white border-0"
+                >
+                  Chỉnh Sửa
+                </Button>
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    setIsModalCourseDetailOpen(false);
+                    handleDelete(selectedCourse.id);
+                  }}
+                >
+                  Xóa Gói Tập
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
-      </Modal>
+      </FitBridgeModal>
 
       {/* Edit Course Modal */}
       <Modal

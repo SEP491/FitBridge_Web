@@ -70,6 +70,7 @@ export default function ManageTransactionPage() {
       const response = await adminService.getAllTransactions({
         page,
         size: pageSize,
+        sortOrder:'dsc'
       });
 
       const { items, total, page: currentPage, totalPages } = response.data;
@@ -544,23 +545,7 @@ export default function ManageTransactionPage() {
                       {selectedTransaction.transactionType === "ProductOrder" ? "Đơn Hàng" : selectedTransaction.transactionType || "N/A"}
                     </Tag>
                   </Descriptions.Item>
-                  
-                  <Descriptions.Item label="Phương Thức">
-                    <Tag color="cyan" icon={<MdPayment />} className="text-sm px-3 py-1">
-                      {selectedTransaction.paymentMethod || "N/A"}
-                    </Tag>
-                  </Descriptions.Item>
-                  
-                  <Descriptions.Item label="Số Tiền">
-                    <span className="text-lg font-bold text-[#ED2A46]">
-                      {selectedTransaction.amount?.toLocaleString("vi", {
-                        style: "currency",
-                        currency: "VND",
-                      }) || "0 VNĐ"}
-                    </span>
-                  </Descriptions.Item>
-                  
-                  <Descriptions.Item label="Lợi Nhuận">
+                  <Descriptions.Item label="Lợi Nhuận" span={2}>
                     <span className="text-lg font-bold text-green-600">
                       {selectedTransaction.profitAmount !== null && selectedTransaction.profitAmount !== undefined
                         ? selectedTransaction.profitAmount.toLocaleString("vi", {
@@ -570,6 +555,22 @@ export default function ManageTransactionPage() {
                         : "N/A"}
                     </span>
                   </Descriptions.Item>
+                  <Descriptions.Item label="Phương Thức">
+                    <Tag color="cyan" icon={<MdPayment />} className="text-sm px-3 py-1">
+                      {selectedTransaction.paymentMethod || "N/A"}
+                    </Tag>
+                  </Descriptions.Item>
+                  
+                  {/* <Descriptions.Item label="Số Tiền">
+                    <span className="text-lg font-bold text-[#ED2A46]">
+                      {selectedTransaction.amount?.toLocaleString("vi", {
+                        style: "currency",
+                        currency: "VND",
+                      }) || "0 VNĐ"}
+                    </span>
+                  </Descriptions.Item> */}
+                  
+                  
                   
                   <Descriptions.Item label="Ngày Tạo" span={2}>
                     <div className="flex flex-col">

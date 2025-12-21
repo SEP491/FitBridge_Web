@@ -47,6 +47,7 @@ import ChatBubble from "./components/Chat/ChatBubble";
 import ManageCerPage from "./pages/AdminPages/ManageCerPage/ManageCerPage";
 import ManageAssetsPage from "./pages/GymPages/ManageAssetsPage/ManageAssetsPage";
 import ManageSystemConfigPage from "./pages/AdminPages/ManageSystemConfigPage/ManageSystemConfigPage";
+import ManagePTSchedule from "./pages/GymPages/ManagePTSchedule/ManagePTSchedule";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -508,6 +509,14 @@ function App() {
               element: (
                 <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
                   <ManageAssetsPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: route.managePTSchedule,
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <ManagePTSchedule />
                 </ProtectedRoute>
               ),
             },

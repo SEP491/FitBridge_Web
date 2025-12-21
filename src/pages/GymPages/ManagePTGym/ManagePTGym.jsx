@@ -16,7 +16,7 @@ import {
   Statistic,
   Tag,
   Avatar,
-  Tooltip,
+  Descriptions,
 } from "antd";
 import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
@@ -32,12 +32,20 @@ import {
   DeleteOutlined,
   PhoneOutlined,
   MailOutlined,
+  CalendarOutlined,
+  ManOutlined,
+  WomanOutlined,
+  IdcardOutlined,
+  HomeOutlined,
 } from "@ant-design/icons";
 import gymService from "../../../services/gymServices";
 import dayjs from "dayjs";
 import { IoBarbell } from "react-icons/io5";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../../redux/features/userSlice";
+import FitBridgeModal from "../../../components/FitBridgeModal";
+import defaultAvatar from "../../../assets/LogoColor.png";
+import { FaUserCircle, FaInfoCircle, FaDumbbell } from "react-icons/fa";
 
 const { Option } = Select;
 
@@ -53,6 +61,8 @@ export default function ManagePTGym() {
   const [formEdit] = Form.useForm();
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [editingPT, setEditingPT] = useState(null);
+  const [selectedPT, setSelectedPT] = useState(null);
+  const [isModalPTDetailOpen, setIsModalPTDetailOpen] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -131,16 +141,6 @@ export default function ManagePTGym() {
       default:
         return "default";
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "Chưa cập nhật";
-    return dayjs(dateString).format("DD/MM/YYYY");
-  };
-
-  const calculateAge = (dob) => {
-    if (!dob) return null;
-    return dayjs().diff(dayjs(dob), "year");
   };
 
   // Map Vietnamese goal training names to English form values
@@ -251,141 +251,86 @@ export default function ManagePTGym() {
       dataIndex: "fullName",
       key: "fullName",
       align: "left",
-      width: 250,
+      width: 210,
       render: (text, record) => (
         <div className="flex items-center gap-3">
           <Avatar
             size={40}
-            src={record.avatarUrl}
+            src={record.avatarUrl || defaultAvatar}
             icon={<UserOutlined />}
             style={{ backgroundColor: "#FF914D" }}
           />
           <div>
-            <div className="font-medium text-gray-900">
-              {text || "Chưa cập nhật"}
-            </div>
-            <div className="text-sm text-gray-500 flex items-center gap-2">
-              <MailOutlined className="text-xs" />
-              {record.email || "Chưa có email"}
-            </div>
-            {record.phone && (
-              <div className="text-sm text-gray-500 flex items-center gap-2">
-                <PhoneOutlined className="text-xs" />
-                {record.phone}
-              </div>
+            <div className="font-medium text-gray-900">{text || "N/A"}</div>
+            {record.email && (
+              <div className="text-sm text-gray-500">{record.email}</div>
             )}
           </div>
         </div>
       ),
     },
     {
-      title: "Ngày sinh",
-      dataIndex: "dob",
-      key: "dob",
-      align: "center",
-      width: 120,
-      render: (dob) => (
-        <div>
-          <div>{formatDate(dob)}</div>
-          {calculateAge(dob) && (
-            <div className="text-xs text-gray-500">
-              ({calculateAge(dob)} tuổi)
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Giới tính",
+      title: "Giới Tính",
       dataIndex: "gender",
       key: "gender",
       align: "center",
       width: 100,
-      render: (gender) => (
-        <Tag color={getGenderColor(gender)}>
-          {gender === "Male" ? "Nam" : gender === "Female" ? "Nữ" : gender}
-        </Tag>
+      render: (gender) => {
+        const isMale = gender === "Male";
+        return (
+          <Tag
+            color={isMale ? "blue" : "pink"}
+            icon={isMale ? <ManOutlined /> : <WomanOutlined />}
+          >
+            {isMale ? "Nam" : "Nữ"}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Liên Hệ",
+      dataIndex: "phone",
+      key: "phone",
+      align: "center",
+      width: 120,
+      render: (text) => (
+        <span className="text-gray-700">{text || "Chưa cập nhật"}</span>
       ),
     },
     {
-      title: "Cân nặng / Chiều cao",
-      key: "weightHeight",
+      title: "Ngày Sinh",
+      dataIndex: "dob",
+      key: "dob",
       align: "center",
-      width: 150,
-      render: (_, record) => (
-        <div>
-          <div>{record.weight ? `${record.weight} kg` : "N/A"}</div>
-          <div className="text-xs text-gray-500">
-            {record.height ? `${record.height} cm` : "N/A"}
-          </div>
+      width: 120,
+      render: (date) => (
+        <div className="flex flex-col items-center">
+          <span>
+            {date ? new Date(date).toLocaleDateString("vi-VN") : "N/A"}
+          </span>
+          <span className="text-xs text-gray-500">
+            {date
+              ? `${new Date().getFullYear() - new Date(date).getFullYear()} tuổi`
+              : ""}
+          </span>
         </div>
       ),
     },
     {
-      title: "Kinh nghiệm",
+      title: "Kinh Nghiệm",
       dataIndex: "experience",
       key: "experience",
       align: "center",
-      width: 120,
+      width: 100,
+      sorter: (a, b) => (a.experience || 0) - (b.experience || 0),
       render: (experience) => (
-        <Tag icon={<TrophyOutlined />} color="orange">
-          {experience ? `${experience} năm` : "N/A"}
-        </Tag>
-      ),
-    },
-    {
-      title: "Chuyên môn",
-      dataIndex: "goalTraining",
-      key: "goalTraining",
-      align: "center",
-      width: 200,
-      render: (goalTraining) => (
-        <div className="flex flex-wrap gap-1 justify-center">
-          {goalTraining ? (
-            goalTraining.split(", ").map((goal, index) => (
-              <Tag key={index} color="cyan">
-                {goal}
-              </Tag>
-            ))
-          ) : (
-            <span className="text-gray-400">Chưa cập nhật</span>
-          )}
+        <div className="flex flex-col items-center">
+          <TrophyOutlined style={{ fontSize: "16px", color: "#FFD700" }} />
+          <span className="text-sm font-bold text-orange-600">
+            {experience || 0}
+          </span>
+          <span className="text-xs text-gray-500">năm</span>
         </div>
-      ),
-    },
-    {
-      title: "Thao Tác",
-      key: "action",
-      align: "center",
-      width: 150,
-      fixed: "right",
-      render: (_, record) => (
-        <Space>
-          {/* <Tooltip title="Xem chi tiết">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              className="text-blue-600 hover:bg-blue-50"
-              onClick={() => console.log("View", record)}
-            />
-          </Tooltip> */}
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              className="text-orange-600 hover:bg-orange-50"
-              onClick={() => handleEdit(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              className="text-red-600 hover:bg-red-50"
-              onClick={() => handleDelete(record.id)}
-            />
-          </Tooltip>
-        </Space>
       ),
     },
   ];
@@ -434,7 +379,7 @@ export default function ManagePTGym() {
     }
   };
 
-  if (loading) {
+  if (loading && pts.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Spin
@@ -605,26 +550,338 @@ export default function ManagePTGym() {
             <Table
               dataSource={filteredData}
               columns={columns}
+              loading={loading}
               pagination={{
                 current: pagination.current,
                 pageSize: pagination.pageSize,
                 total: pagination.total,
                 showSizeChanger: true,
                 showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} của ${total} mục`,
                 position: ["bottomCenter"],
-                className: "custom-pagination",
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} của ${total} PT`,
               }}
               onChange={handleTableChange}
               className="rounded-lg overflow-hidden"
-              scroll={{ x: 1200 }}
+              scroll={{ x: 900 }}
+              size="middle"
               rowKey="id"
-              loading={loading}
+              onRow={(record) => ({
+                onClick: () => {
+                  setSelectedPT(record);
+                  setIsModalPTDetailOpen(true);
+                },
+                style: { cursor: "pointer" },
+              })}
             />
           </ConfigProvider>
         </Card>
       </div>
+
+      {/* PT Detail Modal - Enhanced UI */}
+      <FitBridgeModal
+        open={isModalPTDetailOpen}
+        onCancel={() => setIsModalPTDetailOpen(false)}
+        title="Chi Tiết Personal Trainer"
+        titleIcon={<EyeOutlined />}
+        width={900}
+        logoSize="medium"
+        bodyStyle={{ padding: "0", maxHeight: "75vh", overflowY: "auto" }}
+      >
+        {selectedPT && (
+          <div className="flex flex-col">
+            {/* Header Section with Key Info */}
+            <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
+              <div className="flex items-center gap-6">
+                <img
+                  src={selectedPT.avatarUrl || defaultAvatar}
+                  alt={selectedPT.fullName}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+                <div className="flex-1">
+                  <h2 className="text-3xl font-bold text-[#ED2A46] mb-2">
+                    {selectedPT.fullName || "N/A"}
+                  </h2>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <Tag
+                      color={selectedPT.gender === "Male" ? "blue" : "pink"}
+                      icon={
+                        selectedPT.gender === "Male" ? (
+                          <ManOutlined />
+                        ) : (
+                          <WomanOutlined />
+                        )
+                      }
+                      className="text-sm px-3 py-1"
+                    >
+                      {selectedPT.gender === "Male" ? "Nam" : "Nữ"}
+                    </Tag>
+                    <Tag color="orange" className="text-sm px-3 py-1">
+                      <TrophyOutlined /> {selectedPT.experience || 0} năm kinh
+                      nghiệm
+                    </Tag>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="p-6 flex-col gap-5 flex space-y-6">
+              {/* Personal Info Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaUserCircle />
+                    Thông Tin Cá Nhân
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <IdcardOutlined /> ID
+                      </span>
+                    }
+                    span={2}
+                  >
+                    <div className="font-mono text-xs bg-gray-50 p-2 rounded inline-block">
+                      {selectedPT.id}
+                    </div>
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <UserOutlined /> Họ Tên
+                      </span>
+                    }
+                  >
+                    <div className="font-semibold p-2 text-gray-800">
+                      {selectedPT.fullName || "N/A"}
+                    </div>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item
+                    span={2}
+                    label={
+                      <span>
+                        <MailOutlined /> Email
+                      </span>
+                    }
+                  >
+                    <span className="text-blue-600">
+                      {selectedPT.email || "N/A"}
+                    </span>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <PhoneOutlined /> Số Điện Thoại
+                      </span>
+                    }
+                  >
+                    <span className="font-semibold">
+                      {selectedPT.phone || "Chưa cập nhật"}
+                    </span>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <CalendarOutlined /> Ngày Sinh
+                      </span>
+                    }
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-semibold">
+                        {selectedPT.dob
+                          ? new Date(selectedPT.dob).toLocaleDateString(
+                              "vi-VN",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
+                            )
+                          : "N/A"}
+                      </span>
+                      {selectedPT.dob && (
+                        <span className="text-xs text-gray-500">
+                          {new Date().getFullYear() -
+                            new Date(selectedPT.dob).getFullYear()}{" "}
+                          tuổi
+                        </span>
+                      )}
+                    </div>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Giới Tính">
+                    <Tag
+                      color={selectedPT.gender === "Male" ? "blue" : "pink"}
+                      icon={
+                        selectedPT.gender === "Male" ? (
+                          <ManOutlined />
+                        ) : (
+                          <WomanOutlined />
+                        )
+                      }
+                    >
+                      {selectedPT.gender === "Male" ? "Nam" : "Nữ"}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Cân Nặng">
+                    <span className="font-semibold">
+                      {selectedPT.weight ? `${selectedPT.weight} kg` : "N/A"}
+                    </span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Chiều Cao">
+                    <span className="font-semibold">
+                      {selectedPT.height ? `${selectedPT.height} cm` : "N/A"}
+                    </span>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              {/* Professional Info Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaDumbbell />
+                    Thông Tin Nghề Nghiệp
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <TrophyOutlined /> Kinh Nghiệm
+                      </span>
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-orange-600">
+                        {selectedPT.experience || 0}
+                      </span>
+                      <span className="text-gray-600">năm</span>
+                    </div>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item
+                    label={
+                      <span>
+                        <HomeOutlined /> Loại PT
+                      </span>
+                    }
+                  >
+                    <Tag color="blue" className="px-3 py-1">
+                      Gym PT
+                    </Tag>
+                  </Descriptions.Item>
+
+                  {selectedPT.goalTraining && (
+                    <Descriptions.Item label="Chuyên Môn Tập Luyện">
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPT.goalTraining.split(", ").map(
+                          (goal, index) => (
+                            <Tag key={index} color="blue" className="px-2 py-1">
+                              {goal}
+                            </Tag>
+                          )
+                        )}
+                      </div>
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
+              </Card>
+
+              {/* Additional Info Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaInfoCircle />
+                    Thông Tin Bổ Sung
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={8}>
+                      <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                        <div className="text-3xl font-bold text-[#FF914D] mb-2">
+                          {selectedPT.experience || 0}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Năm Kinh Nghiệm
+                        </div>
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                        <div className="text-3xl mb-2">
+                          {selectedPT.gender === "Male" ? "👨" : "👩"}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {selectedPT.gender === "Male" ? "Nam Giới" : "Nữ Giới"}
+                        </div>
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                        <div className="text-3xl font-bold text-green-600 mb-2">
+                          {selectedPT.weight && selectedPT.height
+                            ? (
+                                selectedPT.weight /
+                                Math.pow(selectedPT.height / 100, 2)
+                              ).toFixed(1)
+                            : "N/A"}
+                        </div>
+                        <div className="text-sm text-gray-600">BMI</div>
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => {
+                    setIsModalPTDetailOpen(false);
+                    handleEdit(selectedPT);
+                  }}
+                  className="bg-orange-500 hover:bg-orange-600 text-white border-0"
+                >
+                  Chỉnh Sửa
+                </Button>
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    setIsModalPTDetailOpen(false);
+                    handleDelete(selectedPT.id);
+                  }}
+                >
+                  Xóa PT
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </FitBridgeModal>
 
       {/* Add PT Modal */}
       <Modal

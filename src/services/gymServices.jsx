@@ -33,6 +33,11 @@ const gymService = {
   updateCourse: (courseId, data) =>
     request("PUT", `/v1/gym-courses/${courseId}`, data),
   deleteCourse: (id) => request("DELETE", `/v1/gym-courses/${id}`),
+
+  getGymPTBookings: (params) =>
+    request("GET", "/v1/accounts/gym-owner/gym-pt-bookings", null, {}, params),
+  getGymPTRegisterSlots: (params) =>
+    request("GET", "/v1/accounts/gym-owner/gym-pt-register-slots", null, {}, params),
 };
 
 export default gymService;
