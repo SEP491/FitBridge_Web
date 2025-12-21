@@ -28,6 +28,7 @@ export const route = {
   manageTransactionGym: "manage-transaction-gym",
   manageSlotGym: "manage-slot-gym",
   manageVoucherGym: "manage-voucher-gym",
+  managePTSchedule: "manage-pt-schedule",
   contractSigning: "contract-signing",
 
   orderProcess: "order-process",
