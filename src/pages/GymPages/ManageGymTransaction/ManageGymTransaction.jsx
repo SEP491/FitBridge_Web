@@ -32,12 +32,14 @@ import {
   ExclamationCircleOutlined,
   PlusOutlined,
   UserOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { FaMoneyBillWave, FaFilter, FaUserCircle, FaInfoCircle, FaReceipt } from "react-icons/fa";
 import { MdPayment } from "react-icons/md";
 import { ImStatsBars } from "react-icons/im";
 import transactionService from "../../../services/transactionServices";
 import paymentService from "../../../services/paymentService";
+import dashboardService from "../../../services/dashboardService";
 import FitBridgeModal from "../../../components/FitBridgeModal";
 import defaultAvatar from "../../../assets/LogoColor.png";
 import banks from "../../../constants/banks";
@@ -64,6 +66,11 @@ export default function ManageGymTransaction() {
   const [formCreateWithdrawal] = Form.useForm();
   const [loadingCreateWithdrawal, setLoadingCreateWithdrawal] = useState(false);
   const [availableBalance, setAvailableBalance] = useState(0);
+  const [walletBalance, setWalletBalance] = useState({
+    totalAvailableBalance: 0,
+    totalPendingBalance: 0,
+  });
+  const [loadingWalletBalance, setLoadingWalletBalance] = useState(false);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -100,6 +107,28 @@ export default function ManageGymTransaction() {
       setTransactions([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch wallet balance (available + pending)
+  const fetchWalletBalance = async () => {
+    setLoadingWalletBalance(true);
+    try {
+      const response = await dashboardService.getBalanceOfGym({});
+      const data = response.data || {};
+      setWalletBalance({
+        totalAvailableBalance: data.totalAvailableBalance || 0,
+        totalPendingBalance: data.totalPendingBalance || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching wallet balance:", error);
+      toast.error("Không thể tải số dư ví");
+      setWalletBalance({
+        totalAvailableBalance: 0,
+        totalPendingBalance: 0,
+      });
+    } finally {
+      setLoadingWalletBalance(false);
     }
   };
 
@@ -144,6 +173,7 @@ export default function ManageGymTransaction() {
 
   useEffect(() => {
     fetchTransactions();
+    fetchWalletBalance();
   }, []);
 
   useEffect(() => {
@@ -521,6 +551,79 @@ export default function ManageGymTransaction() {
     return matchesSearch && matchesStatus;
   });
 
+  // Filter controls UI
+  const transactionFilters = (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <Input
+        placeholder="Tìm kiếm theo mã GD, khách hàng, loại giao dịch..."
+        prefix={<SearchOutlined />}
+        onChange={(e) => setSearchText(e.target.value)}
+        style={{ width: 320 }}
+        allowClear
+        size="middle"
+      />
+
+      <Select
+        placeholder="Lọc theo loại giao dịch"
+        value={statusFilter}
+        onChange={setStatusFilter}
+        style={{ width: 200 }}
+        size="middle"
+      >
+        <Select.Option value="all">Tất cả loại</Select.Option>
+        <Select.Option value="ProductOrder">Đơn hàng</Select.Option>
+        <Select.Option value="ExtendCourse">Gia hạn khóa học</Select.Option>
+        <Select.Option value="GymCourse">Gói tập Gym</Select.Option>
+        <Select.Option value="Withdraw">Rút tiền</Select.Option>
+        <Select.Option value="DistributeProfit">Phân phối lợi nhuận</Select.Option>
+      </Select>
+
+      <Button
+        icon={<ImStatsBars />}
+        className="bg-[#FF914D] text-white border-0 hover:bg-[#e8823d]"
+        size="middle"
+      >
+        Xuất báo cáo
+      </Button>
+    </div>
+  );
+
+  const withdrawalFilters = (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <Input
+        placeholder="Tìm kiếm theo tên, ngân hàng, số tài khoản..."
+        prefix={<SearchOutlined />}
+        value={withdrawalSearchText}
+        onChange={(e) => setWithdrawalSearchText(e.target.value)}
+        style={{ width: 320 }}
+        allowClear
+        size="middle"
+      />
+      <Select
+        value={withdrawalStatusFilter}
+        onChange={setWithdrawalStatusFilter}
+        style={{ width: 180 }}
+        size="middle"
+      >
+        <Select.Option value="All">Tất cả trạng thái</Select.Option>
+        <Select.Option value="Pending">Chờ duyệt</Select.Option>
+        <Select.Option value="Approved">Đã duyệt</Select.Option>
+        <Select.Option value="Completed">Đã xác nhận</Select.Option>
+        <Select.Option value="Rejected">Đã từ chối</Select.Option>
+      </Select>
+
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        size="middle"
+        onClick={() => setIsModalCreateWithdrawalOpen(true)}
+        className="bg-[#ED2A46] text-white border-0 hover:bg-[#e43e56]"
+      >
+        Tạo Yêu Cầu Rút Tiền
+      </Button>
+    </div>
+  );
+
   if (loading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -536,12 +639,54 @@ export default function ManageGymTransaction() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 bg-gray-100">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <MdPayment />
           Quản Lý Giao Dịch
         </h1>
+
+        {/* Wallet Balance Row */}
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={24} md={12}>
+            <Card className="border-0 shadow-md bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Số dư khả dụng
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-emerald-600">
+                    {loadingWalletBalance
+                      ? "Đang tải..."
+                      : formatCurrency(walletBalance.totalAvailableBalance)}
+                  </div>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+                  <MoneyCollectOutlined className="text-white text-2xl" />
+                </div>
+              </div>
+            </Card>
+          </Col>
+          <Col xs={24} md={12}>
+            <Card className="border-0 shadow-md bg-gradient-to-r from-amber-50 to-yellow-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Số dư đang chờ
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-amber-600">
+                    {loadingWalletBalance
+                      ? "Đang tải..."
+                      : formatCurrency(walletBalance.totalPendingBalance)}
+                  </div>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center shadow-md">
+                  <ClockCircleOutlined className="text-white text-2xl" />
+                </div>
+              </div>
+            </Card>
+          </Col>
+        </Row>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -587,184 +732,102 @@ export default function ManageGymTransaction() {
         </div>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
-          {
-            key: "transactions",
-            label: (
-              <span className="flex items-center gap-2">
-                <MdPayment />
-                Giao Dịch
-              </span>
-            ),
-            children: (
-              <ConfigProvider
-                theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
-              >
-                {/* Filters */}
-                <Card
-                  style={{ marginBottom: 20 }}
-                  title={
+      <Card className="border-0 shadow-lg">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  key: "transactions",
+                  label: (
                     <span className="flex items-center gap-2">
-                      <FaFilter /> Bộ lọc
+                      <MdPayment />
+                      Giao Dịch
                     </span>
-                  }
-                >
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
-                      <Input
-                        placeholder="Tìm kiếm theo mã GD, khách hàng, loại giao dịch..."
-                        prefix={<SearchOutlined />}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        style={{ width: 350 }}
-                        allowClear
-                      />
-
-                      <Select
-                        placeholder="Lọc theo loại giao dịch"
-                        value={statusFilter}
-                        onChange={setStatusFilter}
-                        style={{ width: 200 }}
-                      >
-                        <Select.Option value="all">Tất cả loại</Select.Option>
-                        <Select.Option value="ProductOrder">Đơn hàng</Select.Option>
-                        <Select.Option value="ExtendCourse">Gia hạn khóa học</Select.Option>
-                        <Select.Option value="GymCourse">Gói tập Gym</Select.Option>
-                        <Select.Option value="Withdraw">Rút tiền</Select.Option>
-                        <Select.Option value="DistributeProfit">Phân phối lợi nhuận</Select.Option>
-                      </Select>
-                    </div>
-
-                    <Button
-                      icon={<ImStatsBars />}
-                      className="bg-[#FF914D] text-white border-0 hover:bg-[#e8823d]"
-                    >
-                      Xuất báo cáo
-                    </Button>
-                  </div>
-                </Card>
-
-                <Table
-                  dataSource={filteredData}
-                  columns={columns}
-                  loading={loading}
-                  pagination={{
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                    total: pagination.total,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    position: ["bottomCenter"],
-                    showTotal: (total, range) =>
-                      `${range[0]}-${range[1]} của ${total} giao dịch`,
-                  }}
-                  onChange={handleTableChange}
-                  scroll={{ x: 800 }}
-                  size="middle"
-                  rowKey="transactionId"
-                  onRow={(record) => ({
-                    onClick: () => {
-                      fetchTransactionDetail(record.transactionId);
-                    },
-                    style: { cursor: "pointer" },
-                  })}
-                />
-              </ConfigProvider>
-            ),
-          },
-          {
-            key: "withdrawals",
-            label: (
-              <span className="flex items-center gap-2">
-                <MoneyCollectOutlined />
-                Yêu Cầu Rút Tiền
-              </span>
-            ),
-            children: (
-              <div>
-                {/* Filters */}
-                <Card
-                  style={{ marginBottom: 20 }}
-                  title={
+                  ),
+                },
+                {
+                  key: "withdrawals",
+                  label: (
                     <span className="flex items-center gap-2">
-                      <FaFilter /> Bộ lọc
+                      <MoneyCollectOutlined />
+                      Yêu Cầu Rút Tiền
                     </span>
-                  }
-                >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <Input
-                      placeholder="Tìm kiếm theo tên, ngân hàng, số tài khoản..."
-                      prefix={<SearchOutlined />}
-                      value={withdrawalSearchText}
-                      onChange={(e) => setWithdrawalSearchText(e.target.value)}
-                      style={{ width: 350 }}
-                      allowClear
-                    />
-                    <Select
-                      value={withdrawalStatusFilter}
-                      onChange={setWithdrawalStatusFilter}
-                      style={{ width: 180 }}
-                    >
-                      <Select.Option value="All">Tất cả trạng thái</Select.Option>
-                      <Select.Option value="Pending">Chờ duyệt</Select.Option>
-                      <Select.Option value="Approved">Đã duyệt</Select.Option>
-                      <Select.Option value="Completed">Đã xác nhận</Select.Option>
-                      <Select.Option value="Rejected">Đã từ chối</Select.Option>
-                    </Select>
-                    </div>
-                    
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        size="large"
-                        onClick={() => setIsModalCreateWithdrawalOpen(true)}
-                        className="bg-white text-[#ED2A46] border-0 hover:bg-gray-100"
-                      >
-                        Tạo Yêu Cầu Rút Tiền
-                      </Button>
-                  </div>
-                </Card>
+                  ),
+                },
+              ]}
+            />
 
-                {/* Withdrawal Requests Table */}
-                <ConfigProvider
-                  theme={{
-                    components: {
-                      Table: {
-                        headerBg: "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
-                        headerColor: "#333",
-                        rowHoverBg: "#FFF9FA",
-                      },
-                    },
-                  }}
-                >
-                  <Table
-                    dataSource={filteredWithdrawals}
-                    columns={withdrawalColumns}
-                    loading={loadingWithdrawals}
-                    pagination={{
-                      current: withdrawalPagination.current,
-                      pageSize: withdrawalPagination.pageSize,
-                      total: withdrawalPagination.total,
-                      showSizeChanger: true,
-                      showQuickJumper: true,
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} của ${total} yêu cầu`,
-                      position: ["bottomCenter"],
-                    }}
-                    onChange={handleWithdrawalTableChange}
-                    className="rounded-lg overflow-hidden"
-                    scroll={{ x: 800 }}
-                    rowKey="id"
-                  />
-                </ConfigProvider>
-              </div>
-            ),
-          },
-        ]}
-      />
+            <div className="w-full md:w-auto">
+              {activeTab === "transactions" ? transactionFilters : withdrawalFilters}
+            </div>
+          </div>
+
+          {activeTab === "transactions" ? (
+            <ConfigProvider theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}>
+              <Table
+                dataSource={filteredData}
+                columns={columns}
+                loading={loading}
+                pagination={{
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  position: ["bottomCenter"],
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} của ${total} giao dịch`,
+                }}
+                onChange={handleTableChange}
+                scroll={{ x: 800 }}
+                size="middle"
+                rowKey="transactionId"
+                onRow={(record) => ({
+                  onClick: () => {
+                    fetchTransactionDetail(record.transactionId);
+                  },
+                  style: { cursor: "pointer" },
+                })}
+              />
+            </ConfigProvider>
+          ) : (
+            <ConfigProvider
+              theme={{
+                components: {
+                  Table: {
+                    headerBg: "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
+                    headerColor: "#333",
+                    rowHoverBg: "#FFF9FA",
+                  },
+                },
+              }}
+            >
+              <Table
+                dataSource={filteredWithdrawals}
+                columns={withdrawalColumns}
+                loading={loadingWithdrawals}
+                pagination={{
+                  current: withdrawalPagination.current,
+                  pageSize: withdrawalPagination.pageSize,
+                  total: withdrawalPagination.total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} của ${total} yêu cầu`,
+                  position: ["bottomCenter"],
+                }}
+                onChange={handleWithdrawalTableChange}
+                className="rounded-lg overflow-hidden"
+                scroll={{ x: 800 }}
+                rowKey="id"
+              />
+            </ConfigProvider>
+          )}
+        </div>
+      </Card>
 
       {/* Transaction Detail Modal - Enhanced UI */}
       <FitBridgeModal
