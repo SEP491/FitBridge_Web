@@ -136,6 +136,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         //   <FaDumbbell className="text-lg" />
         // ),
         getItem(
+          "Quản Lý Giao Dịch",
+          `${route.gym}/${route.manageTransactionGym}`,
+          <GrTransaction className="text-lg" />
+        ),
+        getItem(
           "Quản Lý Khách Hàng",
           `/gym/manage-customers`,
           <LiaFileContractSolid className="text-lg" />
@@ -169,11 +174,6 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Quản Lý Voucher",
           `${route.gym}/${route.manageVoucherGym}`,
           <GiGymBag className="text-lg" />
-        ),
-        getItem(
-          "Lịch Sử Giao Dịch",
-          `${route.gym}/${route.manageTransactionGym}`,
-          <GrTransaction className="text-lg" />
         ),
         getItem(
           "Ký Hợp Đồng",
