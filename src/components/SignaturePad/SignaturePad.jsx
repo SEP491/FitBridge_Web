@@ -63,7 +63,7 @@ const SignaturePad = ({ onSave, title = "Chữ ký" }) => {
           </Button>,
         ]}
       >
-        <div className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2.5 bg-gray-50">
+        <div className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2.5">
           <SignatureCanvas
             ref={sigPad}
             penColor="black"

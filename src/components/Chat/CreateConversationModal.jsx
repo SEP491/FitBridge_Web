@@ -64,8 +64,9 @@ export default function CreateConversationModal({
       try {
         setLoadingUsers(true);
         const params = {
-          pageNumber: 1,
-          pageSize: 50,
+          page: 1,
+          size: 50,
+          doApplyPaging: false,
         };
         const response = await messageService.getUsersConversations(params);
         const items = response.data?.items || response.items || [];

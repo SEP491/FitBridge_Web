@@ -1,5 +1,7 @@
 import React from "react";
-import { Modal, Select, Input, Tag } from "antd";
+import { Select, Input, Tag, Button } from "antd";
+import { SyncOutlined } from "@ant-design/icons";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 
 const { Option } = Select;
 
@@ -69,17 +71,28 @@ export default function StatusUpdateModal({
   const availableOptions = getAvailableStatusOptions();
 
   return (
-    <Modal
-      title="Cập Nhật Trạng Thái Đơn Hàng"
+    <FitBridgeModal
       open={isOpen}
-      onOk={onConfirm}
       onCancel={onClose}
-      okText="Cập Nhật"
-      cancelText="Hủy"
-      okButtonProps={{ className: "bg-blue-500" }}
-      zIndex={1100}
+      title="Cập Nhật Trạng Thái Đơn Hàng"
+      titleIcon={<SyncOutlined />}
+      width={650}
+      logoSize="medium"
+      bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
+      footer={
+        <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+          <Button onClick={onClose}>Hủy</Button>
+          <Button
+            type="primary"
+            onClick={onConfirm}
+            className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+          >
+            Cập Nhật
+          </Button>
+        </div>
+      }
     >
-      <div className="py-4 space-y-4">
+      <div className="p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Trạng thái mới
@@ -91,7 +104,7 @@ export default function StatusUpdateModal({
             className="w-full"
             size="large"
           >
-            {availableOptions.map(option => (
+            {availableOptions.map((option) => (
               <Option key={option.value} value={option.value}>
                 {option.label}
               </Option>
@@ -131,7 +144,8 @@ export default function StatusUpdateModal({
                 {selectedOrder.currentStatus === "Arrived" && "Đã Đến Nơi"}
                 {selectedOrder.currentStatus === "InReturn" && "Đang Hoàn Trả"}
                 {selectedOrder.currentStatus === "Returned" && "Đã Hoàn Trả"}
-                {selectedOrder.currentStatus === "CustomerNotReceived" && "Khách Không Nhận"}
+                {selectedOrder.currentStatus === "CustomerNotReceived" &&
+                  "Khách Không Nhận"}
                 {selectedOrder.currentStatus === "Finished" && "Hoàn Thành"}
                 {selectedOrder.currentStatus === "Cancelled" && "Đã Hủy"}
               </Tag>
@@ -139,6 +153,6 @@ export default function StatusUpdateModal({
           </div>
         )}
       </div>
-    </Modal>
+    </FitBridgeModal>
   );
 }

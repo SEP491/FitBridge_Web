@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Table,
   Button,
-  Modal,
   Form,
   Input,
   DatePicker,
@@ -16,6 +15,7 @@ import {
   Row,
   Col,
   Statistic,
+  ConfigProvider,
 } from "antd";
 import {
   PlusOutlined,
@@ -32,6 +32,7 @@ import {
 import contractService from "../../../services/contractService";
 import ContractTemplate from "../../../components/ContractTemplate/ContractTemplate";
 import SignaturePad from "../../../components/SignaturePad/SignaturePad";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import dayjs from "dayjs";
@@ -448,95 +449,146 @@ const ManageContractPage = () => {
   ];
 
   return (
-    <div className="p-6 min-h-screen">
+    <div className="p-6">
+      {/* Header */}
       <div className="mb-6">
+        <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-2">
+          <FileTextOutlined />
+          Quản Lý Hợp Đồng
+        </h1>
+        <p className="text-gray-600">
+          Quản lý và theo dõi các hợp đồng với Gym Owner và Freelance PT
+        </p>
+      </div>
+
+      {/* Statistics Cards */}
+      <Row gutter={16} className="mb-6">
+        <Col xs={24} sm={12} md={6}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Statistic
+              title="Tổng hợp đồng"
+              value={statistics.total}
+              prefix={<FileTextOutlined style={{ color: "#FF914D" }} />}
+              valueStyle={{
+                color: "#FF914D",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Statistic
+              title="Mới tạo"
+              value={statistics.created}
+              prefix={<FileProtectOutlined style={{ color: "#8c8c8c" }} />}
+              valueStyle={{
+                color: "#8c8c8c",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Statistic
+              title="Chờ khách ký"
+              value={statistics.pending}
+              prefix={<ClockCircleOutlined style={{ color: "#1890ff" }} />}
+              valueStyle={{
+                color: "#1890ff",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Statistic
+              title="Đã hoàn thành"
+              value={statistics.signed}
+              prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
+              valueStyle={{
+                color: "#52c41a",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Main Content Card */}
+      <Card className="border-0 shadow-lg">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-semibold m-0 flex items-center gap-2">
-            <FileTextOutlined /> Quản lý hợp đồng
-          </h1>
+          <h2 className="text-lg font-semibold text-gray-800 m-0 flex items-center gap-2">
+            <FileTextOutlined className="text-[#ED2A46]" />
+            Danh Sách Hợp Đồng
+          </h2>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleCreateContract}
+            className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 rounded-lg px-4 shadow-lg hover:shadow-xl"
           >
-            Tạo hợp đồng mới
+            Tạo Hợp Đồng Mới
           </Button>
         </div>
 
-        <Row gutter={16} className="mb-6">
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title="Tổng hợp đồng"
-                value={statistics.total}
-                prefix={<FileTextOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title="Mới tạo"
-                value={statistics.created}
-                prefix={<FileProtectOutlined />}
-                valueStyle={{ color: "#8c8c8c" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title="Chờ khách ký"
-                value={statistics.pending}
-                prefix={<ClockCircleOutlined />}
-                valueStyle={{ color: "#1890ff" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title="Đã hoàn thành"
-                value={statistics.signed}
-                prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: "#52c41a" }}
-              />
-            </Card>
-          </Col>
-        </Row>
-      </div>
-
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={contracts}
-          loading={loading}
-          rowKey="id"
-          scroll={{ x: 1200 }}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} hợp đồng`,
-            position: ["bottomCenter"],
-          }}
-          onChange={handleTableChange}
-        />
+        <ConfigProvider
+          theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
+        >
+          <Table
+            columns={columns}
+            dataSource={contracts}
+            loading={loading}
+            rowKey="id"
+            scroll={{ x: 1200 }}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} của ${total} hợp đồng`,
+              position: ["bottomCenter"],
+            }}
+            onChange={handleTableChange}
+          />
+        </ConfigProvider>
       </Card>
 
-      <Modal
-        title="Tạo hợp đồng mới"
+      <FitBridgeModal
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
-        onOk={() => form.submit()}
-        width={700}
-        okText="Tạo hợp đồng"
-        cancelText="Hủy"
+        title="Tạo Hợp Đồng Mới"
+        titleIcon={<PlusOutlined />}
+        width={750}
+        logoSize="medium"
+        footer={
+          <div className="flex justify-end gap-3 px-6 py-4  border-t">
+            <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
+            <Button
+              type="primary"
+              onClick={() => form.submit()}
+              className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+            >
+              Tạo Hợp Đồng
+            </Button>
+          </div>
+        }
+        bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="p-6"
+        >
           <Form.Item
             name="customerId"
             label="Chọn Gym Owner / Freelance PT"
@@ -605,27 +657,30 @@ const ManageContractPage = () => {
             />
           </Form.Item>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Preview Modal */}
-      <Modal
-        title="Xem trước hợp đồng"
+      <FitBridgeModal
         open={isPreviewVisible}
         onCancel={() => setIsPreviewVisible(false)}
-        width={900}
-        footer={[
-          <Button key="cancel" onClick={() => setIsPreviewVisible(false)}>
-            Đóng
-          </Button>,
-          <Button
-            key="download"
-            type="primary"
-            icon={<DownloadOutlined />}
-            onClick={handleDownloadPreviewPDF}
-          >
-            Tải xuống PDF
-          </Button>,
-        ]}
+        title="Xem Trước Hợp Đồng"
+        titleIcon={<EyeOutlined />}
+        width={950}
+        logoSize="medium"
+        footer={
+          <div className="flex justify-end gap-3 px-6 py-4  border-t">
+            <Button onClick={() => setIsPreviewVisible(false)}>Đóng</Button>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadPreviewPDF}
+              className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+            >
+              Tải xuống PDF
+            </Button>
+          </div>
+        }
+        bodyStyle={{ padding: 0, maxHeight: "75vh", overflowY: "auto" }}
       >
         <div className="max-h-[70vh] overflow-y-auto">
           {previewContract && (
@@ -636,43 +691,51 @@ const ManageContractPage = () => {
             />
           )}
         </div>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Admin Signature Modal */}
-      <Modal
-        title="Ký hợp đồng (Admin)"
+      <FitBridgeModal
         open={isSignatureModalVisible}
         onCancel={() => {
           setIsSignatureModalVisible(false);
           setAdminSignature(null);
           setSelectedContract(null);
         }}
-        width={900}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setIsSignatureModalVisible(false);
-              setAdminSignature(null);
-              setSelectedContract(null);
-            }}
-          >
-            Hủy
-          </Button>,
-          <Button
-            key="sign"
-            type="primary"
-            loading={signing}
-            onClick={handleSignAsAdmin}
-            disabled={!adminSignature}
-          >
-            Xác nhận ký
-          </Button>,
-        ]}
+        title="Ký Hợp Đồng (Admin)"
+        titleIcon={<FileTextOutlined />}
+        width={950}
+        logoSize="medium"
+        footer={
+          <div className="flex justify-end gap-3 px-6 py-4  border-t">
+            <Button
+              onClick={() => {
+                setIsSignatureModalVisible(false);
+                setAdminSignature(null);
+                setSelectedContract(null);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              loading={signing}
+              onClick={handleSignAsAdmin}
+              disabled={!adminSignature}
+              className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+            >
+              Xác nhận ký
+            </Button>
+          </div>
+        }
+        bodyStyle={{
+          padding: "0 0 16px",
+          maxHeight: "75vh",
+          overflowY: "auto",
+        }}
       >
-        <div className="mb-5">
+        <div className="p-6 space-y-4">
           {selectedContract && (
-            <div>
+            <div className=" p-4 rounded-lg border">
               <p>
                 <strong>Hợp đồng:</strong>{" "}
                 {selectedContract.id?.substring(0, 15)}...
@@ -680,32 +743,30 @@ const ManageContractPage = () => {
               <p>
                 <strong>Khách hàng:</strong> {selectedContract.fullName}
               </p>
-              <p>
+              <p className="flex items-center gap-2">
                 <strong>Trạng thái:</strong>{" "}
                 {getStatusTag(selectedContract.contractStatus)}
               </p>
             </div>
           )}
-        </div>
 
-        <div className="mb-5">
           <SignaturePad
             onSave={handleAdminSignatureSave}
             title="Chữ ký của Admin"
           />
-        </div>
 
-        {adminSignature && (
-          <div className="mt-5 text-center">
-            <p className="font-semibold mb-2">Xem trước chữ ký:</p>
-            <img
-              src={adminSignature}
-              alt="Admin Signature Preview"
-              className="max-w-md border border-gray-300 rounded p-2 inline-block"
-            />
-          </div>
-        )}
-      </Modal>
+          {adminSignature && (
+            <div className="mt-2 text-center">
+              <p className="font-semibold mb-2">Xem trước chữ ký:</p>
+              <img
+                src={adminSignature}
+                alt="Admin Signature Preview"
+                className="max-w-md border border-gray-300 rounded p-2 inline-block"
+              />
+            </div>
+          )}
+        </div>
+      </FitBridgeModal>
     </div>
   );
 };

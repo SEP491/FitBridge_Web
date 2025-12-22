@@ -11,7 +11,6 @@ import {
   Space,
   Tag,
   Tooltip,
-  Modal,
   message,
   Image,
   Select,
@@ -34,6 +33,7 @@ import {
   MoneyCollectOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 
 const { TextArea } = Input;
 
@@ -362,18 +362,18 @@ export default function ManageWithdrawalPage() {
   }
 
   return (
-    <div className="">
-      <div className="">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Quản Lý Yêu Cầu Rút Tiền
-          </h1>
-          <p className="text-gray-600">
-            Quản lý và xử lý các yêu cầu rút tiền từ người dùng
-          </p>
-        </div>
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[#ED2A46] mb-2 flex items-center gap-2">
+          <MoneyCollectOutlined className="text-orange-500" />
+          Quản Lý Yêu Cầu Rút Tiền
+        </h1>
+        <p className="text-gray-600">
+          Quản lý và xử lý các yêu cầu rút tiền từ người dùng
+        </p>
+      </div>
 
+      <div className="">
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} className="mb-8">
           <Col xs={24} sm={12} lg={6}>
@@ -531,50 +531,48 @@ export default function ManageWithdrawalPage() {
         </Card>
 
         {/* Detail Modal */}
-        <Modal
-          title="Chi tiết yêu cầu rút tiền"
+        <FitBridgeModal
           open={detailModalVisible}
           onCancel={() => {
             setDetailModalVisible(false);
             setSelectedRequest(null);
           }}
-          footer={[
-            <Button
-              key="close"
-              onClick={() => {
-                setDetailModalVisible(false);
-                setSelectedRequest(null);
-              }}
-            >
-              Đóng
-            </Button>,
-            selectedRequest?.status === "Pending" && (
+          title="Chi Tiết Yêu Cầu Rút Tiền"
+          titleIcon={<EyeOutlined />}
+          width={780}
+          logoSize="medium"
+          footer={
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
               <Button
-                key="reject"
-                danger
-                icon={<CloseCircleOutlined />}
                 onClick={() => {
-                  handleReject(selectedRequest);
+                  setDetailModalVisible(false);
+                  setSelectedRequest(null);
                 }}
               >
-                Từ chối
+                Đóng
               </Button>
-            ),
-            selectedRequest?.status === "Pending" && (
-              <Button
-                key="approve"
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                className="bg-green-500 hover:bg-green-600"
-                onClick={() => {
-                  handleApprove(selectedRequest);
-                }}
-              >
-                Xác nhận
-              </Button>
-            ),
-          ]}
-          width={700}
+              {selectedRequest?.status === "Pending" && (
+                <>
+                  <Button
+                    danger
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => handleReject(selectedRequest)}
+                  >
+                    Từ chối
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+                    onClick={() => handleApprove(selectedRequest)}
+                  >
+                    Xác nhận
+                  </Button>
+                </>
+              )}
+            </div>
+          }
+          bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
         >
           {selectedRequest && (
             <div className="space-y-4">
@@ -670,11 +668,10 @@ export default function ManageWithdrawalPage() {
               </div>
             </div>
           )}
-        </Modal>
+        </FitBridgeModal>
 
         {/* Approval Modal */}
-        <Modal
-          title="Duyệt yêu cầu rút tiền"
+        <FitBridgeModal
           open={approvalModalVisible}
           onCancel={() => {
             setApprovalModalVisible(false);
@@ -682,14 +679,33 @@ export default function ManageWithdrawalPage() {
             setApprovalImage(null);
             setRequestToApprove(null);
           }}
-          onOk={submitApproval}
-          okText="Xác nhận duyệt"
-          cancelText="Hủy"
-          okButtonProps={{
-            disabled: !approvalImageUrl,
-            className: "bg-green-500 hover:bg-green-600",
-          }}
-          width={600}
+          title="Duyệt Yêu Cầu Rút Tiền"
+          titleIcon={<CheckCircleOutlined />}
+          width={700}
+          logoSize="medium"
+          footer={
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+              <Button
+                onClick={() => {
+                  setApprovalModalVisible(false);
+                  setApprovalImageUrl("");
+                  setApprovalImage(null);
+                  setRequestToApprove(null);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                onClick={submitApproval}
+                disabled={!approvalImageUrl}
+                className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+              >
+                Xác nhận duyệt
+              </Button>
+            </div>
+          }
+          bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
         >
           {requestToApprove && (
             <div className="space-y-4">
@@ -785,25 +801,43 @@ export default function ManageWithdrawalPage() {
               )}
             </div>
           )}
-        </Modal>
+        </FitBridgeModal>
 
         {/* Rejection Modal */}
-        <Modal
-          title="Từ chối yêu cầu rút tiền"
+        <FitBridgeModal
           open={rejectionModalVisible}
           onCancel={() => {
             setRejectionModalVisible(false);
             setRejectionReason("");
             setRequestToReject(null);
           }}
-          onOk={submitRejection}
-          okText="Xác nhận từ chối"
-          cancelText="Hủy"
-          okButtonProps={{
-            danger: true,
-            disabled: !rejectionReason.trim(),
-          }}
-          width={600}
+          title="Từ Chối Yêu Cầu Rút Tiền"
+          titleIcon={<CloseCircleOutlined />}
+          width={700}
+          logoSize="medium"
+          footer={
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+              <Button
+                onClick={() => {
+                  setRejectionModalVisible(false);
+                  setRejectionReason("");
+                  setRequestToReject(null);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                danger
+                onClick={submitRejection}
+                disabled={!rejectionReason.trim()}
+                className="px-6"
+              >
+                Xác nhận từ chối
+              </Button>
+            </div>
+          }
+          bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
         >
           {requestToReject && (
             <div className="space-y-4">
@@ -857,7 +891,7 @@ export default function ManageWithdrawalPage() {
               </div>
             </div>
           )}
-        </Modal>
+        </FitBridgeModal>
       </div>
 
       <style jsx>{`

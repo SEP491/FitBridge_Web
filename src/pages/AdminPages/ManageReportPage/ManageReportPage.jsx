@@ -49,6 +49,7 @@ export default function ManageReportPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [dateRange, setDateRange] = useState([]);
   const [replyForm] = Form.useForm();
+  const currentStatus = selectedReport?.status || "Pending";
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -497,7 +498,7 @@ export default function ManageReportPage() {
             >
               Đóng
             </Button>
-            {selectedReport.status !== "FraudConfirmed" && (
+            {selectedReport?.status !== "FraudConfirmed" && (
             <Button
               type="primary"
               size="large"
@@ -701,45 +702,42 @@ export default function ManageReportPage() {
       </FitBridgeModal>
 
       {/* Reply Modal */}
-      <Modal
-        title={
-          <span className="flex items-center gap-2 text-lg font-semibold text-[#ED2A46]">
-            <SendOutlined />
-            Phản Hồi Báo Cáo
-          </span>
-        }
+      <FitBridgeModal
         open={isReplyModalOpen}
         onCancel={() => {
           setIsReplyModalOpen(false);
           replyForm.resetFields();
         }}
-        footer={[
-          <Button
-            key="cancel"
-            size="large"
-            onClick={() => {
-              setIsReplyModalOpen(false);
-              replyForm.resetFields();
-            }}
-          >
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            size="large"
-            icon={<SendOutlined />}
-            loading={replyLoading}
-            onClick={handleReplyReport}
-            className="bg-[#FF914D] border-0 hover:bg-[#e8823d]"
-          >
-            Gửi Phản Hồi
-          </Button>,
-        ]}
-        width={600}
-        centered
+        title="Phản Hồi Báo Cáo"
+        titleIcon={<SendOutlined />}
+        width={650}
+        logoSize="medium"
+        footer={
+          <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+            <Button
+              size="large"
+              onClick={() => {
+                setIsReplyModalOpen(false);
+                replyForm.resetFields();
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              icon={<SendOutlined />}
+              loading={replyLoading}
+              onClick={handleReplyReport}
+              className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+            >
+              Gửi Phản Hồi
+            </Button>
+          </div>
+        }
+        bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
       >
-        <Form form={replyForm} layout="vertical" className="mt-4">
+        <Form form={replyForm} layout="vertical" className="p-6">
           <Form.Item
             name="status"
             label={
@@ -761,7 +759,7 @@ export default function ManageReportPage() {
                 }
               }}
             >
-            {selectedReport.status !== "Processing" && selectedReport.status !== "Resolved" && (
+            {currentStatus !== "Processing" && currentStatus !== "Resolved" && (
               <Select.Option value="Processing">
                 <span className="flex items-center gap-2">
                   <LoadingOutlined className="text-blue-500" />
@@ -769,7 +767,7 @@ export default function ManageReportPage() {
                 </span>
               </Select.Option>
             )}
-            {selectedReport.status !== "Resolved" && (
+            {currentStatus !== "Resolved" && (
               <Select.Option value="Resolved">
                 <span className="flex items-center gap-2">
                   <CheckCircleOutlined className="text-green-500" />
@@ -873,7 +871,7 @@ export default function ManageReportPage() {
             </div>
           )}
         </Form>
-      </Modal>
+      </FitBridgeModal>
     </div>
   );
 }

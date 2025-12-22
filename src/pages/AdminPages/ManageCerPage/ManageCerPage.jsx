@@ -4,7 +4,6 @@ import {
   Button,
   Tag,
   Space,
-  Modal,
   Image,
   Card,
   Row,
@@ -28,6 +27,7 @@ import {
   ClockCircleOutlined as ClockIcon,
 } from "@ant-design/icons";
 import { FaCertificate } from "react-icons/fa";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 import certificateService from "../../../services/certificateServices";
 
 const { TextArea } = Input;
@@ -365,16 +365,13 @@ export default function ManageCerPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <Typography.Title
-          level={2}
-          className="text-gray-900 mb-2 flex items-center gap-3"
-        >
+        <h1 className="text-3xl font-bold text-[#ED2A46] mb-2 flex items-center gap-2">
           <FaCertificate className="text-orange-500" />
           Quản Lý Chứng Chỉ
-        </Typography.Title>
-        <Typography.Text className="text-gray-600 text-base">
+        </h1>
+        <p className="text-gray-600">
           Quản lý và xét duyệt chứng chỉ của Personal Trainer
-        </Typography.Text>
+        </p>
       </div>
 
       {/* Statistics Cards */}
@@ -532,45 +529,47 @@ export default function ManageCerPage() {
       </Card>
 
       {/* Detail Modal */}
-      <Modal
-        title="Chi tiết chứng chỉ"
+      <FitBridgeModal
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            Đóng
-          </Button>,
-          selectedCertificate?.certificateStatus === "WaitingForReview" && (
-            <>
-              <Button
-                key="approve"
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => {
-                  setDetailModalVisible(false);
-                  handleStatusAction(selectedCertificate, "approve");
-                }}
-              >
-                Duyệt
-              </Button>
-              <Button
-                key="reject"
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => {
-                  setDetailModalVisible(false);
-                  handleStatusAction(selectedCertificate, "reject");
-                }}
-              >
-                Từ chối
-              </Button>
-            </>
-          ),
-        ]}
+        title="Chi tiết chứng chỉ"
+        titleIcon={<FaCertificate className="text-orange-500" />}
         width={800}
+        logoSize="medium"
+        bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
+        footer={
+          <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+            <Button onClick={() => setDetailModalVisible(false)}>Đóng</Button>
+            {selectedCertificate?.certificateStatus === "WaitingForReview" && (
+              <>
+                <Button
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => {
+                    setDetailModalVisible(false);
+                    handleStatusAction(selectedCertificate, "approve");
+                  }}
+                  className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-4 shadow-lg"
+                >
+                  Duyệt
+                </Button>
+                <Button
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => {
+                    setDetailModalVisible(false);
+                    handleStatusAction(selectedCertificate, "reject");
+                  }}
+                >
+                  Từ chối
+                </Button>
+              </>
+            )}
+          </div>
+        }
       >
         {selectedCertificate && (
-          <div>
+          <div className="p-6 space-y-6">
             <Row gutter={16}>
               <Col span={8}>
                 <Image
@@ -594,7 +593,7 @@ export default function ManageCerPage() {
               </Col>
             </Row>
 
-            <h3 style={{ marginTop: "24px", marginBottom: "16px" }}>
+            <h3 className="mt-6 mb-4 font-semibold text-gray-800">
               Thông tin chứng chỉ
             </h3>
             <Descriptions column={2} bordered>
@@ -639,7 +638,7 @@ export default function ManageCerPage() {
               </Descriptions.Item>
             </Descriptions>
 
-            <h3 style={{ marginTop: "24px", marginBottom: "16px" }}>
+            <h3 className="mt-6 mb-4 font-semibold text-gray-800">
               Hình ảnh chứng chỉ
             </h3>
             <Image
@@ -649,44 +648,61 @@ export default function ManageCerPage() {
             />
           </div>
         )}
-      </Modal>
+      </FitBridgeModal>
 
       {/* Status Update Modal */}
-      <Modal
-        title={`${actionType === "approve" ? "Duyệt" : "Từ chối"} chứng chỉ`}
+      <FitBridgeModal
         open={statusModalVisible}
         onCancel={() => setStatusModalVisible(false)}
-        onOk={handleUpdateStatus}
-        confirmLoading={updateLoading}
-        okText={actionType === "approve" ? "Duyệt" : "Từ chối"}
-        cancelText="Hủy"
-        okButtonProps={{
-          danger: actionType === "reject",
-        }}
+        title={`${actionType === "approve" ? "Duyệt" : "Từ chối"} chứng chỉ`}
+        titleIcon={<FaCertificate className="text-orange-500" />}
+        width={600}
+        logoSize="medium"
+        bodyStyle={{ padding: 0, maxHeight: "60vh", overflowY: "auto" }}
+        footer={
+          <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+            <Button onClick={() => setStatusModalVisible(false)}>Hủy</Button>
+            <Button
+              type="primary"
+              onClick={handleUpdateStatus}
+              loading={updateLoading}
+              danger={actionType === "reject"}
+              className={
+                actionType === "approve"
+                  ? "bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+                  : undefined
+              }
+            >
+              {actionType === "approve" ? "Duyệt" : "Từ chối"}
+            </Button>
+          </div>
+        }
       >
-        <p>
-          Bạn có chắc chắn muốn{" "}
-          <strong>{actionType === "approve" ? "duyệt" : "từ chối"}</strong>{" "}
-          chứng chỉ này không?
-        </p>
-        {selectedCertificate && (
-          <Card size="small" style={{ marginBottom: "16px" }}>
-            <p>
-              <strong>PT:</strong> {selectedCertificate.ptName}
-            </p>
-            <p>
-              <strong>Chứng chỉ:</strong>{" "}
-              {selectedCertificate.certificateMetadata?.certName}
-            </p>
-          </Card>
-        )}
-        <TextArea
-          rows={4}
-          placeholder="Thêm ghi chú (tùy chọn)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-      </Modal>
+        <div className="p-6 space-y-4">
+          <p>
+            Bạn có chắc chắn muốn{" "}
+            <strong>{actionType === "approve" ? "duyệt" : "từ chối"}</strong>{" "}
+            chứng chỉ này không?
+          </p>
+          {selectedCertificate && (
+            <Card size="small" className="mb-4">
+              <p>
+                <strong>PT:</strong> {selectedCertificate.ptName}
+              </p>
+              <p>
+                <strong>Chứng chỉ:</strong>{" "}
+                {selectedCertificate.certificateMetadata?.certName}
+              </p>
+            </Card>
+          )}
+          <TextArea
+            rows={4}
+            placeholder="Thêm ghi chú (tùy chọn)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+      </FitBridgeModal>
     </div>
   );
 }

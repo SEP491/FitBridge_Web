@@ -5,7 +5,6 @@ import {
   Form,
   Input,
   InputNumber,
-  Modal,
   Select,
   Space,
   Spin,
@@ -294,18 +293,18 @@ export default function ManageSystemConfigPage() {
   }
 
   return (
-    <div className="">
-      <div className="">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Quản Lý Cấu Hình Hệ Thống
-          </h1>
-          <p className="text-gray-600">
-            Quản lý và theo dõi các cấu hình hệ thống
-          </p>
-        </div>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-[#ED2A46] mb-2 flex items-center gap-2">
+          <SettingOutlined />
+          Quản Lý Cấu Hình Hệ Thống
+        </h1>
+        <p className="text-gray-600">
+          Quản lý và theo dõi các cấu hình hệ thống
+        </p>
+      </div>
 
+      <div className="">
         {/* Main Content Card */}
         <Card className="border-0 shadow-lg">
           {/* Filters and Actions */}
@@ -389,6 +388,27 @@ export default function ManageSystemConfigPage() {
         titleIcon={<SettingOutlined />}
         width={600}
         logoSize="medium"
+        bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
+        footer={
+          <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+            <Button
+              onClick={() => {
+                setIsModalAddOpen(false);
+                formAdd.resetFields();
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              loading={loadingAdd}
+              onClick={() => formAdd.submit()}
+              className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+            >
+              Thêm Cấu Hình
+            </Button>
+          </div>
+        }
       >
         <Form
           form={formAdd}
@@ -458,20 +478,6 @@ export default function ManageSystemConfigPage() {
               className="!w-full rounded-lg"
             />
           </Form.Item>
-
-          <div className="text-center pt-4">
-            <Button
-              onClick={() => formAdd.submit()}
-              loading={loadingAdd}
-              className="!w-[60%] !h-12 !rounded-full !font-medium !border-0 shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #FF914D 0%, #FF6B35 100%)",
-                color: "white",
-              }}
-            >
-              Thêm Cấu Hình
-            </Button>
-          </div>
         </Form>
       </FitBridgeModal>
 
@@ -487,6 +493,28 @@ export default function ManageSystemConfigPage() {
         titleIcon={<SettingOutlined />}
         width={600}
         logoSize="medium"
+        bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
+        footer={
+          <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+            <Button
+              onClick={() => {
+                setIsModalEditOpen(false);
+                formEdit.resetFields();
+                setSelectedConfig(null);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              loading={loadingEdit}
+              onClick={() => formEdit.submit()}
+              className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+            >
+              Cập Nhật Cấu Hình
+            </Button>
+          </div>
+        }
       >
         <Form
           form={formEdit}
@@ -555,20 +583,6 @@ export default function ManageSystemConfigPage() {
               className="!w-full rounded-lg"
             />
           </Form.Item>
-
-          <div className="text-center pt-4">
-            <Button
-              onClick={() => formEdit.submit()}
-              loading={loadingEdit}
-              className="!w-[60%] !h-12 !rounded-full !font-medium !border-0 shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #FF914D 0%, #FF6B35 100%)",
-                color: "white",
-              }}
-            >
-              Cập Nhật Cấu Hình
-            </Button>
-          </div>
         </Form>
       </FitBridgeModal>
     </div>

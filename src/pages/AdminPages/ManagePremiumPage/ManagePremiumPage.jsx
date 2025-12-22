@@ -342,18 +342,17 @@ export default function ManagePremiumPage() {
   }
 
   return (
-    <div className="">
-      <div className="">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Quản Lý Gói Membership
-          </h1>
-          <p className="text-gray-600">
-            Quản lý các gói membership có sẵn trong hệ thống
-          </p>
-        </div>
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[#ED2A46] mb-2">
+          Quản Lý Gói Membership
+        </h1>
+        <p className="text-gray-600">
+          Quản lý các gói membership có sẵn trong hệ thống
+        </p>
+      </div>
 
+      <div className="">
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} className="mb-8">
           <Col xs={24} sm={12} lg={6}>
@@ -500,20 +499,30 @@ export default function ManagePremiumPage() {
         </Card>
 
         {/* Add/Edit Modal */}
-        <Modal
-          title={
-            editingPackage ? "Chỉnh Sửa Gói Membership" : "Thêm Gói Membership Mới"
-          }
+        <FitBridgeModal
           open={modalVisible}
           onCancel={() => {
             setModalVisible(false);
             setEditingPackage(null);
             form.resetFields();
           }}
-          footer={null}
+          title={
+            editingPackage
+              ? "Chỉnh Sửa Gói Membership"
+              : "Thêm Gói Membership Mới"
+          }
+          titleIcon={<CrownOutlined />}
           width={600}
+          logoSize="medium"
+          bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
+          footer={null}
         >
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            className="p-6"
+          >
             <Form.Item
               label="Tên Gói"
               name="serviceName"
@@ -602,13 +611,13 @@ export default function ManagePremiumPage() {
               <Button
                 type="primary"
                 htmlType="submit"
-                className="bg-orange-500 hover:bg-orange-600 border-orange-500"
+                className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
               >
                 {editingPackage ? "Cập Nhật" : "Tạo Mới"}
               </Button>
             </div>
           </Form>
-        </Modal>
+        </FitBridgeModal>
       </div>
 
       <style jsx>{`

@@ -4,7 +4,6 @@ import {
   ConfigProvider,
   Form,
   Input,
-  Modal,
   Space,
   Switch,
   Table,
@@ -223,27 +222,31 @@ export default function ManageGymPage() {
   }, []);
 
   const handleDelete = async (id) => {
-    Modal.confirm({
-      title: "Xác nhận xóa phòng gym",
-      content:
-        "Bạn có chắc chắn muốn xóa phòng gym này? Hành động này không thể hoàn tác.",
-      okText: "Xóa",
-      cancelText: "Hủy",
-      okType: "danger",
-      centered: true,
-      icon: <DeleteOutlined style={{ color: "#ff4d4f" }} />,
-      onOk: async () => {
-        try {
-          await adminService.deleteGym(id);
-          fetchGym();
-          toast.success("Đã xóa phòng gym thành công");
-        } catch (error) {
-          console.error("Error deleting gym:", error);
-          toast.error(
-            error.response?.data?.message || "Không thể xóa phòng gym"
-          );
-        }
-      },
+    // Keep confirm using AntD Modal for destructive action but keep styling minimal
+    // This confirmation dialog is separate from main content modals
+    import("antd").then(({ Modal }) => {
+      Modal.confirm({
+        title: "Xác nhận xóa phòng gym",
+        content:
+          "Bạn có chắc chắn muốn xóa phòng gym này? Hành động này không thể hoàn tác.",
+        okText: "Xóa",
+        cancelText: "Hủy",
+        okType: "danger",
+        centered: true,
+        icon: <DeleteOutlined style={{ color: "#ff4d4f" }} />,
+        onOk: async () => {
+          try {
+            await adminService.deleteGym(id);
+            fetchGym();
+            toast.success("Đã xóa phòng gym thành công");
+          } catch (error) {
+            console.error("Error deleting gym:", error);
+            toast.error(
+              error.response?.data?.message || "Không thể xóa phòng gym"
+            );
+          }
+        },
+      });
     });
   };
 
@@ -548,1078 +551,993 @@ export default function ManageGymPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen ">
-        <Spin
-          indicator={
-            <LoadingOutlined style={{ fontSize: 48, color: "#FF914D" }} spin />
-          }
-          tip="Đang tải dữ liệu..."
-          size="large"
-        />
-      </div>
-    );
-  }
-
   return (
     <APIProvider apiKey={import.meta.env.VITE_API_KEY_GOOGLE}>
-      <div className="">
-        <div className="">
-          {/* Header */}
-          <div className="">
-            <Title
-              level={2}
-              className="text-gray-900 mb-2 flex items-center gap-3"
-            >
-              <FaDumbbell className="text-orange-500" />
-              Quản Lý Phòng Gym
-            </Title>
-            <Text className="text-gray-600 text-base">
-              Quản lý và theo dõi thông tin các phòng gym trong hệ thống
-            </Text>
-          </div>
-
-          {/* Statistics Cards */}
-          <Row gutter={[20, 20]} className="mb-8">
-            <Col xs={24} sm={12} lg={6}>
-              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100">
-                <Statistic
-                  title={
-                    <span className="text-gray-600 font-medium">
-                      Tổng Số Phòng Gym
-                    </span>
-                  }
-                  value={statistics.totalGyms}
-                  prefix={<HomeOutlined className="text-blue-500" />}
-                  valueStyle={{
-                    color: "#1890ff",
-                    fontSize: "28px",
-                    fontWeight: "bold",
-                  }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100">
-                <Statistic
-                  title={
-                    <span className="text-gray-600 font-medium">
-                      Hot Research
-                    </span>
-                  }
-                  value={statistics.hotResearchGyms}
-                  prefix={<FireOutlined className="text-red-500" />}
-                  valueStyle={{
-                    color: "#ff4d4f",
-                    fontSize: "28px",
-                    fontWeight: "bold",
-                  }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100">
-                <Statistic
-                  title={
-                    <span className="text-gray-600 font-medium">
-                      Phòng Gym Thường
-                    </span>
-                  }
-                  value={statistics.normalGyms}
-                  prefix={<BankOutlined className="text-green-500" />}
-                  valueStyle={{
-                    color: "#52c41a",
-                    fontSize: "28px",
-                    fontWeight: "bold",
-                  }}
-                />
-              </Card>
-            </Col>
-          </Row>
-
-          {/* Main Content */}
-          <Card className="border-0 shadow-xl">
-            <ConfigProvider
-              theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
-            >
-              {/* Controls */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div className="flex-1 max-w-md">
-                  <Input
-                    placeholder="Tìm kiếm theo tên gym, địa chỉ, người đại diện..."
-                    prefix={<SearchOutlined className="text-gray-400" />}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    allowClear
-                    size="large"
-                    className="rounded-lg shadow-sm"
-                  />
-                </div>
-
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  size="large"
-                  className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 rounded-lg px-6 shadow-lg hover:shadow-xl transition-all duration-300"
-                  onClick={() => setIsModalAddGymOpen(true)}
-                >
-                  Thêm Phòng Gym
-                </Button>
-              </div>
-
-              {/* Results Summary */}
-              <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                <Text className="text-gray-600">
-                  Hiển thị{" "}
-                  <span className="font-semibold text-orange-600">
-                    {filteredData.length}
-                  </span>{" "}
-                  trong tổng số{" "}
-                  <span className="font-semibold">{statistics.totalGyms}</span>{" "}
-                  phòng gym
-                  {searchText && (
-                    <span className="ml-2">
-                      | Tìm kiếm: "
-                      <span className="font-semibold text-blue-600">
-                        {searchText}
-                      </span>
-                      "
-                    </span>
-                  )}
-                </Text>
-              </div>
-
-              {/* Table */}
-              <Table
-                rowKey="id"
-                dataSource={filteredData}
-                columns={columns}
-                pagination={{
-                  current: pagination.current,
-                  pageSize: pagination.pageSize,
-                  total: pagination.total,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} của ${total} mục`,
-                  position: ["bottomCenter"],
-                }}
-                onChange={handleTableChange}
-                className="rounded-lg overflow-hidden"
-                scroll={{ x: 1000 }}
-                size="middle"
-                onRow={(record) => ({
-                  onClick: () => {
-                    setSelectedGym(record);
-                    setIsModalGymDetailOpen(true);
-                  },
-                  style: { cursor: "pointer" },
-                })}
-              />
-            </ConfigProvider>
-          </Card>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-[#ED2A46] mb-2 flex items-center gap-2">
+            <FaDumbbell className="text-orange-500" />
+            Quản Lý Phòng Gym
+          </h1>
+          <p className="text-gray-600">
+            Quản lý và theo dõi thông tin các phòng gym trong hệ thống
+          </p>
         </div>
 
-        {/* Gym Detail Modal */}
-        <FitBridgeModal
-          open={isModalGymDetailOpen}
-          onCancel={() => setIsModalGymDetailOpen(false)}
-          title="Chi Tiết Phòng Gym"
-          titleIcon={<EyeOutlined />}
-          width={950}
-          logoSize="medium"
-          bodyStyle={{ padding: "0", maxHeight: "75vh", overflowY: "auto" }}
-        >
-          {selectedGym && (
-            <div className="flex flex-col">
-              {/* Header Section with Key Info */}
-              <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
-                <Row gutter={[24, 16]}>
-                  <Col xs={24} md={12}>
-                    <div className="flex flex-col gap-2">
-                      <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <FaDumbbell className="text-[#FF914D]" />
-                        <span>Tên Phòng Gym</span>
-                      </div>
-                      <div className="text-2xl font-bold text-blue-600">
-                        {selectedGym.gymName || "N/A"}
-                        {selectedGym.hotResearch && (
-                          <Tag
-                            color="red"
-                            className="ml-2"
-                            icon={<FireOutlined />}
-                          >
-                            HOT
-                          </Tag>
-                        )}
-                      </div>
-                    </div>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <div className="flex flex-col gap-2">
-                      <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <CalendarOutlined className="text-[#FF914D]" />
-                        <span>Hoạt Động Từ</span>
-                      </div>
-                      <div className="text-2xl font-bold text-[#ED2A46]">
-                        Năm {selectedGym.since || "N/A"}
-                      </div>
-                    </div>
-                  </Col>
-                </Row>
-              </div>
-
-              {/* Main Content */}
-              <div className="p-6 flex flex-col gap-5 space-y-6">
-                {/* Gym Info Card */}
-                <Card
-                  size="small"
-                  className="shadow-sm hover:shadow-md transition-shadow"
-                  title={
-                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                      <FaInfoCircle />
-                      Thông Tin Phòng Gym
-                    </span>
-                  }
-                  bordered={true}
-                  style={{ borderColor: "#FFE5E9" }}
-                >
-                  <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
-                    <Descriptions.Item label="Tên Phòng Gym" span={2}>
-                      <div className="font-semibold text-lg">
-                        {selectedGym.gymName || "N/A"}
-                      </div>
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Địa Chỉ" span={2}>
-                      <div className="flex items-center gap-2">
-                        <EnvironmentOutlined className="text-red-500" />
-                        <span>{selectedGym.address || "N/A"}</span>
-                      </div>
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Hoạt Động Từ">
-                      <div className="flex items-center gap-2">
-                        <CalendarOutlined className="text-orange-500" />
-                        <span className="font-semibold">
-                          Năm {selectedGym.since || "N/A"}
-                        </span>
-                      </div>
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Trạng Thái">
-                      <Tag
-                        color={selectedGym.hotResearch ? "red" : "default"}
-                        icon={selectedGym.hotResearch ? <FireOutlined /> : null}
-                        className="text-sm px-3 py-1"
-                      >
-                        {selectedGym.hotResearch
-                          ? "Hot Research"
-                          : "Bình thường"}
-                      </Tag>
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Tọa Độ" span={2}>
-                      {selectedGym.latitude && selectedGym.longitude ? (
-                        <div className="flex gap-4">
-                          <div className="flex items-center gap-1">
-                            <IoLocationSharp className="text-red-500" />
-                            <span className="font-mono text-xs bg-gray-50 p-1 rounded">
-                              Lat: {selectedGym.latitude}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <IoLocationSharp className="text-red-500" />
-                            <span className="font-mono text-xs bg-gray-50 p-1 rounded">
-                              Lng: {selectedGym.longitude}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Chưa có tọa độ</span>
-                      )}
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-
-                {/* Owner Info Card */}
-                <Card
-                  size="small"
-                  className="shadow-sm hover:shadow-md transition-shadow"
-                  title={
-                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                      <FaUserCircle />
-                      Thông Tin Chủ Sở Hữu
-                    </span>
-                  }
-                  bordered={true}
-                  style={{ borderColor: "#FFE5E9" }}
-                >
-                  <Descriptions column={1} bordered size="small">
-                    <Descriptions.Item label="Tên Người Đại Diện">
-                      <div className="flex items-center gap-2">
-                        <UserOutlined className="text-green-500" />
-                        <span className="font-medium text-base">
-                          {selectedGym.fullName ||
-                            selectedGym.representName ||
-                            "Chưa có thông tin"}
-                        </span>
-                      </div>
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Số Điện Thoại">
-                      <div className="flex items-center gap-2">
-                        <PhoneOutlined className="text-blue-500" />
-                        <span>{selectedGym.phone || "Chưa có thông tin"}</span>
-                      </div>
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Mã Số Thuế">
-                      <div className="font-mono text-xs bg-orange-50 p-2 rounded inline-block">
-                        {selectedGym.taxCode || "Chưa có thông tin"}
-                      </div>
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Trạng Thái Tài Khoản">
-                      <Tag
-                        color={selectedGym.isActive ? "green" : "red"}
-                        icon={
-                          selectedGym.isActive ? (
-                            <CheckCircleOutlined />
-                          ) : (
-                            <StopOutlined />
-                          )
-                        }
-                        className="text-sm px-3 py-1"
-                      >
-                        {selectedGym.isActive ? "Đang Hoạt Động" : "Bị Cấm"}
-                      </Tag>
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-
-                {/* Images Card */}
-                {(selectedGym.mainImage ||
-                  (selectedGym.images && selectedGym.images.length > 0)) && (
-                  <Card
-                    size="small"
-                    className="shadow-sm hover:shadow-md transition-shadow"
-                    title={
-                      <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                        <FaBuilding />
-                        Hình Ảnh Phòng Gym
-                      </span>
-                    }
-                    bordered={true}
-                    style={{ borderColor: "#FFE5E9" }}
-                  >
-                    <div className="space-y-4">
-                      {selectedGym.mainImage && (
-                        <div>
-                          <div className="text-sm text-gray-500 mb-2">
-                            Ảnh Đại Diện
-                          </div>
-                          <img
-                            src={selectedGym.mainImage}
-                            alt="Main gym"
-                            className="w-full h-64 object-cover rounded-lg shadow-md"
-                          />
-                        </div>
-                      )}
-
-                      {selectedGym.images && selectedGym.images.length > 0 && (
-                        <div>
-                          <div className="text-sm text-gray-500 mb-2">
-                            Ảnh Bổ Sung
-                          </div>
-                          <div className="grid grid-cols-3 gap-3">
-                            {selectedGym.images.map((img, index) => (
-                              <img
-                                key={index}
-                                src={img}
-                                alt={`Gym ${index + 1}`}
-                                className="w-full h-32 object-cover rounded-lg shadow-md hover:scale-105 transition-transform"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                )}
-              </div>
-            </div>
-          )}
-        </FitBridgeModal>
-
-        {/* Add Gym Modal */}
-        <Modal
-          open={isModalAddGymOpen}
-          onCancel={() => {
-            setIsModalAddGymOpen(false);
-            formAdd.resetFields();
-            setPosition(null);
-            setMapCenter(center);
-            setMainImageList({});
-            setImagesList([]);
-          }}
-          title={
-            <div className="flex items-center gap-3 pb-4 border-b">
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
-                <IoBarbell className="text-white text-xl" />
-              </div>
-              <div>
-                <Title level={3} className="m-0 text-gray-800">
-                  Thêm Phòng Gym Mới
-                </Title>
-                <Text className="text-gray-500 text-sm">
-                  Điền thông tin để thêm phòng gym vào hệ thống
-                </Text>
-              </div>
-            </div>
-          }
-          footer={null}
-          width={950}
-          className="custom-modal"
-        >
-          <Form
-            form={formAdd}
-            layout="vertical"
-            requiredMark={false}
-            onFinish={handleAddGym}
-            className="max-h-[70vh] justify-between flex gap-4   flex-col overflow-y-auto py-6 overflow-x-hidden"
-          >
-            {/* Section 1: Account Information */}
-            <Card
-              size="small"
-              className="mb-4 shadow-sm"
-              title={
-                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                  <UserOutlined />
-                  Thông Tin Tài Khoản
-                </span>
-              }
-              bordered={true}
-              style={{ borderColor: "#FFE5E9" }}
-            >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Số điện thoại
-                      </span>
-                    }
-                    name="phone"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập số điện thoại",
-                      },
-                      { pattern: /^[0-9]+$/, message: "Vui lòng chỉ nhập số" },
-                    ]}
-                  >
-                    <Input
-                      prefix={<PhoneOutlined className="text-gray-400" />}
-                      placeholder="09XXXXXXXX"
-                      maxLength={10}
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">Email</span>
-                    }
-                    name="email"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập email" },
-                      { type: "email", message: "Email không hợp lệ" },
-                    ]}
-                  >
-                    <Input
-                      prefix={<GlobalOutlined className="text-gray-400" />}
-                      placeholder="example@email.com"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Form.Item
-                label={
-                  <span className="font-semibold text-gray-700">Mật khẩu</span>
-                }
-                name="password"
-                rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
-              >
-                <Input.Password placeholder="Nhập mật khẩu" size="large" />
-              </Form.Item>
-            </Card>
-
-            {/* Section 2: Gym Information */}
-            <Card
-              size="small"
-              className="mb-4 shadow-sm"
-              title={
-                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                  <FaDumbbell />
-                  Thông Tin Phòng Gym
-                </span>
-              }
-              bordered={true}
-              style={{ borderColor: "#FFE5E9" }}
-            >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Tên Phòng Gym
-                      </span>
-                    }
-                    name="gymName"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập tên phòng gym",
-                      },
-                    ]}
-                  >
-                    <Input
-                      prefix={<FaDumbbell className="text-gray-400" />}
-                      placeholder="Tên phòng gym"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Hoạt động từ năm
-                      </span>
-                    }
-                    name="since"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập năm hoạt động",
-                      },
-                    ]}
-                  >
-                    <Input
-                      prefix={<CalendarOutlined className="text-gray-400" />}
-                      placeholder="2025"
-                      type="number"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Tên người đại diện
-                      </span>
-                    }
-                    name="representName"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập tên người đại diện",
-                      },
-                    ]}
-                  >
-                    <Input
-                      prefix={<UserOutlined className="text-gray-400" />}
-                      placeholder="Nguyễn Văn A"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Mã số thuế
-                      </span>
-                    }
-                    name="taxCode"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập mã số thuế" },
-                    ]}
-                  >
-                    <Input
-                      prefix={<BankOutlined className="text-gray-400" />}
-                      placeholder="ABC1234567"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Card>
-
-            {/* Section 3: Location & Map */}
-            <Card
-              size="small"
-              className="mb-4 shadow-sm"
-              title={
-                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                  <EnvironmentOutlined />
-                  Vị Trí & Bản Đồ
-                </span>
-              }
-              bordered={true}
-              style={{ borderColor: "#FFE5E9" }}
-            >
-              <Row gutter={16}>
-                <Col span={24}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Địa chỉ kinh doanh
-                      </span>
-                    }
-                    name="address"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập địa chỉ" },
-                    ]}
-                  >
-                    <PlacesAutocomplete
-                      onSelect={handlePlaceSelect}
-                      formInstance={formAdd}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              {/* Hidden fields for coordinates */}
-              <Form.Item name="longitude" hidden>
-                <Input type="hidden" />
-              </Form.Item>
-              <Form.Item name="latitude" hidden>
-                <Input type="hidden" />
-              </Form.Item>
-
-              <div className="mb-2">
-                <Text className="font-semibold text-gray-700 block mb-2">
-                  Xem vị trí trên bản đồ
-                </Text>
-                <div
-                  className="border rounded-lg overflow-hidden shadow-sm"
-                  style={{ height: "350px" }}
-                >
-                  <Map
-                    defaultCenter={center}
-                    center={mapCenter}
-                    defaultZoom={13}
-                    zoom={position ? 15 : 13}
-                    gestureHandling={"greedy"}
-                    disableDefaultUI={false}
-                    mapId="gym-location-map"
-                    onClick={async (e) => {
-                      if (e.detail.latLng) {
-                        const { lat, lng } = e.detail.latLng;
-                        await getAddressFromLatLng(lat, lng);
-                      }
-                    }}
-                  >
-                    {position && (
-                      <AdvancedMarker position={position}>
-                        <Pin
-                          background={"#FF914D"}
-                          borderColor={"#FF6B35"}
-                          glyphColor={"#FFFFFF"}
-                        />
-                      </AdvancedMarker>
-                    )}
-                  </Map>
-                </div>
-                <Text className="text-gray-500 text-xs mt-2 block">
-                  💡 Click vào bản đồ để chọn vị trí và lấy địa chỉ tự động
-                </Text>
-              </div>
-            </Card>
-
-            {/* Section 4: CCCD Information */}
-            <Card
-              size="small"
-              className="mb-4 shadow-sm"
-              title={
-                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                  <FaUserCircle />
-                  Thông Tin CCCD
-                </span>
-              }
-              bordered={true}
-              style={{ borderColor: "#FFE5E9" }}
-            >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Số CCCD
-                      </span>
-                    }
-                    name="citizenIdNumber"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập số CCCD" },
-                      { pattern: /^[0-9]{12}$/, message: "CCCD phải có 12 số" },
-                    ]}
-                  >
-                    <Input
-                      prefix={<UserOutlined className="text-gray-400" />}
-                      placeholder="079204029889"
-                      maxLength={12}
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Nơi Cấp CCCD
-                      </span>
-                    }
-                    name="identityCardPlace"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập nơi cấp CCCD" },
-                    ]}
-                  >
-                    <Input
-                      prefix={<EnvironmentOutlined className="text-gray-400" />}
-                      placeholder="Cục Cảnh sát ĐKQL cư trú và DLQG về dân cư"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Ngày Cấp CCCD
-                      </span>
-                    }
-                    name="identityCardDate"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn ngày cấp CCCD",
-                      },
-                    ]}
-                  >
-                    <Input
-                      type="date"
-                      size="large"
-                      prefix={<CalendarOutlined className="text-gray-400" />}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Địa Chỉ Thường Trú (Theo CCCD)
-                      </span>
-                    }
-                    name="citizenCardPermanentAddress"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập địa chỉ thường trú",
-                      },
-                    ]}
-                  >
-                    <Input
-                      prefix={<EnvironmentOutlined className="text-gray-400" />}
-                      placeholder="Địa chỉ theo CCCD"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Ảnh CCCD Mặt Trước
-                      </span>
-                    }
-                    name="frontCitizenIdFile"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng tải lên ảnh CCCD mặt trước",
-                      },
-                    ]}
-                  >
-                    <Upload
-                      listType="picture-card"
-                      maxCount={1}
-                      beforeUpload={() => false}
-                      accept="image/*"
-                    >
-                      <div>
-                        <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>Mặt Trước</div>
-                      </div>
-                    </Upload>
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Ảnh CCCD Mặt Sau
-                      </span>
-                    }
-                    name="backCitizenIdFile"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng tải lên ảnh CCCD mặt sau",
-                      },
-                    ]}
-                  >
-                    <Upload
-                      listType="picture-card"
-                      maxCount={1}
-                      beforeUpload={() => false}
-                      accept="image/*"
-                    >
-                      <div>
-                        <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>Mặt Sau</div>
-                      </div>
-                    </Upload>
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Card>
-
-            {/* Section 5: Business Information */}
-            <Card
-              size="small"
-              className="mb-4 shadow-sm"
-              title={
-                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                  <CalendarOutlined />
-                  Thông Tin Kinh Doanh
-                </span>
-              }
-              bordered={true}
-              style={{ borderColor: "#FFE5E9" }}
-            >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Giờ Mở Cửa
-                      </span>
-                    }
-                    name="openTime"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập giờ mở cửa" },
-                    ]}
-                  >
-                    <Input
-                      type="time"
-                      size="large"
-                      prefix={<CalendarOutlined className="text-gray-400" />}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-gray-700">
-                        Giờ Đóng Cửa
-                      </span>
-                    }
-                    name="closeTime"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập giờ đóng cửa" },
-                    ]}
-                  >
-                    <Input
-                      type="time"
-                      size="large"
-                      prefix={<CalendarOutlined className="text-gray-400" />}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Card>
-
-            <Card
-              size="small"
-              className="mb-4 shadow-sm"
-              title={
-                <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                  <FaBuilding />
-                  Hình Ảnh Phòng Gym
-                </span>
-              }
-              bordered={true}
-              style={{ borderColor: "#FFE5E9" }}
-            >
-              {/* Main Image Upload */}
-              <Form.Item
-                label={
-                  <span className="font-semibold text-gray-700">
-                    Ảnh đại diện phòng gym
+        {/* Statistics Cards */}
+        <Row gutter={[20, 20]} className="mb-8">
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100">
+              <Statistic
+                title={
+                  <span className="text-gray-600 font-medium">
+                    Tổng Số Phòng Gym
                   </span>
                 }
-                name="mainImage"
-                rules={[
-                  { required: true, message: "Vui lòng tải lên ảnh đại diện" },
-                ]}
+                value={statistics.totalGyms}
+                prefix={<HomeOutlined className="text-blue-500" />}
+                valueStyle={{
+                  color: "#1890ff",
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100">
+              <Statistic
+                title={
+                  <span className="text-gray-600 font-medium">
+                    Hot Research
+                  </span>
+                }
+                value={statistics.hotResearchGyms}
+                prefix={<FireOutlined className="text-red-500" />}
+                valueStyle={{
+                  color: "#ff4d4f",
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100">
+              <Statistic
+                title={
+                  <span className="text-gray-600 font-medium">
+                    Phòng Gym Thường
+                  </span>
+                }
+                value={statistics.normalGyms}
+                prefix={<BankOutlined className="text-green-500" />}
+                valueStyle={{
+                  color: "#52c41a",
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                }}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Main Content */}
+        <Card className="border-0 shadow-xl">
+          <ConfigProvider
+            theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
+          >
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div className="flex-1 max-w-md">
+                <Input
+                  placeholder="Tìm kiếm theo tên gym, địa chỉ, người đại diện..."
+                  prefix={<SearchOutlined className="text-gray-400" />}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  allowClear
+                  size="large"
+                  className="rounded-lg shadow-sm"
+                />
+              </div>
+
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                size="large"
+                className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 rounded-lg px-6 shadow-lg hover:shadow-xl transition-all duration-300"
+                onClick={() => setIsModalAddGymOpen(true)}
               >
-                <Upload
-                  listType="picture-card"
-                  fileList={mainImageList ? [mainImageList] : []}
-                  onChange={({ fileList }) => {
-                    const latestFile = fileList[fileList.length - 1] || null;
-                    setMainImageList(latestFile);
-                    formAdd.setFieldsValue({ mainImage: latestFile });
-                  }}
-                  beforeUpload={() => false}
-                  accept="image/*"
-                  maxCount={1}
+                Thêm Phòng Gym
+              </Button>
+            </div>
+
+            {/* Results Summary */}
+            <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
+              <Text className="text-gray-600">
+                Hiển thị{" "}
+                <span className="font-semibold text-orange-600">
+                  {filteredData.length}
+                </span>{" "}
+                trong tổng số{" "}
+                <span className="font-semibold">{statistics.totalGyms}</span>{" "}
+                phòng gym
+                {searchText && (
+                  <span className="ml-2">
+                    | Tìm kiếm: "
+                    <span className="font-semibold text-blue-600">
+                      {searchText}
+                    </span>
+                    "
+                  </span>
+                )}
+              </Text>
+            </div>
+
+            {/* Table */}
+            <Table
+              rowKey="id"
+              dataSource={filteredData}
+              columns={columns}
+              pagination={{
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} của ${total} mục`,
+                position: ["bottomCenter"],
+              }}
+              onChange={handleTableChange}
+              className="rounded-lg overflow-hidden"
+              scroll={{ x: 1000 }}
+              size="middle"
+              onRow={(record) => ({
+                onClick: () => {
+                  setSelectedGym(record);
+                  setIsModalGymDetailOpen(true);
+                },
+                style: { cursor: "pointer" },
+              })}
+            />
+          </ConfigProvider>
+        </Card>
+      </div>
+
+      {/* Gym Detail Modal */}
+      <FitBridgeModal
+        open={isModalGymDetailOpen}
+        onCancel={() => setIsModalGymDetailOpen(false)}
+        title="Chi Tiết Phòng Gym"
+        titleIcon={<EyeOutlined />}
+        width={950}
+        logoSize="medium"
+        bodyStyle={{ padding: "0", maxHeight: "75vh", overflowY: "auto" }}
+      >
+        {selectedGym && (
+          <div className="flex flex-col">
+            {/* Header Section with Key Info */}
+            <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
+              <Row gutter={[24, 16]}>
+                <Col xs={24} md={12}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <FaDumbbell className="text-[#FF914D]" />
+                      <span>Tên Phòng Gym</span>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedGym.gymName || "N/A"}
+                      {selectedGym.hotResearch && (
+                        <Tag
+                          color="red"
+                          className="ml-2"
+                          icon={<FireOutlined />}
+                        >
+                          HOT
+                        </Tag>
+                      )}
+                    </div>
+                  </div>
+                </Col>
+                <Col xs={24} md={12}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <CalendarOutlined className="text-[#FF914D]" />
+                      <span>Hoạt Động Từ</span>
+                    </div>
+                    <div className="text-2xl font-bold text-[#ED2A46]">
+                      Năm {selectedGym.since || "N/A"}
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Main Content */}
+            <div className="p-6 flex flex-col gap-5 space-y-6">
+              {/* Gym Info Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaInfoCircle />
+                    Thông Tin Phòng Gym
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+                  <Descriptions.Item label="Tên Phòng Gym" span={2}>
+                    <div className="font-semibold text-lg">
+                      {selectedGym.gymName || "N/A"}
+                    </div>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Địa Chỉ" span={2}>
+                    <div className="flex items-center gap-2">
+                      <EnvironmentOutlined className="text-red-500" />
+                      <span>{selectedGym.address || "N/A"}</span>
+                    </div>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Hoạt Động Từ">
+                    <div className="flex items-center gap-2">
+                      <CalendarOutlined className="text-orange-500" />
+                      <span className="font-semibold">
+                        Năm {selectedGym.since || "N/A"}
+                      </span>
+                    </div>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Trạng Thái">
+                    <Tag
+                      color={selectedGym.hotResearch ? "red" : "default"}
+                      icon={selectedGym.hotResearch ? <FireOutlined /> : null}
+                      className="text-sm px-3 py-1"
+                    >
+                      {selectedGym.hotResearch ? "Hot Research" : "Bình thường"}
+                    </Tag>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Tọa Độ" span={2}>
+                    {selectedGym.latitude && selectedGym.longitude ? (
+                      <div className="flex gap-4">
+                        <div className="flex items-center gap-1">
+                          <IoLocationSharp className="text-red-500" />
+                          <span className="font-mono text-xs bg-gray-50 p-1 rounded">
+                            Lat: {selectedGym.latitude}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <IoLocationSharp className="text-red-500" />
+                          <span className="font-mono text-xs bg-gray-50 p-1 rounded">
+                            Lng: {selectedGym.longitude}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">Chưa có tọa độ</span>
+                    )}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              {/* Owner Info Card */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <FaUserCircle />
+                    Thông Tin Chủ Sở Hữu
+                  </span>
+                }
+                bordered={true}
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item label="Tên Người Đại Diện">
+                    <div className="flex items-center gap-2">
+                      <UserOutlined className="text-green-500" />
+                      <span className="font-medium text-base">
+                        {selectedGym.fullName ||
+                          selectedGym.representName ||
+                          "Chưa có thông tin"}
+                      </span>
+                    </div>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Số Điện Thoại">
+                    <div className="flex items-center gap-2">
+                      <PhoneOutlined className="text-blue-500" />
+                      <span>{selectedGym.phone || "Chưa có thông tin"}</span>
+                    </div>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Mã Số Thuế">
+                    <div className="font-mono text-xs bg-orange-50 p-2 rounded inline-block">
+                      {selectedGym.taxCode || "Chưa có thông tin"}
+                    </div>
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Trạng Thái Tài Khoản">
+                    <Tag
+                      color={selectedGym.isActive ? "green" : "red"}
+                      icon={
+                        selectedGym.isActive ? (
+                          <CheckCircleOutlined />
+                        ) : (
+                          <StopOutlined />
+                        )
+                      }
+                      className="text-sm px-3 py-1"
+                    >
+                      {selectedGym.isActive ? "Đang Hoạt Động" : "Bị Cấm"}
+                    </Tag>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              {/* Images Card */}
+              {(selectedGym.mainImage ||
+                (selectedGym.images && selectedGym.images.length > 0)) && (
+                <Card
+                  size="small"
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                  title={
+                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                      <FaBuilding />
+                      Hình Ảnh Phòng Gym
+                    </span>
+                  }
+                  bordered={true}
+                  style={{ borderColor: "#FFE5E9" }}
                 >
-                  {!mainImageList && (
+                  <div className="space-y-4">
+                    {selectedGym.mainImage && (
+                      <div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          Ảnh Đại Diện
+                        </div>
+                        <img
+                          src={selectedGym.mainImage}
+                          alt="Main gym"
+                          className="w-full h-64 object-cover rounded-lg shadow-md"
+                        />
+                      </div>
+                    )}
+
+                    {selectedGym.images && selectedGym.images.length > 0 && (
+                      <div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          Ảnh Bổ Sung
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          {selectedGym.images.map((img, index) => (
+                            <img
+                              key={index}
+                              src={img}
+                              alt={`Gym ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg shadow-md hover:scale-105 transition-transform"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+            </div>
+          </div>
+        )}
+      </FitBridgeModal>
+
+      {/* Add Gym Modal */}
+      <FitBridgeModal
+        open={isModalAddGymOpen}
+        onCancel={() => {
+          setIsModalAddGymOpen(false);
+          formAdd.resetFields();
+          setPosition(null);
+          setMapCenter(center);
+          setMainImageList({});
+          setImagesList([]);
+        }}
+        title="Thêm Phòng Gym Mới"
+        titleIcon={<IoBarbell />}
+        width={950}
+        logoSize="medium"
+        footer={null}
+        bodyStyle={{ padding: 0, maxHeight: "75vh", overflowY: "auto" }}
+      >
+        <Form
+          form={formAdd}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={handleAddGym}
+          className="max-h-[70vh] justify-between flex gap-4 flex-col overflow-y-auto py-6 overflow-x-hidden"
+        >
+          {/* Section 1: Account Information */}
+          <Card
+            size="small"
+            className="mb-4 shadow-sm"
+            title={
+              <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                <UserOutlined />
+                Thông Tin Tài Khoản
+              </span>
+            }
+            bordered={true}
+            style={{ borderColor: "#FFE5E9" }}
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Số điện thoại
+                    </span>
+                  }
+                  name="phone"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập số điện thoại",
+                    },
+                    { pattern: /^[0-9]+$/, message: "Vui lòng chỉ nhập số" },
+                  ]}
+                >
+                  <Input
+                    prefix={<PhoneOutlined className="text-gray-400" />}
+                    placeholder="09XXXXXXXX"
+                    maxLength={10}
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">Email</span>
+                  }
+                  name="email"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập email" },
+                    { type: "email", message: "Email không hợp lệ" },
+                  ]}
+                >
+                  <Input
+                    prefix={<GlobalOutlined className="text-gray-400" />}
+                    placeholder="example@email.com"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              label={
+                <span className="font-semibold text-gray-700">Mật khẩu</span>
+              }
+              name="password"
+              rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
+            >
+              <Input.Password placeholder="Nhập mật khẩu" size="large" />
+            </Form.Item>
+          </Card>
+
+          {/* Section 2: Gym Information */}
+          <Card
+            size="small"
+            className="mb-4 shadow-sm"
+            title={
+              <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                <FaDumbbell />
+                Thông Tin Phòng Gym
+              </span>
+            }
+            bordered={true}
+            style={{ borderColor: "#FFE5E9" }}
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Tên Phòng Gym
+                    </span>
+                  }
+                  name="gymName"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập tên phòng gym",
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<FaDumbbell className="text-gray-400" />}
+                    placeholder="Tên phòng gym"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Hoạt động từ năm
+                    </span>
+                  }
+                  name="since"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập năm hoạt động",
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<CalendarOutlined className="text-gray-400" />}
+                    placeholder="2025"
+                    type="number"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Tên người đại diện
+                    </span>
+                  }
+                  name="representName"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập tên người đại diện",
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<UserOutlined className="text-gray-400" />}
+                    placeholder="Nguyễn Văn A"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Mã số thuế
+                    </span>
+                  }
+                  name="taxCode"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập mã số thuế" },
+                  ]}
+                >
+                  <Input
+                    prefix={<BankOutlined className="text-gray-400" />}
+                    placeholder="ABC1234567"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Section 3: Location & Map */}
+          <Card
+            size="small"
+            className="mb-4 shadow-sm"
+            title={
+              <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                <EnvironmentOutlined />
+                Vị Trí & Bản Đồ
+              </span>
+            }
+            bordered={true}
+            style={{ borderColor: "#FFE5E9" }}
+          >
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Địa chỉ kinh doanh
+                    </span>
+                  }
+                  name="address"
+                  rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
+                >
+                  <PlacesAutocomplete
+                    onSelect={handlePlaceSelect}
+                    formInstance={formAdd}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {/* Hidden fields for coordinates */}
+            <Form.Item name="longitude" hidden>
+              <Input type="hidden" />
+            </Form.Item>
+            <Form.Item name="latitude" hidden>
+              <Input type="hidden" />
+            </Form.Item>
+
+            <div className="mb-2">
+              <Text className="font-semibold text-gray-700 block mb-2">
+                Xem vị trí trên bản đồ
+              </Text>
+              <div
+                className="border rounded-lg overflow-hidden shadow-sm"
+                style={{ height: "350px" }}
+              >
+                <Map
+                  defaultCenter={center}
+                  center={mapCenter}
+                  defaultZoom={13}
+                  zoom={position ? 15 : 13}
+                  gestureHandling={"greedy"}
+                  disableDefaultUI={false}
+                  mapId="gym-location-map"
+                  onClick={async (e) => {
+                    if (e.detail.latLng) {
+                      const { lat, lng } = e.detail.latLng;
+                      await getAddressFromLatLng(lat, lng);
+                    }
+                  }}
+                >
+                  {position && (
+                    <AdvancedMarker position={position}>
+                      <Pin
+                        background={"#FF914D"}
+                        borderColor={"#FF6B35"}
+                        glyphColor={"#FFFFFF"}
+                      />
+                    </AdvancedMarker>
+                  )}
+                </Map>
+              </div>
+              <Text className="text-gray-500 text-xs mt-2 block">
+                💡 Click vào bản đồ để chọn vị trí và lấy địa chỉ tự động
+              </Text>
+            </div>
+          </Card>
+
+          {/* Section 4: CCCD Information */}
+          <Card
+            size="small"
+            className="mb-4 shadow-sm"
+            title={
+              <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                <FaUserCircle />
+                Thông Tin CCCD
+              </span>
+            }
+            bordered={true}
+            style={{ borderColor: "#FFE5E9" }}
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">Số CCCD</span>
+                  }
+                  name="citizenIdNumber"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập số CCCD" },
+                    { pattern: /^[0-9]{12}$/, message: "CCCD phải có 12 số" },
+                  ]}
+                >
+                  <Input
+                    prefix={<UserOutlined className="text-gray-400" />}
+                    placeholder="079204029889"
+                    maxLength={12}
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Nơi Cấp CCCD
+                    </span>
+                  }
+                  name="identityCardPlace"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập nơi cấp CCCD" },
+                  ]}
+                >
+                  <Input
+                    prefix={<EnvironmentOutlined className="text-gray-400" />}
+                    placeholder="Cục Cảnh sát ĐKQL cư trú và DLQG về dân cư"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Ngày Cấp CCCD
+                    </span>
+                  }
+                  name="identityCardDate"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng chọn ngày cấp CCCD",
+                    },
+                  ]}
+                >
+                  <Input
+                    type="date"
+                    size="large"
+                    prefix={<CalendarOutlined className="text-gray-400" />}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Địa Chỉ Thường Trú (Theo CCCD)
+                    </span>
+                  }
+                  name="citizenCardPermanentAddress"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập địa chỉ thường trú",
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<EnvironmentOutlined className="text-gray-400" />}
+                    placeholder="Địa chỉ theo CCCD"
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Ảnh CCCD Mặt Trước
+                    </span>
+                  }
+                  name="frontCitizenIdFile"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng tải lên ảnh CCCD mặt trước",
+                    },
+                  ]}
+                >
+                  <Upload
+                    listType="picture-card"
+                    maxCount={1}
+                    beforeUpload={() => false}
+                    accept="image/*"
+                  >
                     <div>
                       <PlusOutlined />
-                      <div style={{ marginTop: 8 }}>Tải lên</div>
+                      <div style={{ marginTop: 8 }}>Mặt Trước</div>
                     </div>
-                  )}
-                </Upload>
-              </Form.Item>
-
-              {/* Multiple Images Upload */}
-              <Form.Item
-                label={
-                  <span className="font-semibold text-gray-700">
-                    Ảnh bổ sung phòng gym
-                  </span>
-                }
-                name="images"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng tải lên ít nhất 1 ảnh bổ sung",
-                  },
-                ]}
-              >
-                <Upload
-                  listType="picture-card"
-                  fileList={imagesList}
-                  onChange={({ fileList }) => {
-                    setImagesList(fileList);
-                    formAdd.setFieldsValue({ images: fileList });
-                  }}
-                  beforeUpload={() => false}
-                  accept="image/*"
-                  multiple
+                  </Upload>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Ảnh CCCD Mặt Sau
+                    </span>
+                  }
+                  name="backCitizenIdFile"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng tải lên ảnh CCCD mặt sau",
+                    },
+                  ]}
                 >
+                  <Upload
+                    listType="picture-card"
+                    maxCount={1}
+                    beforeUpload={() => false}
+                    accept="image/*"
+                  >
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>Mặt Sau</div>
+                    </div>
+                  </Upload>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Section 5: Business Information */}
+          <Card
+            size="small"
+            className="mb-4 shadow-sm"
+            title={
+              <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                <CalendarOutlined />
+                Thông Tin Kinh Doanh
+              </span>
+            }
+            bordered={true}
+            style={{ borderColor: "#FFE5E9" }}
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Giờ Mở Cửa
+                    </span>
+                  }
+                  name="openTime"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập giờ mở cửa" },
+                  ]}
+                >
+                  <Input
+                    type="time"
+                    size="large"
+                    prefix={<CalendarOutlined className="text-gray-400" />}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-gray-700">
+                      Giờ Đóng Cửa
+                    </span>
+                  }
+                  name="closeTime"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập giờ đóng cửa" },
+                  ]}
+                >
+                  <Input
+                    type="time"
+                    size="large"
+                    prefix={<CalendarOutlined className="text-gray-400" />}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          <Card
+            size="small"
+            className="mb-4 shadow-sm"
+            title={
+              <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                <FaBuilding />
+                Hình Ảnh Phòng Gym
+              </span>
+            }
+            bordered={true}
+            style={{ borderColor: "#FFE5E9" }}
+          >
+            {/* Main Image Upload */}
+            <Form.Item
+              label={
+                <span className="font-semibold text-gray-700">
+                  Ảnh đại diện phòng gym
+                </span>
+              }
+              name="mainImage"
+              rules={[
+                { required: true, message: "Vui lòng tải lên ảnh đại diện" },
+              ]}
+            >
+              <Upload
+                listType="picture-card"
+                fileList={mainImageList ? [mainImageList] : []}
+                onChange={({ fileList }) => {
+                  const latestFile = fileList[fileList.length - 1] || null;
+                  setMainImageList(latestFile);
+                  formAdd.setFieldsValue({ mainImage: latestFile });
+                }}
+                beforeUpload={() => false}
+                accept="image/*"
+                maxCount={1}
+              >
+                {!mainImageList && (
                   <div>
                     <PlusOutlined />
                     <div style={{ marginTop: 8 }}>Tải lên</div>
                   </div>
-                </Upload>
-              </Form.Item>
-            </Card>
+                )}
+              </Upload>
+            </Form.Item>
 
-            <div className="text-center pt-6 border-t mt-6">
-              <Space size="middle">
-                <Button
-                  size="large"
-                  onClick={() => {
-                    setIsModalAddGymOpen(false);
-                    formAdd.resetFields();
-                    setPosition(null);
-                    setMapCenter(center);
-                    setMainImageList({});
-                    setImagesList([]);
-                  }}
-                  className="px-8"
-                >
-                  Hủy
-                </Button>
-                <Button
-                  type="primary"
-                  size="large"
-                  loading={loadingAdd}
-                  onClick={() => formAdd.submit()}
-                  className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-8 shadow-lg"
-                >
-                  {loadingAdd ? "Đang thêm..." : "Thêm Phòng Gym"}
-                </Button>
-              </Space>
-            </div>
-          </Form>
-        </Modal>
+            {/* Multiple Images Upload */}
+            <Form.Item
+              label={
+                <span className="font-semibold text-gray-700">
+                  Ảnh bổ sung phòng gym
+                </span>
+              }
+              name="images"
+              rules={[
+                {
+                  required: true,
+                  message: "Vui lòng tải lên ít nhất 1 ảnh bổ sung",
+                },
+              ]}
+            >
+              <Upload
+                listType="picture-card"
+                fileList={imagesList}
+                onChange={({ fileList }) => {
+                  setImagesList(fileList);
+                  formAdd.setFieldsValue({ images: fileList });
+                }}
+                beforeUpload={() => false}
+                accept="image/*"
+                multiple
+              >
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Tải lên</div>
+                </div>
+              </Upload>
+            </Form.Item>
+          </Card>
 
-        <style jsx global>{`
-          .custom-modal .ant-modal-header {
-             {
-              /* padding: 24px 24px 0; */
-            }
-          }
-          .custom-modal .ant-modal-body {
-             {
-              /* padding: 0 24px 24px; */
-            }
-          }
-
-          /* Card Section Backgrounds */
-          .custom-modal .ant-card {
-            background: linear-gradient(135deg, #fff9fa 0%, #fffbf7 100%);
-            transition: all 0.3s ease;
-          }
-
-          .custom-modal .ant-card:hover {
-            background: linear-gradient(135deg, #fff5f7 0%, #fff8f3 100%);
-            box-shadow: 0 4px 12px rgba(255, 145, 77, 0.1);
-          }
-
-          .custom-modal .ant-card .ant-card-head {
-            background: linear-gradient(90deg, #ffebee 0%, #fff3e0 100%);
-            border-bottom: 2px solid #ffe5e9;
-          }
-
-          .ant-table-thead > tr > th {
-            font-weight: 600;
-            color: #374151;
-          }
-          .ant-pagination-item-active {
-            background: #ff914d !important;
-            border-color: #ff914d !important;
-          }
-          .ant-pagination-item-active a {
-            color: white !important;
-          }
-          .ant-pagination-item:hover {
-            border-color: #ff914d !important;
-          }
-          .ant-pagination-item:hover a {
-            color: #ff914d !important;
-          }
-        `}</style>
-      </div>
+          <div className="text-center pt-6 border-t mt-6">
+            <Space size="middle">
+              <Button
+                size="large"
+                onClick={() => {
+                  setIsModalAddGymOpen(false);
+                  formAdd.resetFields();
+                  setPosition(null);
+                  setMapCenter(center);
+                  setMainImageList({});
+                  setImagesList([]);
+                }}
+                className="px-8"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                loading={loadingAdd}
+                onClick={() => formAdd.submit()}
+                className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-8 shadow-lg"
+              >
+                {loadingAdd ? "Đang thêm..." : "Thêm Phòng Gym"}
+              </Button>
+            </Space>
+          </div>
+        </Form>
+      </FitBridgeModal>
     </APIProvider>
   );
 }

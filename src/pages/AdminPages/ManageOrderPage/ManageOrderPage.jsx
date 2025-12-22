@@ -466,10 +466,10 @@ export default function ManageOrderPage() {
 
   return (
     <>
-      <div className="">
+      <div className="p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-[#ED2A46] mb-2">
             Quản Lý Đơn Hàng
           </h1>
           <p className="text-gray-600">

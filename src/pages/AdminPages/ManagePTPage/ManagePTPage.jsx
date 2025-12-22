@@ -656,7 +656,7 @@ export default function ManagePTPage() {
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} className="mb-6">
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="Tổng số PT"
@@ -670,7 +670,7 @@ export default function ManagePTPage() {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="PT Đang Hoạt Động"
@@ -684,7 +684,7 @@ export default function ManagePTPage() {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <Statistic
                 title="PT Không Hoạt Động"
@@ -692,21 +692,6 @@ export default function ManagePTPage() {
                 prefix={<ClockCircleOutlined style={{ color: "#faad14" }} />}
                 valueStyle={{
                   color: "#faad14",
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <Statistic
-                title="Tổng Kinh Nghiệm"
-                value={statistics.totalExperience}
-                prefix={<TrophyOutlined style={{ color: "#1890ff" }} />}
-                suffix="năm"
-                valueStyle={{
-                  color: "#1890ff",
                   fontSize: "24px",
                   fontWeight: "bold",
                 }}

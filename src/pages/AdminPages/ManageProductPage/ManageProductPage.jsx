@@ -637,18 +637,17 @@ export default function ManageProductPage() {
   }
 
   return (
-    <div className="">
-      <div className="">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Quản Lý Sản Phẩm
-          </h1>
-          <p className="text-gray-600">
-            Quản lý và theo dõi các sản phẩm trong hệ thống thương mại điện tử
-          </p>
-        </div>
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[#ED2A46] mb-2">
+          Quản Lý Sản Phẩm
+        </h1>
+        <p className="text-gray-600">
+          Quản lý và theo dõi các sản phẩm trong hệ thống thương mại điện tử
+        </p>
+      </div>
 
+      <div className="">
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} className="mb-8">
           <Col xs={24} sm={12} lg={6}>

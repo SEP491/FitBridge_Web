@@ -4,7 +4,6 @@ import {
   Input,
   Button,
   Space,
-  Modal,
   Form,
   DatePicker,
   InputNumber,
@@ -762,6 +761,21 @@ export default function ManageUserPage() {
           width={950}
           logoSize="medium"
           bodyStyle={{ padding: "0", maxHeight: "75vh", overflowY: "auto" }}
+          footer={
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+              <Button
+                onClick={() => {
+                  setModalVisible(false);
+                  setPosition(null);
+                  setMapCenter(center);
+                  setLoadingAddress(false);
+                  form.resetFields();
+                }}
+              >
+                Đóng
+              </Button>
+            </div>
+          }
         >
           {form.getFieldsValue() && (
             <div className="flex flex-col">
@@ -1161,7 +1175,7 @@ export default function ManageUserPage() {
                 size="large"
                 icon={<PlusOutlined />}
                 onClick={handleModalSubmit}
-                className="bg-[#FF914D] border-0 hover:bg-[#e8823d]"
+                className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
               >
                 Thêm Người Dùng
               </Button>

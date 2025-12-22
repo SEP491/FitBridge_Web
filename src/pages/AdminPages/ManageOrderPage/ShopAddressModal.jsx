@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Table, Tag, Spin, Empty } from "antd";
+import { Table, Tag, Spin, Empty, Button } from "antd";
 import {
   EnvironmentOutlined,
   PhoneOutlined,
@@ -10,6 +10,7 @@ import {
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import toast from "react-hot-toast";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 import addressService from "../../../services/addressServices";
 
 export default function ShopAddressModal({ isOpen, onClose }) {
@@ -153,17 +154,23 @@ export default function ShopAddressModal({ isOpen, onClose }) {
   ];
 
   return (
-    <Modal
+    <FitBridgeModal
+      open={isOpen}
+      onCancel={onClose}
       title={
         <div className="flex items-center gap-2 text-lg">
           <EnvironmentOutlined className="text-orange-500" />
           <span>Địa Chỉ Cửa Hàng</span>
         </div>
       }
-      open={isOpen}
-      onCancel={onClose}
       width={1000}
-      footer={null}
+      logoSize="medium"
+      bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
+      footer={
+        <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+          <Button onClick={onClose}>Đóng</Button>
+        </div>
+      }
     >
       {loading ? (
         <div className="flex justify-center items-center py-12">
@@ -195,6 +202,6 @@ export default function ShopAddressModal({ isOpen, onClose }) {
       ) : (
         <Empty description="Chưa có địa chỉ cửa hàng nào" />
       )}
-    </Modal>
+    </FitBridgeModal>
   );
 }
