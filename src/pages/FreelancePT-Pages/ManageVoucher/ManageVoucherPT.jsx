@@ -20,6 +20,7 @@ import {
   DatePicker,
   Badge,
   Descriptions,
+  Typography,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -48,6 +49,8 @@ import {
   FaTag,
 } from "react-icons/fa";
 import { couponService } from "../../../services/couponService";
+
+const { Title } = Typography;
 
 export default function ManageVoucherPT() {
   const [coupons, setCoupons] = useState([]);
@@ -320,11 +323,20 @@ export default function ManageVoucherPT() {
     <div className="">
       <div className="">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div style={{ marginBottom: 24 }}>
+          <Title
+            level={2}
+            style={{
+              margin: 0,
+              color: "#ed2a46",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <GiftOutlined style={{ marginRight: 12, color: "#ed2a46" }} />
             Quản Lý Coupon Voucher
-          </h1>
-          <p className="text-gray-600">
+          </Title>
+          <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
             Quản lý và theo dõi các coupon giảm giá cho khách hàng
           </p>
         </div>

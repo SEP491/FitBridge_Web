@@ -50,6 +50,7 @@ import dashboardService from "../../../services/dashboardService";
 import FitBridgeModal from "../../../components/FitBridgeModal";
 import defaultAvatar from "../../../assets/LogoColor.png";
 import banks from "../../../constants/banks";
+import WalletBalanceTab from "./WalletBalanceTab";
 
 export default function ManageGymTransaction() {
   const [transactions, setTransactions] = useState([]);
@@ -905,7 +906,7 @@ export default function ManageGymTransaction() {
   }
 
   return (
-    <div className="p-4 bg-gray-100">
+    <div className="p-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <MdPayment />
@@ -928,7 +929,7 @@ export default function ManageGymTransaction() {
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
-                  <MoneyCollectOutlined className="text-white text-2xl" />
+                  <DollarOutlined className="text-white text-2xl" />
                 </div>
               </div>
             </Card>
@@ -1048,32 +1049,32 @@ export default function ManageGymTransaction() {
             <ConfigProvider
               theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
             >
-        <Table
-          dataSource={filteredData}
-          columns={columns}
-          loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            position: ["bottomCenter"],
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} giao dịch`,
-          }}
-          onChange={handleTableChange}
-          scroll={{ x: 800 }}
-          size="middle"
-          rowKey="transactionId"
-          onRow={(record) => ({
-            onClick: () => {
-              fetchTransactionDetail(record.transactionId);
-            },
-            style: { cursor: "pointer" },
-          })}
-        />
-      </ConfigProvider>
+              <Table
+                dataSource={filteredData}
+                columns={columns}
+                loading={loading}
+                pagination={{
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  position: ["bottomCenter"],
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} của ${total} giao dịch`,
+                }}
+                onChange={handleTableChange}
+                scroll={{ x: 800 }}
+                size="middle"
+                rowKey="transactionId"
+                onRow={(record) => ({
+                  onClick: () => {
+                    fetchTransactionDetail(record.transactionId);
+                  },
+                  style: { cursor: "pointer" },
+                })}
+              />
+            </ConfigProvider>
           ) : activeTab === "withdrawals" ? (
             <ConfigProvider
               theme={{
@@ -1114,163 +1115,22 @@ export default function ManageGymTransaction() {
               />
             </ConfigProvider>
           ) : (
-            <div className="flex flex-col gap-6">
-              {/* Wallet filter buttons */}
-              <div className="flex flex-wrap gap-2 mb-2">
-                <Button
-                  type={walletFilter === "all" ? "primary" : "default"}
-                  onClick={() => setWalletFilter("all")}
-                  size="middle"
-                >
-                  Tất cả
-                </Button>
-                <Button
-                  type={walletFilter === "available" ? "primary" : "default"}
-                  onClick={() => setWalletFilter("available")}
-                  size="middle"
-                >
-                  Khả dụng
-                </Button>
-                <Button
-                  type={walletFilter === "pending" ? "primary" : "default"}
-                  onClick={() => setWalletFilter("pending")}
-                  size="middle"
-                >
-                  Đang xử lý
-                </Button>
-                
-                <Button
-                  type={walletFilter === "disbursement" ? "primary" : "default"}
-                  onClick={() => setWalletFilter("disbursement")}
-                  size="middle"
-                >
-                  Giải ngân
-                </Button>
-              </div>
-
-              {/* Pending Balance Card */}
-              {(walletFilter === "all" || walletFilter === "pending") && (
-                <Card className="border-0 shadow-md">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-500">
-                        Số dư đang xử lý
-                      </div>
-                      <div className="text-2xl font-bold">
-                        {renderSignedAmount(
-                          pendingTotalProfit,
-                          "text-green-600",
-                          "text-red-600"
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <ConfigProvider
-                    theme={{
-                      components: {
-                        Table: {
-                          headerBg: "#FFF7E6",
-                          headerColor: "#7C5300",
-                          rowHoverBg: "#FFFDF5",
-                        },
-                      },
-                    }}
-                  >
-                    <Table
-                      dataSource={pendingItems}
-                      columns={pendingColumns}
-                      loading={loadingPendingDetails}
-                      pagination={false}
-                      size="middle"
-                      rowKey={(record) =>
-                        record.transactionDetail?.transactionId ||
-                        record.orderItemId
-                      }
-                    />
-                  </ConfigProvider>
-                </Card>
-              )}
-
-              {/* Available Balance Card */}
-              {(walletFilter === "all" || walletFilter === "available") && (
-                <Card className="border-0 shadow-md">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-500">
-                        Chi tiết số dư khả dụng
-                      </div>
-                      <div className="text-2xl font-bold">
-                        {renderSignedAmount(
-                          availableTotalProfit,
-                          "text-green-600",
-                          "text-red-600"
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <ConfigProvider
-                    theme={{
-                      components: {
-                        Table: {
-                          headerBg: "#E6FFFB",
-                          headerColor: "#006D75",
-                          rowHoverBg: "#F5FFFD",
-                        },
-                      },
-                    }}
-                  >
-                    <Table
-                      dataSource={availableItems}
-                      columns={simpleWalletColumns}
-                      loading={loadingAvailableDetails}
-                      pagination={false}
-                      size="middle"
-                      rowKey={(record) => record.transactionId}
-                    />
-                  </ConfigProvider>
-                </Card>
-              )}
-
-              {/* Disbursement Card */}
-              {(walletFilter === "all" || walletFilter === "disbursement") && (
-                <Card className="border-0 shadow-md">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-500">
-                        Chi tiết giải ngân
-                      </div>
-                      <div className="text-2xl font-bold">
-                        {renderSignedAmount(
-                          disbursementTotalProfit,
-                          "text-green-600",
-                          "text-red-600"
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <ConfigProvider
-                    theme={{
-                      components: {
-                        Table: {
-                          headerBg: "#E6F4FF",
-                          headerColor: "#0958D9",
-                          rowHoverBg: "#F5FAFF",
-                        },
-                      },
-                    }}
-                  >
-                    <Table
-                      dataSource={disbursementItems}
-                      columns={simpleWalletColumns}
-                      loading={loadingDisbursementDetails}
-                      pagination={false}
-                      size="middle"
-                      rowKey={(record) => record.transactionId}
-                    />
-                  </ConfigProvider>
-                </Card>
-              )}
-            </div>
+            <WalletBalanceTab
+              walletFilter={walletFilter}
+              setWalletFilter={setWalletFilter}
+              pendingTotalProfit={pendingTotalProfit}
+              pendingItems={pendingItems}
+              pendingColumns={pendingColumns}
+              loadingPendingDetails={loadingPendingDetails}
+              availableTotalProfit={availableTotalProfit}
+              availableItems={availableItems}
+              simpleWalletColumns={simpleWalletColumns}
+              loadingAvailableDetails={loadingAvailableDetails}
+              disbursementTotalProfit={disbursementTotalProfit}
+              disbursementItems={disbursementItems}
+              loadingDisbursementDetails={loadingDisbursementDetails}
+              renderSignedAmount={renderSignedAmount}
+            />
           )}
         </div>
       </Card>

@@ -4,7 +4,6 @@ import {
   Input,
   Button,
   Space,
-  Modal,
   Form,
   InputNumber,
   Select,
@@ -39,6 +38,7 @@ import toast from "react-hot-toast";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../../redux/features/userSlice";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 
 const { Search } = Input;
 const { Option } = Select;
@@ -107,7 +107,10 @@ export default function ManageAssetsPage() {
         const facilityCount = items.filter(
           (a) => a.assetType === "Facility"
         ).length;
-        const totalQuantity = items.reduce((sum, a) => sum + (a.quantity || 0), 0);
+        const totalQuantity = items.reduce(
+          (sum, a) => sum + (a.quantity || 0),
+          0
+        );
 
         setStatistics({
           totalAssets: response.data.total || items.length,
@@ -309,17 +312,25 @@ export default function ManageAssetsPage() {
     }
   };
 
-  // Handle delete
-  const handleDelete = async (assetId) => {
+  // Handle delete in modal (edit mode)
+  const handleDeleteAsset = async () => {
+    if (!selectedAsset?.id) return;
     try {
-      const response = await assetsService.deleteGymAsset(assetId);
+      setUploading(true);
+      const response = await assetsService.deleteGymAsset(selectedAsset.id);
       if (response.status === "200") {
         toast.success("Xóa cơ sở vật chất thành công");
+        setIsModalVisible(false);
+        form.resetFields();
+        setFileList([]);
+        setImagesToRemove([]);
         fetchAssets(pagination.current, pagination.pageSize);
       }
     } catch (error) {
       console.error("Error deleting asset:", error);
       toast.error("Không thể xóa cơ sở vật chất");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -331,14 +342,21 @@ export default function ManageAssetsPage() {
       key: "assetName",
       width: 200,
       render: (text, record) => (
-        <Space>
+        <div style={{ display: "flex", alignItems: "center", justifyContent:'start', gap:10 }}>
           {record.imageUrls && record.imageUrls.length > 0 ? (
             <Image
               src={record.imageUrls[0]}
               alt={text}
-              width={40}
-              height={40}
-              style={{ borderRadius: 8, objectFit: "cover" }}
+              width={50}
+              height={50}
+              style={{
+                maxHeight:40,
+                borderRadius: 8,
+                objectFit: "cover",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
               preview={{
                 mask: <CameraOutlined />,
               }}
@@ -359,7 +377,7 @@ export default function ManageAssetsPage() {
             </div>
           )}
           <span style={{ fontWeight: 500, color: "#1f2937" }}>{text}</span>
-        </Space>
+        </div>
       ),
     },
     {
@@ -372,7 +390,11 @@ export default function ManageAssetsPage() {
           color={text === "Equipment" ? "blue" : "cyan"}
           style={{ borderRadius: 6 }}
         >
-          {text === "Equipment" ? "Thiết bị" : text === "Facility" ? "Cơ sở" : text}
+          {text === "Equipment"
+            ? "Thiết bị"
+            : text === "Facility"
+            ? "Cơ sở"
+            : text}
         </Tag>
       ),
     },
@@ -442,7 +464,9 @@ export default function ManageAssetsPage() {
           ))}
           {groups?.length > 3 && (
             <Tooltip title={groups.slice(3).join(", ")}>
-              <Tag color="purple" style={{ borderRadius: 6 }}>+{groups.length - 3}</Tag>
+              <Tag color="purple" style={{ borderRadius: 6 }}>
+                +{groups.length - 3}
+              </Tag>
             </Tooltip>
           )}
         </>
@@ -474,41 +498,6 @@ export default function ManageAssetsPage() {
         </span>
       ),
     },
-    {
-      title: "Hành động",
-      key: "actions",
-      width: 120,
-      fixed: "right",
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              size="small"
-              style={{ borderRadius: 6 }}
-              onClick={() => handleEdit(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xóa cơ sở vật chất"
-            description="Bạn có chắc chắn muốn xóa cơ sở vật chất này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Tooltip title="Xóa">
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                size="small"
-                style={{ borderRadius: 6 }}
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
   ];
 
   // Group metadata by assetType for Select options
@@ -520,21 +509,24 @@ export default function ManageAssetsPage() {
       theme={{
         components: {
           Table: {
-            headerBg: "#f8fafc",
-            headerColor: "#1f2937",
-            rowHoverBg: "#f1f5f9",
+            headerBg: "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
+            headerColor: "#333",
+            rowHoverBg: "#FFF9FA",
           },
           Card: {
             borderRadiusLG: 12,
           },
+          Button: {
+            borderRadius: 8,
+          },
         },
       }}
     >
-      <div style={{ padding: "24px", background: "#f5f5f5", minHeight: "100vh" }}>
+      <div style={{ padding: 16, background: "#fff", minHeight: "100vh" }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
-          <Title level={2} style={{ margin: 0, color: "#1f2937" }}>
-            <AppstoreOutlined style={{ marginRight: 12, color: "#3b82f6" }} />
+          <Title level={2} style={{ margin: 0, color: "#ed2a46" }}>
+            <AppstoreOutlined style={{ marginRight: 12, color: "#ed2a46" }} />
             Quản lý cơ sở vật chất
           </Title>
           <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
@@ -560,9 +552,11 @@ export default function ManageAssetsPage() {
                 }
                 value={statistics.totalAssets}
                 prefix={
-                  <AppstoreOutlined style={{ color: "#3b82f6", fontSize: 20 }} />
+                  <AppstoreOutlined
+                    style={{ color: "#ed2a46", fontSize: 20 }}
+                  />
                 }
-                valueStyle={{ color: "#3b82f6", fontWeight: 600 }}
+                valueStyle={{ color: "#ed2a46", fontWeight: 600 }}
               />
             </Card>
           </Col>
@@ -626,7 +620,9 @@ export default function ManageAssetsPage() {
                 }
                 value={statistics.totalQuantity}
                 prefix={
-                  <CheckCircleOutlined style={{ color: "#8b5cf6", fontSize: 20 }} />
+                  <CheckCircleOutlined
+                    style={{ color: "#8b5cf6", fontSize: 20 }}
+                  />
                 }
                 valueStyle={{ color: "#8b5cf6", fontWeight: 600 }}
               />
@@ -682,13 +678,7 @@ export default function ManageAssetsPage() {
                 <Option value="Cardio">Cardio</Option>
               </Select>
             </Col>
-            <Col
-              xs={24}
-              sm={24}
-              md={24}
-              lg={10}
-              style={{ textAlign: "right" }}
-            >
+            <Col xs={24} sm={24} md={24} lg={10} style={{ textAlign: "right" }}>
               <Space>
                 <Button
                   icon={<ReloadOutlined />}
@@ -706,7 +696,8 @@ export default function ManageAssetsPage() {
                   size="large"
                   style={{
                     borderRadius: 8,
-                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    background:
+                      "linear-gradient(135deg, #ed2a46 0%, #ff6b6b 100%)",
                   }}
                   onClick={handleCreate}
                 >
@@ -733,20 +724,16 @@ export default function ManageAssetsPage() {
             onChange={handleTableChange}
             scroll={{ x: 1200 }}
             style={{ marginTop: 8 }}
+            onRow={(record) => ({
+              onClick: () => handleEdit(record),
+              style: { cursor: "pointer" },
+            })}
           />
         </Card>
 
-      {/* Create/Edit Modal */}
-        <Modal
-          title={
-            <span style={{ fontSize: 18, fontWeight: 600 }}>
-              {modalMode === "create"
-                ? "Thêm cơ sở vật chất mới"
-                : "Chỉnh sửa cơ sở vật chất"}
-            </span>
-          }
+        {/* Create/Edit Modal */}
+        <FitBridgeModal
           open={isModalVisible}
-          onOk={handleModalSubmit}
           onCancel={() => {
             setIsModalVisible(false);
             form.resetFields();
@@ -754,14 +741,22 @@ export default function ManageAssetsPage() {
             setImagesToRemove([]);
           }}
           width={700}
-          okText={modalMode === "create" ? "Tạo" : "Cập nhật"}
-          confirmLoading={uploading}
-          styles={{
-            header: { borderBottom: "1px solid #f0f0f0", paddingBottom: 16 },
-            body: { paddingTop: 20 },
-          }}
+          footer={null}
+          title={
+            modalMode === "create"
+              ? "Thêm cơ sở vật chất mới"
+              : "Chỉnh sửa cơ sở vật chất"
+          }
+          titleIcon={<AppstoreOutlined />}
+          logoSize="medium"
+          bodyStyle={{ padding: 16, paddingTop: 8 }}
         >
-          <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+          <Form
+            form={form}
+            layout="vertical"
+            style={{ marginTop: 8 }}
+            onFinish={handleModalSubmit}
+          >
             <Form.Item
               name="assetMetadataId"
               label={
@@ -770,7 +765,10 @@ export default function ManageAssetsPage() {
                 </span>
               }
               rules={[
-                { required: true, message: "Vui lòng chọn loại cơ sở vật chất" },
+                {
+                  required: true,
+                  message: "Vui lòng chọn loại cơ sở vật chất",
+                },
               ]}
             >
               <Select
@@ -779,7 +777,10 @@ export default function ManageAssetsPage() {
                 size="large"
                 optionFilterProp="children"
                 filterOption={(input, option) =>
-                  option.children?.toString().toLowerCase().includes(input.toLowerCase())
+                  option.children
+                    ?.toString()
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
                 }
                 disabled={modalMode === "edit"}
                 style={{ borderRadius: 8 }}
@@ -810,7 +811,11 @@ export default function ManageAssetsPage() {
               label={<span style={{ fontWeight: 500 }}>Số lượng</span>}
               rules={[
                 { required: true, message: "Vui lòng nhập số lượng" },
-                { type: "number", min: 0, message: "Số lượng phải là số dương" },
+                {
+                  type: "number",
+                  min: 0,
+                  message: "Số lượng phải là số dương",
+                },
               ]}
             >
               <InputNumber
@@ -822,7 +827,9 @@ export default function ManageAssetsPage() {
             </Form.Item>
 
             <Form.Item
-              label={<span style={{ fontWeight: 500 }}>Hình ảnh cơ sở vật chất</span>}
+              label={
+                <span style={{ fontWeight: 500 }}>Hình ảnh cơ sở vật chất</span>
+              }
             >
               <Upload
                 listType="picture-card"
@@ -841,8 +848,8 @@ export default function ManageAssetsPage() {
                 )}
               </Upload>
               <div style={{ color: "#999", fontSize: 12, marginTop: 8 }}>
-                Tải lên tối đa 8 hình ảnh cho cơ sở vật chất này. Các tệp sẽ được
-                gửi khi bạn gửi biểu mẫu.
+                Tải lên tối đa 8 hình ảnh cho cơ sở vật chất này. Các tệp sẽ
+                được gửi khi bạn gửi biểu mẫu.
               </div>
             </Form.Item>
 
@@ -851,7 +858,8 @@ export default function ManageAssetsPage() {
                 size="small"
                 style={{
                   marginTop: 16,
-                  background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+                  background:
+                    "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
                   borderRadius: 8,
                   border: "1px solid #e2e8f0",
                 }}
@@ -860,7 +868,9 @@ export default function ManageAssetsPage() {
                   <strong style={{ color: "#1f2937" }}>
                     Cơ sở vật chất hiện tại:
                   </strong>{" "}
-                  <span style={{ color: "#3b82f6" }}>{selectedAsset.assetName}</span>
+                  <span style={{ color: "#3b82f6" }}>
+                    {selectedAsset.assetName}
+                  </span>
                   <br />
                   <strong style={{ color: "#1f2937" }}>Danh mục:</strong>{" "}
                   <span style={{ color: "#6b7280" }}>
@@ -874,8 +884,61 @@ export default function ManageAssetsPage() {
                 </div>
               </Card>
             )}
+            <div
+              style={{
+                marginTop: 24,
+                paddingTop: 16,
+                borderTop: "1px solid #f0f0f0",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                {modalMode === "edit" && selectedAsset && (
+                  <Popconfirm
+                    title="Xóa cơ sở vật chất"
+                    description="Bạn có chắc chắn muốn xóa cơ sở vật chất này?"
+                    onConfirm={handleDeleteAsset}
+                    okText="Có"
+                    cancelText="Không"
+                  >
+                    <Button danger size="large">
+                      Xóa
+                    </Button>
+                  </Popconfirm>
+                )}
+              </div>
+              <Space>
+                <Button
+                  size="large"
+                  onClick={() => {
+                    setIsModalVisible(false);
+                    form.resetFields();
+                    setFileList([]);
+                    setImagesToRemove([]);
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={uploading}
+                  onClick={() => form.submit()}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #ed2a46 0%, #ff6b6b 100%)",
+                    border: "none",
+                    boxShadow: "0 4px 12px rgba(237, 42, 70, 0.35)",
+                  }}
+                >
+                  {modalMode === "create" ? "Tạo" : "Cập nhật"}
+                </Button>
+              </Space>
+            </div>
           </Form>
-        </Modal>
+        </FitBridgeModal>
       </div>
     </ConfigProvider>
   );

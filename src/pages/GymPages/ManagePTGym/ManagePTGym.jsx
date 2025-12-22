@@ -17,6 +17,7 @@ import {
   Tag,
   Avatar,
   Descriptions,
+  Typography,
 } from "antd";
 import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
@@ -48,6 +49,7 @@ import defaultAvatar from "../../../assets/LogoColor.png";
 import { FaUserCircle, FaInfoCircle, FaDumbbell } from "react-icons/fa";
 
 const { Option } = Select;
+const { Title } = Typography;
 
 export default function ManagePTGym() {
   const [pts, setPts] = useState([]);
@@ -397,11 +399,20 @@ export default function ManagePTGym() {
     <div className="">
       <div className="">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div style={{ marginBottom: 24 }}>
+          <Title
+            level={2}
+            style={{
+              margin: 0,
+              color: "#ed2a46",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <IoBarbell style={{ marginRight: 12, color: "#ed2a46" }} />
             Quản Lý Personal Trainer Gym
-          </h1>
-          <p className="text-gray-600">
+          </Title>
+          <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
             Quản lý và theo dõi thông tin các huấn luyện viên tại phòng gym của
             bạn
           </p>
