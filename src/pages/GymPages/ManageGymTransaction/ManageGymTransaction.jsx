@@ -848,6 +848,7 @@ export default function ManageGymTransaction() {
         size="middle"
         onClick={() => setIsModalCreateWithdrawalOpen(true)}
         className="border-0 bg-[#ED2A46] text-white hover:bg-[#e43e56]"
+        disabled={hasUnresolvedWithdrawal}
       >
         {hasUnresolvedWithdrawal
           ? "Bạn đã có yêu cầu đang chờ xử lý"
