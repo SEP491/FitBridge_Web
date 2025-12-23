@@ -260,7 +260,7 @@ export default function DashboardGym() {
         fill: true,
       },
       {
-        label: "Hoa Hồng App (10%)",
+        label: "Hoa Hồng App",
         data: filteredData.map((item) => item.appCommission || 0),
         borderColor: "#F59E0B",
         backgroundColor: "rgba(245, 158, 11, 0.1)",
@@ -268,7 +268,7 @@ export default function DashboardGym() {
         fill: true,
       },
       {
-        label: "Tiền Về Chủ Gym (90%)",
+        label: "Tiền Về Chủ Gym",
         data: filteredData.map((item) => item.paybackToGym || 0),
         borderColor: "#10B981",
         backgroundColor: "rgba(16, 185, 129, 0.1)",
@@ -436,7 +436,7 @@ export default function DashboardGym() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">
-                  Hoa Hồng App (10%)
+                  Hoa Hồng App
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   - {formatVND(totalAppCommission)}
@@ -452,7 +452,7 @@ export default function DashboardGym() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">
-                  Tiền Về Chủ Gym (90%)
+                  Tiền Về Chủ Gym
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {formatVND(totalpaybackToGym)}
@@ -510,10 +510,10 @@ export default function DashboardGym() {
                     Tổng Doanh Thu
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hoa Hồng App (10%)
+                    Hoa Hồng App
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tiền Về Phòng Gym (90%)
+                    Tiền Về Phòng Gym
                   </th>
                 </tr>
               </thead>

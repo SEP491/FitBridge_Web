@@ -70,7 +70,7 @@ export default function ManageTransactionPage() {
       const response = await adminService.getAllTransactions({
         page,
         size: pageSize,
-        sortOrder:'dsc'
+        sortOrder:'dsc',
       });
 
       const { items, total, page: currentPage, totalPages } = response.data;
