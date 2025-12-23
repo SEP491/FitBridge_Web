@@ -16,6 +16,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import dashboardService from "../../../services/dashboardService";
 import { DollarOutlined, RiseOutlined, PercentageOutlined, DownCircleOutlined } from "@ant-design/icons";
+import { MdAdminPanelSettings } from "react-icons/md";
 
 ChartJS.register(
   CategoryScale,
@@ -412,16 +413,14 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen ">
+      <div className="">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
+            <MdAdminPanelSettings />
             Bảng Điều Khiển Tài Chính
           </h1>
-          <p className="text-gray-600">
-            Theo dõi doanh thu, lợi nhuận và giao dịch từ tất cả các nguồn
-          </p>
         </div>
 
         {/* Date Range Filter */}

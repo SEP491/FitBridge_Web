@@ -567,17 +567,11 @@ export default function ManageGymPage() {
       <div className="">
         <div className="">
           {/* Header */}
-          <div className="">
-            <Title
-              level={2}
-              className="text-gray-900 mb-2 flex items-center gap-3"
-            >
-              <FaDumbbell className="text-orange-500" />
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-2">
+              <UserOutlined />
               Quản Lý Phòng Gym
-            </Title>
-            <Text className="text-gray-600 text-base">
-              Quản lý và theo dõi thông tin các phòng gym trong hệ thống
-            </Text>
+            </h1>
           </div>
 
           {/* Statistics Cards */}
