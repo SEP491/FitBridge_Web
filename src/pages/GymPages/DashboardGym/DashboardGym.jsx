@@ -14,7 +14,6 @@ import { Line } from "react-chartjs-2";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import dashboardService from "../../../services/dashboardService";
-import mockedData from "./mockedData";
 import { DollarOutlined, ClockCircleOutlined } from "@ant-design/icons";
 
 ChartJS.register(
@@ -77,13 +76,16 @@ export default function DashboardGym() {
       setLoadingWalletBalance(false);
     }
   };
-
-  // API function to fetch gym revenue detail data (mocked for testing)
-  const fetchGymRevenueData = async () => {
+  // API function to fetch gym revenue detail data from dashboardService
+  const fetchGymRevenueData = async (startDate, endDate) => {
     setLoading(true);
     try {
-      // Using mocked data instead of real API for testing
-      const apiData = mockedData.data || {};
+      const response = await dashboardService.getRevenueDetails({
+        startDate,
+        endDate,
+      });
+
+      const apiData = response.data || {};
       const items = apiData.items || [];
 
       // Save raw revenue items for the detailed table
@@ -135,13 +137,75 @@ export default function DashboardGym() {
     }
   };
 
-  // Initial fetch when component mounts (mock data is static)
-  useEffect(() => {
-    fetchGymRevenueData();
-    fetchWalletBalance();
-  }, []);
+  // API function to fetch gym revenue detail data (mocked for testing)
+  // const fetchGymRevenueData = async () => {
+  //   setLoading(true);
+  //   try {
+  //     // Using mocked data instead of real API for testing
+  //     const apiData = mockedData.data || {};
+  //     const items = apiData.items || [];
 
-  // Filter data when data or dateRange changes
+  //     // Save raw revenue items for the detailed table
+  //     setRevenueItems(items);
+
+  //     // Aggregate by month of plannedDistributionDate (or skip if no date)
+  //     const aggregated = {};
+
+  //     items.forEach((item) => {
+  //       const dateSource = item.plannedDistributionDate;
+  //       if (!dateSource) return;
+
+  //       const monthKey = dayjs(dateSource).format("YYYY-MM");
+
+  //       if (!aggregated[monthKey]) {
+  //         aggregated[monthKey] = {
+  //           totalRevenue: 0,
+  //           appCommission: 0,
+  //           paybackToGym: 0,
+  //         };
+  //       }
+
+  //       const subTotal = item.subTotal || 0;
+  //       const systemProfit = item.systemProfit || 0;
+  //       const totalProfit = item.totalProfit || 0;
+
+  //       aggregated[monthKey].totalRevenue += subTotal;
+  //       aggregated[monthKey].appCommission += systemProfit;
+  //       aggregated[monthKey].paybackToGym += totalProfit;
+  //     });
+
+  //     const aggregatedArray = Object.keys(aggregated)
+  //       .sort()
+  //       .map((monthKey) => ({
+  //         // Use first day of month as representative date
+  //         date: dayjs(`${monthKey}-01`).format("YYYY-MM-DD"),
+  //         totalRevenue: aggregated[monthKey].totalRevenue,
+  //         appCommission: aggregated[monthKey].appCommission,
+  //         paybackToGym: aggregated[monthKey].paybackToGym,
+  //       }));
+
+  //     setData(aggregatedArray);
+  //   } catch (error) {
+  //     console.error("Error fetching gym revenue data:", error);
+  //     setData([]); // Set empty array on error
+  //     setRevenueItems([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // Initial fetch when component mounts
+  useEffect(() => {
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const startDate = dateRange[0].format("YYYY-MM-DD");
+      const endDate = dateRange[1].format("YYYY-MM-DD");
+      fetchGymRevenueData(startDate, endDate);
+    }
+    fetchWalletBalance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Initial load only
+
+  // Filter data when data or dateRange changes (client-side filtering for chart display)
   useEffect(() => {
     if (dateRange && dateRange[0] && dateRange[1] && data.length > 0) {
       const startDate = dateRange[0].startOf("month").format("YYYY-MM-DD");
@@ -158,7 +222,11 @@ export default function DashboardGym() {
 
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
-    // With mocked data, we only filter client-side; no refetch needed
+    if (dates && dates[0] && dates[1]) {
+      const startDate = dates[0].format("YYYY-MM-DD");
+      const endDate = dates[1].format("YYYY-MM-DD");
+      fetchGymRevenueData(startDate, endDate);
+    }
   };
 
   // Calculate metrics
