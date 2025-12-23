@@ -42,11 +42,11 @@ export default function ManageSystemConfigPage() {
   const [loadingEdit, setLoadingEdit] = useState(false);
 
   const dataTypeOptions = [
-    { label: "String", value: "String" },
-    { label: "Int", value: "Int" },
-    { label: "Decimal", value: "Decimal" },
-    { label: "Double", value: "Double" },
-    { label: "Boolean", value: "Boolean" },
+    { label: "Chuỗi (String)", value: "String" },
+    { label: "Số nguyên (Int)", value: "Int" },
+    { label: "Số thập phân (Decimal)", value: "Decimal" },
+    { label: "Số thực (Double)", value: "Double" },
+    { label: "Boolean (Đúng/Sai)", value: "Boolean" },
   ];
 
   const fetchConfigs = async () => {
@@ -177,7 +177,7 @@ export default function ManageSystemConfigPage() {
             getValueFromEvent={(checked) => checked.toString()}
             getValueProps={(value) => ({ checked: value === "true" })}
           >
-            <Switch checkedChildren="True" unCheckedChildren="False" />
+            <Switch checkedChildren="Đúng" unCheckedChildren="Sai" />
           </Form.Item>
         );
       default:
@@ -194,14 +194,14 @@ export default function ManageSystemConfigPage() {
 
   const columns = [
     {
-      title: "Key",
+      title: "Khóa",
       dataIndex: "key",
       key: "key",
       align: "left",
       render: (text) => <div className="font-medium text-gray-900">{text}</div>,
     },
     {
-      title: "Value",
+      title: "Giá Trị",
       dataIndex: "value",
       key: "value",
       align: "center",
@@ -210,7 +210,7 @@ export default function ManageSystemConfigPage() {
       ),
     },
     {
-      title: "Description",
+      title: "Mô Tả",
       dataIndex: "description",
       key: "description",
       align: "left",
@@ -219,7 +219,7 @@ export default function ManageSystemConfigPage() {
       ),
     },
     {
-      title: "Data Type",
+      title: "Kiểu Dữ Liệu",
       dataIndex: "dataType",
       key: "dataType",
       align: "center",
@@ -311,7 +311,7 @@ export default function ManageSystemConfigPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
-                placeholder="Tìm kiếm theo key, value, description..."
+                placeholder="Tìm kiếm theo khóa, giá trị, mô tả..."
                 prefix={<SearchOutlined className="text-gray-400" />}
                 onChange={(e) => setSearchText(e.target.value)}
                 style={{ width: 280 }}
@@ -418,25 +418,25 @@ export default function ManageSystemConfigPage() {
           className="max-h-[65vh] overflow-y-auto !py-5 !px-5"
         >
           <Form.Item
-            label={<p className="text-xl font-bold text-[#ED2A46]">Key</p>}
+            label={<p className="text-xl font-bold text-[#ED2A46]">Khóa</p>}
             name="key"
             rules={[{ required: true, message: "Vui lòng nhập key" }]}
           >
             <Input
-              placeholder="Nhập key (ví dụ: ProfitDistributionDays)"
+              placeholder="Nhập khóa (ví dụ: ProfitDistributionDays)"
               className="!w-full rounded-lg"
             />
           </Form.Item>
 
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Data Type</p>
+              <p className="text-xl font-bold text-[#ED2A46]">Kiểu Dữ Liệu</p>
             }
             name="dataType"
             rules={[{ required: true, message: "Vui lòng chọn data type" }]}
           >
             <Select
-              placeholder="Chọn data type"
+              placeholder="Chọn kiểu dữ liệu"
               className="!w-full rounded-lg"
               options={dataTypeOptions}
               onChange={() => {
@@ -456,7 +456,7 @@ export default function ManageSystemConfigPage() {
               return (
                 <Form.Item
                   label={
-                    <p className="text-xl font-bold text-[#ED2A46]">Value</p>
+                    <p className="text-xl font-bold text-[#ED2A46]">Giá Trị</p>
                   }
                 >
                   {renderValueInput(dataType)}
@@ -466,11 +466,9 @@ export default function ManageSystemConfigPage() {
           </Form.Item>
 
           <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Description</p>
-            }
+            label={<p className="text-xl font-bold text-[#ED2A46]">Mô Tả</p>}
             name="description"
-            rules={[{ required: true, message: "Vui lòng nhập description" }]}
+            rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
           >
             <TextArea
               placeholder="Nhập mô tả"
@@ -524,7 +522,7 @@ export default function ManageSystemConfigPage() {
           className="max-h-[65vh] overflow-y-auto !py-5 !px-5"
         >
           <Form.Item
-            label={<p className="text-xl font-bold text-[#ED2A46]">Key</p>}
+            label={<p className="text-xl font-bold text-[#ED2A46]">Khóa</p>}
             name="key"
             rules={[{ required: true, message: "Vui lòng nhập key" }]}
           >
@@ -537,13 +535,13 @@ export default function ManageSystemConfigPage() {
 
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Data Type</p>
+              <p className="text-xl font-bold text-[#ED2A46]">Kiểu Dữ Liệu</p>
             }
             name="dataType"
             rules={[{ required: true, message: "Vui lòng chọn data type" }]}
           >
             <Select
-              placeholder="Chọn data type"
+              placeholder="Chọn kiểu dữ liệu"
               className="!w-full rounded-lg"
               options={dataTypeOptions}
               disabled
@@ -561,7 +559,7 @@ export default function ManageSystemConfigPage() {
               return (
                 <Form.Item
                   label={
-                    <p className="text-xl font-bold text-[#ED2A46]">Value</p>
+                    <p className="text-xl font-bold text-[#ED2A46]">Giá Trị</p>
                   }
                 >
                   {renderValueInput(dataType)}
@@ -571,11 +569,9 @@ export default function ManageSystemConfigPage() {
           </Form.Item>
 
           <Form.Item
-            label={
-              <p className="text-xl font-bold text-[#ED2A46]">Description</p>
-            }
+            label={<p className="text-xl font-bold text-[#ED2A46]">Mô Tả</p>}
             name="description"
-            rules={[{ required: true, message: "Vui lòng nhập description" }]}
+            rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
           >
             <TextArea
               placeholder="Nhập mô tả"
