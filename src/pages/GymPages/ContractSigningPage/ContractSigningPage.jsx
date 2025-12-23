@@ -347,7 +347,7 @@ const ContractSigningPage = () => {
   ];
 
   return (
-    <div className="p-6 min-h-screen">
+    <div className=" min-h-screen">
       <div className="mb-6">
         <div style={{ marginBottom: 24 }}>
           <Title

@@ -522,13 +522,13 @@ export default function ManageAssetsPage() {
         },
       }}
     >
-      <div style={{ padding: 16, background: "#fff", minHeight: "100vh" }}>
+      <div className=" min-h-screen">
         {/* Header */}
-        <div style={{ marginBottom: 24 }}>
-          <Title level={2} style={{ margin: 0, color: "#ed2a46" }}>
+        <div className="mb-6">
+        <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
             <AppstoreOutlined style={{ marginRight: 12, color: "#ed2a46" }} />
             Quản lý cơ sở vật chất
-          </Title>
+          </h1>
           <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
             Quản lý thiết bị và cơ sở vật chất của phòng tập
           </p>

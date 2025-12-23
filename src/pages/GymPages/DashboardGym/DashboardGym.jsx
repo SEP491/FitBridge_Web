@@ -274,14 +274,15 @@ export default function DashboardGym() {
   };
 
   return (
-    <div className="min-h-screen  p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen  ">
+      <div className="max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
+            <DollarOutlined style={{ marginRight: 12, color: "#ed2a46" }} />
             Bảng Điều Khiển Doanh Thu Phòng Gym
           </h1>
-          <p className="text-gray-600">
+          <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
             Theo dõi doanh thu từ bán khóa học và hoa hồng ứng dụng
           </p>
         </div>

@@ -260,7 +260,7 @@ export default function ManageSlotGym() {
     slot.name.toLowerCase().includes(searchText.toLowerCase())
   );
   return (
-    <div style={{ padding: 16 }}>
+    <div className=" min-h-screen">
       <div>
         <div style={{ marginBottom: 24 }}>
           <Title
