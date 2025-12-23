@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DatePicker } from "antd";
+import { DatePicker, Row, Col, Card } from "antd";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,7 +13,9 @@ import {
 import { Line } from "react-chartjs-2";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
-import gymService from "../../../services/gymServices";
+import dashboardService from "../../../services/dashboardService";
+import mockedData from "./mockedData";
+import { DollarOutlined, ClockCircleOutlined } from "@ant-design/icons";
 
 ChartJS.register(
   CategoryScale,
@@ -40,48 +42,110 @@ const formatVND = (amount) => {
 };
 
 export default function DashboardGym() {
-  // Set initial date range to past 2 weeks to current date
+  // Set initial date range to full current year so all months are visible
   const [dateRange, setDateRange] = useState([
-    dayjs().subtract(2, "week"),
-    dayjs(),
+    dayjs().startOf("year"),
+    dayjs().endOf("year"),
   ]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
+  const [revenueItems, setRevenueItems] = useState([]);
+  const [walletBalance, setWalletBalance] = useState({
+    totalAvailableBalance: 0,
+    totalPendingBalance: 0,
+  });
+  const [loadingWalletBalance, setLoadingWalletBalance] = useState(false);
 
-  // API function to fetch gym revenue data
-  const fetchGymRevenueData = async (startDate, endDate) => {
-    setLoading(true);
-    const params = {
-      startDate: startDate,
-      endDate: endDate,
-    };
+  // Fetch wallet balance (available + pending) - same as ManageGymTransaction
+  const fetchWalletBalance = async () => {
+    setLoadingWalletBalance(true);
     try {
-      const response = await gymService.getRevenueOfGym(params);
-      console.log(response.data);
-      setData(response.data); // Assuming response.data contains the revenue data
+      const response = await dashboardService.getBalanceOfGym({});
+      const data = response.data || {};
+      setWalletBalance({
+        totalAvailableBalance: data.totalAvailableBalance || 0,
+        totalPendingBalance: data.totalPendingBalance || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching wallet balance:", error);
+      setWalletBalance({
+        totalAvailableBalance: 0,
+        totalPendingBalance: 0,
+      });
+    } finally {
+      setLoadingWalletBalance(false);
+    }
+  };
+
+  // API function to fetch gym revenue detail data (mocked for testing)
+  const fetchGymRevenueData = async () => {
+    setLoading(true);
+    try {
+      // Using mocked data instead of real API for testing
+      const apiData = mockedData.data || {};
+      const items = apiData.items || [];
+
+      // Save raw revenue items for the detailed table
+      setRevenueItems(items);
+
+      // Aggregate by month of plannedDistributionDate (or skip if no date)
+      const aggregated = {};
+
+      items.forEach((item) => {
+        const dateSource = item.plannedDistributionDate;
+        if (!dateSource) return;
+
+        const monthKey = dayjs(dateSource).format("YYYY-MM");
+
+        if (!aggregated[monthKey]) {
+          aggregated[monthKey] = {
+            totalRevenue: 0,
+            appCommission: 0,
+            paybackToGym: 0,
+          };
+        }
+
+        const subTotal = item.subTotal || 0;
+        const systemProfit = item.systemProfit || 0;
+        const totalProfit = item.totalProfit || 0;
+
+        aggregated[monthKey].totalRevenue += subTotal;
+        aggregated[monthKey].appCommission += systemProfit;
+        aggregated[monthKey].paybackToGym += totalProfit;
+      });
+
+      const aggregatedArray = Object.keys(aggregated)
+        .sort()
+        .map((monthKey) => ({
+          // Use first day of month as representative date
+          date: dayjs(`${monthKey}-01`).format("YYYY-MM-DD"),
+          totalRevenue: aggregated[monthKey].totalRevenue,
+          appCommission: aggregated[monthKey].appCommission,
+          paybackToGym: aggregated[monthKey].paybackToGym,
+        }));
+
+      setData(aggregatedArray);
     } catch (error) {
       console.error("Error fetching gym revenue data:", error);
       setData([]); // Set empty array on error
+      setRevenueItems([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Initial fetch when component mounts
+  // Initial fetch when component mounts (mock data is static)
   useEffect(() => {
-    if (dateRange && dateRange[0] && dateRange[1]) {
-      const startDate = dateRange[0].format("YYYY-MM-DD");
-      const endDate = dateRange[1].format("YYYY-MM-DD");
-      fetchGymRevenueData(startDate, endDate);
-    }
-  }, []); // Empty dependency array for initial load only
+    fetchGymRevenueData();
+    fetchWalletBalance();
+  }, []);
 
   // Filter data when data or dateRange changes
   useEffect(() => {
     if (dateRange && dateRange[0] && dateRange[1] && data.length > 0) {
-      const startDate = dateRange[0].format("YYYY-MM-DD");
-      const endDate = dateRange[1].format("YYYY-MM-DD");
+      const startDate = dateRange[0].startOf("month").format("YYYY-MM-DD");
+      const endDate = dateRange[1].endOf("month").format("YYYY-MM-DD");
 
       const filtered = data.filter(
         (item) => item.date >= startDate && item.date <= endDate
@@ -94,11 +158,7 @@ export default function DashboardGym() {
 
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
-    if (dates && dates[0] && dates[1]) {
-      const startDate = dates[0].format("YYYY-MM-DD");
-      const endDate = dates[1].format("YYYY-MM-DD");
-      fetchGymRevenueData(startDate, endDate);
-    }
+    // With mocked data, we only filter client-side; no refetch needed
   };
 
   // Calculate metrics
@@ -118,12 +178,10 @@ export default function DashboardGym() {
   // Calculate average values
   const avgRevenue =
     filteredData.length > 0 ? totalRevenue / filteredData.length : 0;
-  const avgpaybackToGym =
-    filteredData.length > 0 ? totalpaybackToGym / filteredData.length : 0;
 
   // Chart configuration
   const chartData = {
-    labels: filteredData.map((item) => dayjs(item.date).format("DD/MM")),
+    labels: filteredData.map((item) => dayjs(item.date).format("MM/YYYY")),
     datasets: [
       {
         label: "Tổng Doanh Thu",
@@ -227,6 +285,48 @@ export default function DashboardGym() {
             Theo dõi doanh thu từ bán khóa học và hoa hồng ứng dụng
           </p>
         </div>
+
+        {/* Wallet Balance Row (Available & Pending) */}
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={24} md={12}>
+            <Card className="border-0 shadow-md bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Số dư khả dụng
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-emerald-600">
+                    {loadingWalletBalance
+                      ? "Đang tải..."
+                      : formatVND(walletBalance.totalAvailableBalance)}
+                  </div>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+                  <DollarOutlined className="text-white text-2xl" />
+                </div>
+              </div>
+            </Card>
+          </Col>
+          <Col xs={24} md={12}>
+            <Card className="border-0 shadow-md bg-gradient-to-r from-amber-50 to-yellow-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Số dư đang xử lý
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-amber-600">
+                    {loadingWalletBalance
+                      ? "Đang tải..."
+                      : formatVND(walletBalance.totalPendingBalance)}
+                  </div>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center shadow-md">
+                  <ClockCircleOutlined className="text-white text-2xl" />
+                </div>
+              </div>
+            </Card>
+          </Col>
+        </Row>
 
         {/* Date Range Filter */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
@@ -349,19 +449,23 @@ export default function DashboardGym() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredData.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
+                {revenueItems.map((item, index) => (
+                  <tr key={item.orderItemId || index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {dayjs(item.date).format("DD/MM/YYYY")}
+                      {item.plannedDistributionDate
+                        ? dayjs(item.plannedDistributionDate).format(
+                            "DD/MM/YYYY"
+                          )
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                      {formatVND(item.totalRevenue || 0)}
+                      {formatVND(item.subTotal || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-amber-600 font-medium">
-                      - {formatVND(item.appCommission || 0)}
+                      - {formatVND(item.systemProfit || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                      {formatVND(item.paybackToGym || 0)}
+                      {formatVND(item.totalProfit || 0)}
                     </td>
                   </tr>
                 ))}
