@@ -104,16 +104,17 @@ export default function ManageReportPage() {
       toast.success("Phản hồi báo cáo thành công");
       setIsReplyModalOpen(false);
       replyForm.resetFields();
-      
+
       // Refresh reports list
       await fetchReports(pagination.current, pagination.pageSize);
-      
+
       // Update selected report status
       if (selectedReport) {
         setSelectedReport({
           ...selectedReport,
           status: values.status,
-          resolvedAt: values.status !== "Pending" ? new Date().toISOString() : null,
+          resolvedAt:
+            values.status !== "Pending" ? new Date().toISOString() : null,
         });
       }
     } catch (error) {
@@ -141,7 +142,9 @@ export default function ManageReportPage() {
     const matchesSearch =
       !searchText ||
       report.reporterName?.toLowerCase().includes(searchText.toLowerCase()) ||
-      report.reportedUserName?.toLowerCase().includes(searchText.toLowerCase()) ||
+      report.reportedUserName
+        ?.toLowerCase()
+        .includes(searchText.toLowerCase()) ||
       report.title?.toLowerCase().includes(searchText.toLowerCase()) ||
       report.description?.toLowerCase().includes(searchText.toLowerCase());
 
@@ -168,11 +171,31 @@ export default function ManageReportPage() {
   // Get status tag
   const getStatusTag = (status) => {
     const statusConfig = {
-      Pending: { color: "orange", icon: <ClockCircleOutlined />, text: "Chờ xử lý" },
-      Processing: { color: "blue", icon: <LoadingOutlined />, text: "Đang xử lý" },
-      Resolved: { color: "green", icon: <CheckCircleOutlined />, text: "Đã xử lý" },
-      Rejected: { color: "red", icon: <CloseCircleOutlined />, text: "Từ chối" },
-      FraudConfirmed: { color: "volcano", icon: <CloseCircleOutlined />, text: "Xác nhận gian lận" },
+      Pending: {
+        color: "orange",
+        icon: <ClockCircleOutlined />,
+        text: "Chờ xử lý",
+      },
+      Processing: {
+        color: "blue",
+        icon: <LoadingOutlined />,
+        text: "Đang xử lý",
+      },
+      Resolved: {
+        color: "green",
+        icon: <CheckCircleOutlined />,
+        text: "Đã xử lý",
+      },
+      Rejected: {
+        color: "red",
+        icon: <CloseCircleOutlined />,
+        text: "Từ chối",
+      },
+      FraudConfirmed: {
+        color: "volcano",
+        icon: <CloseCircleOutlined />,
+        text: "Xác nhận gian lận",
+      },
     };
     const config = statusConfig[status] || statusConfig.Pending;
     return (
@@ -286,7 +309,7 @@ export default function ManageReportPage() {
       dataIndex: "status",
       key: "status",
       align: "center",
-      fixed: 'right',
+      fixed: "right",
       width: 120,
       render: (status) => getStatusTag(status),
     },
@@ -295,7 +318,7 @@ export default function ManageReportPage() {
       dataIndex: "resolvedAt",
       key: "resolvedAt",
       align: "center",
-      fixed: 'right',
+      fixed: "right",
       width: 150,
       render: (date) => (
         <div>
@@ -323,7 +346,8 @@ export default function ManageReportPage() {
     processing: filteredReports.filter((r) => r.status === "Processing").length,
     resolved: filteredReports.filter((r) => r.status === "Resolved").length,
     rejected: filteredReports.filter((r) => r.status === "Rejected").length,
-    fraudConfirmed: filteredReports.filter((r) => r.status === "FraudConfirmed").length,
+    fraudConfirmed: filteredReports.filter((r) => r.status === "FraudConfirmed")
+      .length,
   };
 
   if (loading && reports.length === 0) {
@@ -421,7 +445,9 @@ export default function ManageReportPage() {
               <Select.Option value="Processing">Đang xử lý</Select.Option>
               <Select.Option value="Resolved">Đã xử lý</Select.Option>
               <Select.Option value="Rejected">Từ chối</Select.Option>
-              <Select.Option value="FraudConfirmed">Xác nhận gian lận</Select.Option>
+              <Select.Option value="FraudConfirmed">
+                Xác nhận gian lận
+              </Select.Option>
             </Select>
 
             <Select
@@ -499,17 +525,16 @@ export default function ManageReportPage() {
               Đóng
             </Button>
             {selectedReport?.status !== "FraudConfirmed" && (
-            <Button
-              type="primary"
-              size="large"
-              icon={<SendOutlined />}
-              onClick={openReplyModal}
-              className="bg-[#FF914D] border-0 hover:bg-[#e8823d]"
-            >
-              Phản Hồi
-            </Button>
-            )
-            }
+              <Button
+                type="primary"
+                size="large"
+                icon={<SendOutlined />}
+                onClick={openReplyModal}
+                className="bg-[#FF914D] border-0 hover:bg-[#e8823d]"
+              >
+                Phản Hồi
+              </Button>
+            )}
           </div>
         }
       >
@@ -589,9 +614,7 @@ export default function ManageReportPage() {
                     <div className="flex flex-col">
                       <span className="font-semibold">
                         {selectedReport.createdAt
-                          ? dayjs(selectedReport.createdAt).format(
-                              "DD/MM/YYYY"
-                            )
+                          ? dayjs(selectedReport.createdAt).format("DD/MM/YYYY")
                           : "N/A"}
                       </span>
                       <span className="text-xs text-gray-500">
@@ -745,36 +768,37 @@ export default function ManageReportPage() {
                 Trạng Thái Mới
               </span>
             }
-            rules={[
-              { required: true, message: "Vui lòng chọn trạng thái" },
-            ]}
+            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
           >
-            <Select 
-              size="large" 
+            <Select
+              size="large"
               placeholder="Chọn trạng thái"
               onChange={(value) => {
                 // Trigger note field validation when status changes
                 if (value === "FraudConfirmed") {
-                  replyForm.setFieldsValue({ note: replyForm.getFieldValue("note") || "" });
+                  replyForm.setFieldsValue({
+                    note: replyForm.getFieldValue("note") || "",
+                  });
                 }
               }}
             >
-            {currentStatus !== "Processing" && currentStatus !== "Resolved" && (
-              <Select.Option value="Processing">
-                <span className="flex items-center gap-2">
-                  <LoadingOutlined className="text-blue-500" />
-                  Đang xử lý
-                </span>
-              </Select.Option>
-            )}
-            {currentStatus !== "Resolved" && (
-              <Select.Option value="Resolved">
-                <span className="flex items-center gap-2">
-                  <CheckCircleOutlined className="text-green-500" />
-                  Đã xử lý
-                </span>
-              </Select.Option>
-            )}
+              {currentStatus !== "Processing" &&
+                currentStatus !== "Resolved" && (
+                  <Select.Option value="Processing">
+                    <span className="flex items-center gap-2">
+                      <LoadingOutlined className="text-blue-500" />
+                      Đang xử lý
+                    </span>
+                  </Select.Option>
+                )}
+              {currentStatus !== "Resolved" && (
+                <Select.Option value="Resolved">
+                  <span className="flex items-center gap-2">
+                    <CheckCircleOutlined className="text-green-500" />
+                    Đã xử lý
+                  </span>
+                </Select.Option>
+              )}
               <Select.Option value="FraudConfirmed">
                 <span className="flex items-center gap-2">
                   <CloseCircleOutlined className="text-red-700" />
@@ -786,14 +810,14 @@ export default function ManageReportPage() {
 
           <Form.Item
             noStyle
-            shouldUpdate={(prevValues, currentValues) => 
+            shouldUpdate={(prevValues, currentValues) =>
               prevValues.status !== currentValues.status
             }
           >
             {({ getFieldValue }) => {
               const selectedStatus = getFieldValue("status");
               const isFraudConfirmed = selectedStatus === "FraudConfirmed";
-              
+
               return (
                 <>
                   <Form.Item
@@ -809,13 +833,13 @@ export default function ManageReportPage() {
                     rules={[
                       {
                         required: isFraudConfirmed,
-                        message: isFraudConfirmed 
-                          ? "Ghi chú bắt buộc khi xác nhận gian lận" 
+                        message: isFraudConfirmed
+                          ? "Ghi chú bắt buộc khi xác nhận gian lận"
                           : "Vui lòng nhập ghi chú",
                       },
-                      { 
-                        min: 10, 
-                        message: "Ghi chú phải có ít nhất 10 ký tự" 
+                      {
+                        min: 10,
+                        message: "Ghi chú phải có ít nhất 10 ký tự",
                       },
                     ]}
                   >
@@ -830,17 +854,20 @@ export default function ManageReportPage() {
                       maxLength={500}
                     />
                   </Form.Item>
-                  
+
                   {isFraudConfirmed && (
                     <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-4">
                       <div className="flex items-start gap-2">
                         <CloseCircleOutlined className="text-red-500 mt-1" />
                         <div className="text-sm text-red-700">
-                          <div className="font-semibold mb-1">⚠️ Cảnh báo quan trọng:</div>
+                          <div className="font-semibold mb-1">
+                            ⚠️ Cảnh báo quan trọng:
+                          </div>
                           <div>
-                            Khi xác nhận gian lận, bạn phải cung cấp ghi chú chi tiết về 
-                            hành vi gian lận và bằng chứng liên quan. Quyết định này sẽ 
-                            ảnh hưởng nghiêm trọng đến tài khoản người bị báo cáo.
+                            Khi xác nhận gian lận, bạn phải cung cấp ghi chú chi
+                            tiết về hành vi gian lận và bằng chứng liên quan.
+                            Quyết định này sẽ ảnh hưởng nghiêm trọng đến tài
+                            khoản người bị báo cáo.
                           </div>
                         </div>
                       </div>
@@ -860,7 +887,8 @@ export default function ManageReportPage() {
                     <strong>Tiêu đề:</strong> {selectedReport.title}
                   </div>
                   <div>
-                    <strong>Người báo cáo:</strong> {selectedReport.reporterName}
+                    <strong>Người báo cáo:</strong>{" "}
+                    {selectedReport.reporterName}
                   </div>
                   <div>
                     <strong>Trạng thái hiện tại:</strong>{" "}

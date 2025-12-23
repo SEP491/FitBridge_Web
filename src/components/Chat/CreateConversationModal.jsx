@@ -16,6 +16,26 @@ import messageService from "../../services/messageService";
 
 const { Text } = Typography;
 
+// Helper to format last message content
+const formatLastMessageContent = (message) => {
+  if (!message) return "Chưa có tin nhắn";
+
+  const isDeleted = message.status === "Deleted" || message.isDeleted;
+  if (isDeleted) return "Tin nhắn này đã bị xóa";
+
+  // Check if message is an image
+  if (
+    message.mediaType === "Image" ||
+    message.lastMessageMediaType === "Image"
+  ) {
+    const senderName = message.senderName || message.lastMessageSenderName;
+    return senderName ? `${senderName} đã gửi 1 hình ảnh` : "Đã gửi 1 hình ảnh";
+  }
+
+  // Return text content for other message types
+  return message.content || message.lastMessageContent || "Chưa có tin nhắn";
+};
+
 // Helper to decode JWT and get current user info
 const getCurrentUserFromToken = () => {
   try {
@@ -118,10 +138,150 @@ export default function CreateConversationModal({
         groupImage: null,
       };
 
-      const conversation = await messageService.createConversation(payload);
+      const response = await messageService.createConversation(payload);
 
-      if (onConversationCreated && conversation) {
-        onConversationCreated(conversation);
+      // Extract conversation data from API response
+      // The response might be: {status, message, data: {conversationId, ...}}
+      // or the conversation object directly
+      let conversationData = null;
+
+      if (response) {
+        // If response has status/message, it's an API response wrapper
+        if (response.status && response.data) {
+          // Try to get conversation from data, or fetch it using conversationId
+          const conversationId =
+            response.data.conversationId || response.data.id;
+          if (conversationId) {
+            // Fetch the full conversation details
+            try {
+              const fullConversation = await messageService.getConversations({
+                page: 1,
+                size: 50, // Fetch more to ensure we find the new conversation
+              });
+              const conversations =
+                fullConversation.data?.items || fullConversation.items || [];
+              const fetchedConv = conversations.find(
+                (c) => c.id === conversationId
+              );
+
+              if (fetchedConv) {
+                // Ensure the title shows the selected user, not current user
+                // For one-on-one conversations, the title should be the other user's name
+                conversationData = {
+                  ...fetchedConv,
+                  // Override title to ensure it shows the selected user
+                  title: selectedUser.fullName || fetchedConv.title,
+                  // Override image to show selected user's avatar
+                  conversationImg:
+                    selectedUser.avatarUrl || fetchedConv.conversationImg,
+                  // Ensure last message content is set if we sent an initial message
+                  lastMessageContent: values.initialMessage
+                    ? formatLastMessageContent({
+                        content: values.initialMessage,
+                        mediaType: "Text",
+                        senderName: currentUser.name,
+                      })
+                    : fetchedConv.lastMessageContent,
+                  // Mark as read if we sent the first message
+                  isRead: values.initialMessage ? true : false,
+                };
+              } else {
+                // Conversation not found in list yet, construct it
+                conversationData = {
+                  id: conversationId,
+                  isGroup: false,
+                  isRead: values.initialMessage ? true : false,
+                  title: selectedUser.fullName,
+                  updatedAt: new Date().toISOString(),
+                  lastMessageContent: values.initialMessage
+                    ? formatLastMessageContent({
+                        content: values.initialMessage,
+                        mediaType: "Text",
+                        senderName: currentUser.name,
+                      })
+                    : "Chưa có tin nhắn",
+                  conversationImg: selectedUser.avatarUrl || null,
+                  lastMessageSenderId: values.initialMessage
+                    ? currentUser.id
+                    : null,
+                  lastMessageSenderName: values.initialMessage
+                    ? currentUser.name
+                    : null,
+                  lastMessageMediaType: values.initialMessage ? "Text" : null,
+                };
+              }
+            } catch (error) {
+              console.error("Error fetching conversation details:", error);
+              // Fallback: construct a basic conversation object with selected user info
+              conversationData = {
+                id: conversationId,
+                isGroup: false,
+                isRead: values.initialMessage ? true : false,
+                title: selectedUser.fullName,
+                updatedAt: new Date().toISOString(),
+                lastMessageContent: values.initialMessage
+                  ? formatLastMessageContent({
+                      content: values.initialMessage,
+                      mediaType: "Text",
+                      senderName: currentUser.name,
+                    })
+                  : "Chưa có tin nhắn",
+                conversationImg: selectedUser.avatarUrl || null,
+                lastMessageSenderId: values.initialMessage
+                  ? currentUser.id
+                  : null,
+                lastMessageSenderName: values.initialMessage
+                  ? currentUser.name
+                  : null,
+                lastMessageMediaType: values.initialMessage ? "Text" : null,
+              };
+            }
+          }
+        } else if (response.id) {
+          // Response is already a conversation object
+          // Ensure it shows the selected user, not current user
+          conversationData = {
+            ...response,
+            title: selectedUser.fullName || response.title,
+            conversationImg: selectedUser.avatarUrl || response.conversationImg,
+            lastMessageContent: values.initialMessage
+              ? formatLastMessageContent({
+                  content: values.initialMessage,
+                  mediaType: "Text",
+                  senderName: currentUser.name,
+                })
+              : response.lastMessageContent || "Chưa có tin nhắn",
+            isRead: values.initialMessage
+              ? true
+              : response.isRead !== undefined
+              ? response.isRead
+              : false,
+          };
+        } else if (response.data && response.data.id) {
+          // Response.data is the conversation object
+          conversationData = {
+            ...response.data,
+            title: selectedUser.fullName || response.data.title,
+            conversationImg:
+              selectedUser.avatarUrl || response.data.conversationImg,
+            lastMessageContent: values.initialMessage
+              ? formatLastMessageContent({
+                  content: values.initialMessage,
+                  mediaType: "Text",
+                  senderName: currentUser.name,
+                })
+              : response.data.lastMessageContent || "Chưa có tin nhắn",
+            isRead: values.initialMessage
+              ? true
+              : response.data.isRead !== undefined
+              ? response.data.isRead
+              : false,
+          };
+        }
+      }
+
+      if (onConversationCreated && conversationData) {
+        onConversationCreated(conversationData);
       }
 
       form.resetFields();

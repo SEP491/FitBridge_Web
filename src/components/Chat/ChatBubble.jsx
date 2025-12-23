@@ -119,8 +119,8 @@ export default function ChatBubble() {
         isRefresh ? setRefreshing(true) : setLoading(true);
 
         const params = {
-          pageNumber: 1,
-          pageSize: 20,
+          page: 1,
+          size: 20,
         };
 
         const response = await messageService.getConversations(params);
@@ -421,6 +421,23 @@ export default function ChatBubble() {
   }, []);
 
   useEffect(() => {
+    // Filter out any API response objects that might have been added
+    const hasInvalidItems = conversations.some(
+      (c) => c.status || c.message || !c.id
+    );
+
+    if (hasInvalidItems) {
+      const validConversations = conversations.filter(
+        (c) => !c.status && !c.message && c.id
+      );
+      setConversations(validConversations);
+      // Update filtered conversations too
+      if (!searchQuery.trim()) {
+        setFilteredConversations(validConversations);
+      }
+      return;
+    }
+
     // keep filtered in sync when no search
     if (!searchQuery.trim()) {
       setFilteredConversations(conversations);
@@ -428,8 +445,12 @@ export default function ChatBubble() {
   }, [conversations, searchQuery]);
 
   const unreadCount = useMemo(() => {
-    const count = conversations.filter((c) => !c.isRead).length;
-    console.log("Unread count:", count, "Conversations:", conversations);
+    // Filter out API response objects (objects with status/message properties)
+    const validConversations = conversations.filter(
+      (c) => !c.status && !c.message && c.id
+    );
+    const count = validConversations.filter((c) => !c.isRead).length;
+    console.log("Unread count:", count, "Conversations:", validConversations);
     return count;
   }, [conversations]);
 
@@ -493,6 +514,11 @@ export default function ChatBubble() {
   };
 
   const renderList = () => {
+    // Filter out API response objects from filtered conversations
+    const validFilteredConversations = filteredConversations.filter(
+      (c) => !c.status && !c.message && c.id
+    );
+
     if (loading && !refreshing && !conversations.length) {
       return (
         <div
@@ -514,7 +540,7 @@ export default function ChatBubble() {
 
     return (
       <List
-        dataSource={filteredConversations}
+        dataSource={validFilteredConversations}
         itemLayout="horizontal"
         renderItem={(item) => {
           // Determine if any user in the conversation is online
@@ -674,23 +700,80 @@ export default function ChatBubble() {
         onClose={() => setIsCreateModalOpen(false)}
         onConversationCreated={(conversation) => {
           if (!conversation) return;
+
+          // Filter out API response objects (objects with status/message properties)
+          // Only process actual conversation objects (objects with id property)
+          if (conversation.status || conversation.message) {
+            // This is an API response object, not a conversation object
+            // The actual conversation will be added via SignalR or we need to fetch it
+            return;
+          }
+
+          // Ensure it's a valid conversation object with an id
+          if (!conversation.id) {
+            console.warn("Invalid conversation object received:", conversation);
+            return;
+          }
+
+          // Process the conversation to ensure it has proper formatting
+          const processedConversation = {
+            ...conversation,
+            lastMessageContent: formatLastMessageContent({
+              status: conversation.lastMessageStatus,
+              isDeleted: conversation.lastMessageIsDeleted,
+              mediaType: conversation.lastMessageMediaType,
+              content: conversation.lastMessageContent,
+              senderName: conversation.lastMessageSenderName,
+            }),
+          };
+
           setConversations((prev) => {
-            const exists = prev.some((c) => c.id === conversation.id);
-            if (exists) return prev;
-            const merged = [...prev, conversation];
+            // Filter out any API response objects that might have been added
+            const filtered = prev.filter(
+              (c) => !c.status && !c.message && c.id
+            );
+
+            const exists = filtered.some(
+              (c) => c.id === processedConversation.id
+            );
+            if (exists) {
+              // Update existing conversation instead of adding duplicate
+              return filtered
+                .map((c) =>
+                  c.id === processedConversation.id ? processedConversation : c
+                )
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            }
+
+            const merged = [...filtered, processedConversation];
             return merged.sort(
               (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
             );
           });
           setFilteredConversations((prev) => {
-            const exists = prev.some((c) => c.id === conversation.id);
-            if (exists) return prev;
-            const merged = [...prev, conversation];
+            // Filter out any API response objects
+            const filtered = prev.filter(
+              (c) => !c.status && !c.message && c.id
+            );
+
+            const exists = filtered.some(
+              (c) => c.id === processedConversation.id
+            );
+            if (exists) {
+              // Update existing conversation instead of adding duplicate
+              return filtered
+                .map((c) =>
+                  c.id === processedConversation.id ? processedConversation : c
+                )
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            }
+
+            const merged = [...filtered, processedConversation];
             return merged.sort(
               (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
             );
           });
-          setSelectedConversation(conversation);
+          setSelectedConversation(processedConversation);
         }}
       />
     </>
