@@ -639,16 +639,13 @@ export default function ManageUserPage() {
 
   return (
     <APIProvider apiKey={import.meta.env.VITE_API_KEY_GOOGLE}>
-      <div className="p-6">
+      <div className="min-h-screen">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-2">
             <UserOutlined />
             Quản Lý Người Dùng
           </h1>
-          <p className="text-gray-600">
-            Quản lý và theo dõi tất cả người dùng trong hệ thống
-          </p>
         </div>
 
         {/* Statistics Cards */}

@@ -75,18 +75,11 @@ export default function ManageGymTransaction() {
     useState(false);
   const [formCreateWithdrawal] = Form.useForm();
   const [loadingCreateWithdrawal, setLoadingCreateWithdrawal] = useState(false);
-  const [availableBalance, setAvailableBalance] = useState(0);
   const [walletBalance, setWalletBalance] = useState({
     totalAvailableBalance: 0,
     totalPendingBalance: 0,
   });
   const [loadingWalletBalance, setLoadingWalletBalance] = useState(false);
-
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
   const [withdrawalPagination, setWithdrawalPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -117,22 +110,15 @@ export default function ManageGymTransaction() {
       return tb - ta; // desc
     });
 
-  const fetchTransactions = async (page = 1, pageSize = 10) => {
+  const fetchTransactions = async () => {
     setLoading(true);
     try {
       const response = await transactionService.getGymOwnerTransaction({
-        page,
-        size: pageSize,
-        sortOrder: 'dsc'
+        sortOrder: "dsc",
+        doApplyPaging: false,
       });
-      const { items, total, page: currentPage, totalPages } = response.data;
-      setTransactions(items || []);
-      setPagination({
-        current: currentPage,
-        pageSize,
-        total: total || 0,
-        totalPages,
-      });
+      const items = response.data?.items || response.data || [];
+      setTransactions(items);
     } catch (error) {
       console.error("Error fetching transactions:", error);
       toast.error(
@@ -270,20 +256,6 @@ export default function ManageGymTransaction() {
     }
   }, []);
 
-  // Calculate available balance
-  useEffect(() => {
-    const totalProfit = transactions.reduce(
-      (sum, t) => sum + (t.profitAmount || 0),
-      0
-    );
-    const totalWithdrawn = withdrawalRequests.reduce((sum, item) => {
-      if (item.status === "Completed" || item.status === "Approved") {
-        return sum + (item.amount || 0);
-      }
-      return sum;
-    }, 0);
-    setAvailableBalance(Math.max(0, totalProfit - totalWithdrawn));
-  }, [transactions, withdrawalRequests]);
 
   useEffect(() => {
     fetchTransactions();
@@ -306,9 +278,7 @@ export default function ManageGymTransaction() {
     fetchDisbursementDetails,
   ]);
 
-  const handleTableChange = (newPagination) => {
-    fetchTransactions(newPagination.current, newPagination.pageSize);
-  };
+  // No server-side pagination; sorting is handled client-side by antd
 
   const handleWithdrawalTableChange = (newPagination) => {
     fetchWithdrawalRequests(newPagination.current, newPagination.pageSize);
@@ -782,12 +752,12 @@ export default function ManageGymTransaction() {
   });
 
   const hasUnresolvedWithdrawal = withdrawalRequests.some(
-    (item) => item.status !== "Resolved"
+    (item) => item.status !== "Resolved" && item.status !== "Rejected"
   );
 
   // Reload all data (transactions, wallet, withdrawals)
   const handleReloadAll = () => {
-    fetchTransactions(1, pagination.pageSize);
+    fetchTransactions();
     fetchWalletBalance();
     fetchWithdrawalRequests(1, withdrawalPagination.pageSize);
     fetchPendingBalanceDetails();
@@ -877,12 +847,7 @@ export default function ManageGymTransaction() {
         icon={<PlusOutlined />}
         size="middle"
         onClick={() => setIsModalCreateWithdrawalOpen(true)}
-        disabled={hasUnresolvedWithdrawal}
-        className={`border-0 ${
-          hasUnresolvedWithdrawal
-            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-            : "bg-[#ED2A46] text-white hover:bg-[#e43e56]"
-        }`}
+        className="border-0 bg-[#ED2A46] text-white hover:bg-[#e43e56]"
       >
         {hasUnresolvedWithdrawal
           ? "Bạn đã có yêu cầu đang chờ xử lý"
@@ -906,7 +871,7 @@ export default function ManageGymTransaction() {
   }
 
   return (
-    <div className="p-4">
+    <div className=" min-h-screen">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <MdPayment />
@@ -983,7 +948,7 @@ export default function ManageGymTransaction() {
           </Card>
           <Card className="text-center">
             <div className="text-2xl font-bold text-purple-600">
-              {stats.totalWithdrawal.toLocaleString("vi", {
+              {disbursementTotalProfit.toLocaleString("vi", {
                 style: "currency",
                 currency: "VND",
               })}
@@ -1053,17 +1018,7 @@ export default function ManageGymTransaction() {
                 dataSource={filteredData}
                 columns={columns}
                 loading={loading}
-                pagination={{
-                  current: pagination.current,
-                  pageSize: pagination.pageSize,
-                  total: pagination.total,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  position: ["bottomCenter"],
-                  showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} của ${total} giao dịch`,
-                }}
-                onChange={handleTableChange}
+                pagination={false}
                 scroll={{ x: 800 }}
                 size="middle"
                 rowKey="transactionId"
@@ -1540,7 +1495,7 @@ export default function ManageGymTransaction() {
                 Tạo Yêu Cầu Rút Tiền
               </h2>
               <p className="text-sm text-gray-500 m-0">
-                Số dư khả dụng: {formatCurrency(availableBalance)}
+                Số dư khả dụng: {formatCurrency(walletBalance.totalAvailableBalance)}
               </p>
             </div>
           </div>
@@ -1564,33 +1519,51 @@ export default function ManageGymTransaction() {
             rules={[
               { required: true, message: "Vui lòng nhập số tiền" },
               {
-                type: "number",
-                min: 10000,
-                message: "Số tiền tối thiểu là 10,000 VNĐ",
-              },
-              {
                 validator: (_, value) => {
-                  if (value && value > availableBalance) {
+                  if (value == null || value === "") return Promise.resolve();
+
+                  const num = Number(value);
+                  if (Number.isNaN(num)) {
+                    return Promise.reject(
+                      new Error("Vui lòng nhập số tiền hợp lệ")
+                    );
+                  }
+
+                  if (num < 50000) {
+                    return Promise.reject(
+                      new Error("Số tiền tối thiểu là 50,000 VNĐ")
+                    );
+                  }
+                  if (num > walletBalance.totalAvailableBalance) {
                     return Promise.reject(
                       new Error("Số tiền không được vượt quá số dư khả dụng")
                     );
                   }
+
+                  if (num > 20000000) {
+                    return Promise.reject(
+                      new Error("Số tiền tối đa là 20,000,000 VNĐ")
+                    );
+                  }
+
+                  
+
                   return Promise.resolve();
                 },
               },
             ]}
           >
             <InputNumber
-              min={10000}
-              max={availableBalance}
               placeholder="Nhập số tiền muốn rút"
               className="!w-full"
               size="large"
               formatter={(value) =>
                 `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
               }
-              parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-              prefix={<DollarOutlined />}
+              parser={(value) =>
+                value ? value.toString().replace(/[^\d]/g, "") : ""
+              }
+              suffix="VNĐ"
             />
           </Form.Item>
 

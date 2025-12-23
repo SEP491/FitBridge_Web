@@ -19,7 +19,6 @@ import Cookies from "js-cookie";
 const LoginForm = ({
   title = "FitBridge",
   subtitle = "Đăng Nhập",
-  onToggleForm,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -233,23 +232,6 @@ const LoginForm = ({
             </motion.div>
           </motion.div>
 
-          {/* Toggle to Register */}
-          <motion.div
-            className="text-center mt-3 sm:mt-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 1.2 }}
-          >
-            <motion.button
-              type="button"
-              onClick={onToggleForm}
-              className="text-white/80 text-xs sm:text-sm hover:text-white transition-colors underline"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Chưa có tài khoản? Đăng ký ngay
-            </motion.button>
-          </motion.div>
         </Form>
       </motion.div>
     </motion.div>

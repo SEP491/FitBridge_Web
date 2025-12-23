@@ -70,7 +70,7 @@ export default function ManageTransactionPage() {
       const response = await adminService.getAllTransactions({
         page,
         size: pageSize,
-        sortOrder:'dsc'
+        sortOrder:'dsc',
       });
 
       const { items, total, page: currentPage, totalPages } = response.data;
@@ -313,7 +313,7 @@ export default function ManageTransactionPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className=" min-h-screen">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <MdAdminPanelSettings />

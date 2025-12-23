@@ -14,7 +14,6 @@ import { Line } from "react-chartjs-2";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import dashboardService from "../../../services/dashboardService";
-import mockedData from "./mockedData";
 import { DollarOutlined, ClockCircleOutlined } from "@ant-design/icons";
 
 ChartJS.register(
@@ -77,13 +76,16 @@ export default function DashboardGym() {
       setLoadingWalletBalance(false);
     }
   };
-
-  // API function to fetch gym revenue detail data (mocked for testing)
-  const fetchGymRevenueData = async () => {
+  // API function to fetch gym revenue detail data from dashboardService
+  const fetchGymRevenueData = async (startDate, endDate) => {
     setLoading(true);
     try {
-      // Using mocked data instead of real API for testing
-      const apiData = mockedData.data || {};
+      const response = await dashboardService.getRevenueDetails({
+        startDate,
+        endDate,
+      });
+
+      const apiData = response.data || {};
       const items = apiData.items || [];
 
       // Save raw revenue items for the detailed table
@@ -135,13 +137,75 @@ export default function DashboardGym() {
     }
   };
 
-  // Initial fetch when component mounts (mock data is static)
-  useEffect(() => {
-    fetchGymRevenueData();
-    fetchWalletBalance();
-  }, []);
+  // API function to fetch gym revenue detail data (mocked for testing)
+  // const fetchGymRevenueData = async () => {
+  //   setLoading(true);
+  //   try {
+  //     // Using mocked data instead of real API for testing
+  //     const apiData = mockedData.data || {};
+  //     const items = apiData.items || [];
 
-  // Filter data when data or dateRange changes
+  //     // Save raw revenue items for the detailed table
+  //     setRevenueItems(items);
+
+  //     // Aggregate by month of plannedDistributionDate (or skip if no date)
+  //     const aggregated = {};
+
+  //     items.forEach((item) => {
+  //       const dateSource = item.plannedDistributionDate;
+  //       if (!dateSource) return;
+
+  //       const monthKey = dayjs(dateSource).format("YYYY-MM");
+
+  //       if (!aggregated[monthKey]) {
+  //         aggregated[monthKey] = {
+  //           totalRevenue: 0,
+  //           appCommission: 0,
+  //           paybackToGym: 0,
+  //         };
+  //       }
+
+  //       const subTotal = item.subTotal || 0;
+  //       const systemProfit = item.systemProfit || 0;
+  //       const totalProfit = item.totalProfit || 0;
+
+  //       aggregated[monthKey].totalRevenue += subTotal;
+  //       aggregated[monthKey].appCommission += systemProfit;
+  //       aggregated[monthKey].paybackToGym += totalProfit;
+  //     });
+
+  //     const aggregatedArray = Object.keys(aggregated)
+  //       .sort()
+  //       .map((monthKey) => ({
+  //         // Use first day of month as representative date
+  //         date: dayjs(`${monthKey}-01`).format("YYYY-MM-DD"),
+  //         totalRevenue: aggregated[monthKey].totalRevenue,
+  //         appCommission: aggregated[monthKey].appCommission,
+  //         paybackToGym: aggregated[monthKey].paybackToGym,
+  //       }));
+
+  //     setData(aggregatedArray);
+  //   } catch (error) {
+  //     console.error("Error fetching gym revenue data:", error);
+  //     setData([]); // Set empty array on error
+  //     setRevenueItems([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // Initial fetch when component mounts
+  useEffect(() => {
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const startDate = dateRange[0].format("YYYY-MM-DD");
+      const endDate = dateRange[1].format("YYYY-MM-DD");
+      fetchGymRevenueData(startDate, endDate);
+    }
+    fetchWalletBalance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Initial load only
+
+  // Filter data when data or dateRange changes (client-side filtering for chart display)
   useEffect(() => {
     if (dateRange && dateRange[0] && dateRange[1] && data.length > 0) {
       const startDate = dateRange[0].startOf("month").format("YYYY-MM-DD");
@@ -158,7 +222,11 @@ export default function DashboardGym() {
 
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
-    // With mocked data, we only filter client-side; no refetch needed
+    if (dates && dates[0] && dates[1]) {
+      const startDate = dates[0].format("YYYY-MM-DD");
+      const endDate = dates[1].format("YYYY-MM-DD");
+      fetchGymRevenueData(startDate, endDate);
+    }
   };
 
   // Calculate metrics
@@ -192,7 +260,7 @@ export default function DashboardGym() {
         fill: true,
       },
       {
-        label: "Hoa Hồng App (10%)",
+        label: "Hoa Hồng App",
         data: filteredData.map((item) => item.appCommission || 0),
         borderColor: "#F59E0B",
         backgroundColor: "rgba(245, 158, 11, 0.1)",
@@ -200,7 +268,7 @@ export default function DashboardGym() {
         fill: true,
       },
       {
-        label: "Tiền Về Chủ Gym (90%)",
+        label: "Tiền Về Chủ Gym",
         data: filteredData.map((item) => item.paybackToGym || 0),
         borderColor: "#10B981",
         backgroundColor: "rgba(16, 185, 129, 0.1)",
@@ -274,14 +342,15 @@ export default function DashboardGym() {
   };
 
   return (
-    <div className="min-h-screen  p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen  ">
+      <div className="max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
+            <DollarOutlined style={{ marginRight: 12, color: "#ed2a46" }} />
             Bảng Điều Khiển Doanh Thu Phòng Gym
           </h1>
-          <p className="text-gray-600">
+          <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
             Theo dõi doanh thu từ bán khóa học và hoa hồng ứng dụng
           </p>
         </div>
@@ -367,7 +436,7 @@ export default function DashboardGym() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">
-                  Hoa Hồng App (10%)
+                  Hoa Hồng App
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   - {formatVND(totalAppCommission)}
@@ -383,7 +452,7 @@ export default function DashboardGym() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">
-                  Tiền Về Chủ Gym (90%)
+                  Tiền Về Chủ Gym
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {formatVND(totalpaybackToGym)}
@@ -441,10 +510,10 @@ export default function DashboardGym() {
                     Tổng Doanh Thu
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hoa Hồng App (10%)
+                    Hoa Hồng App
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tiền Về Phòng Gym (90%)
+                    Tiền Về Phòng Gym
                   </th>
                 </tr>
               </thead>

@@ -251,7 +251,7 @@ export default function ManageGymCustomers() {
   }
 
   return (
-    <div className="p-4">
+    <div className=" min-h-screen">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <FaUsers />

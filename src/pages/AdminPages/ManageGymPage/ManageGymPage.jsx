@@ -553,15 +553,154 @@ export default function ManageGymPage() {
 
   return (
     <APIProvider apiKey={import.meta.env.VITE_API_KEY_GOOGLE}>
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#ED2A46] mb-2 flex items-center gap-2">
-            <FaDumbbell className="text-orange-500" />
-            Quản Lý Phòng Gym
-          </h1>
-          <p className="text-gray-600">
-            Quản lý và theo dõi thông tin các phòng gym trong hệ thống
-          </p>
+      <div className="">
+        <div className="">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-2">
+              <UserOutlined />
+              Quản Lý Phòng Gym
+            </h1>
+          </div>
+
+          {/* Statistics Cards */}
+          <Row gutter={[20, 20]} className="mb-8">
+            <Col xs={24} sm={12} lg={6}>
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100">
+                <Statistic
+                  title={
+                    <span className="text-gray-600 font-medium">
+                      Tổng Số Phòng Gym
+                    </span>
+                  }
+                  value={statistics.totalGyms}
+                  prefix={<HomeOutlined className="text-blue-500" />}
+                  valueStyle={{
+                    color: "#1890ff",
+                    fontSize: "28px",
+                    fontWeight: "bold",
+                  }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100">
+                <Statistic
+                  title={
+                    <span className="text-gray-600 font-medium">
+                      Hot Research
+                    </span>
+                  }
+                  value={statistics.hotResearchGyms}
+                  prefix={<FireOutlined className="text-red-500" />}
+                  valueStyle={{
+                    color: "#ff4d4f",
+                    fontSize: "28px",
+                    fontWeight: "bold",
+                  }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100">
+                <Statistic
+                  title={
+                    <span className="text-gray-600 font-medium">
+                      Phòng Gym Thường
+                    </span>
+                  }
+                  value={statistics.normalGyms}
+                  prefix={<BankOutlined className="text-green-500" />}
+                  valueStyle={{
+                    color: "#52c41a",
+                    fontSize: "28px",
+                    fontWeight: "bold",
+                  }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Main Content */}
+          <Card className="border-0 shadow-xl">
+            <ConfigProvider
+              theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
+            >
+              {/* Controls */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex-1 max-w-md">
+                  <Input
+                    placeholder="Tìm kiếm theo tên gym, địa chỉ, người đại diện..."
+                    prefix={<SearchOutlined className="text-gray-400" />}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    allowClear
+                    size="large"
+                    className="rounded-lg shadow-sm"
+                  />
+                </div>
+
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  size="large"
+                  className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 rounded-lg px-6 shadow-lg hover:shadow-xl transition-all duration-300"
+                  onClick={() => setIsModalAddGymOpen(true)}
+                >
+                  Thêm Phòng Gym
+                </Button>
+              </div>
+
+              {/* Results Summary */}
+              <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
+                <Text className="text-gray-600">
+                  Hiển thị{" "}
+                  <span className="font-semibold text-orange-600">
+                    {filteredData.length}
+                  </span>{" "}
+                  trong tổng số{" "}
+                  <span className="font-semibold">{statistics.totalGyms}</span>{" "}
+                  phòng gym
+                  {searchText && (
+                    <span className="ml-2">
+                      | Tìm kiếm: "
+                      <span className="font-semibold text-blue-600">
+                        {searchText}
+                      </span>
+                      "
+                    </span>
+                  )}
+                </Text>
+              </div>
+
+              {/* Table */}
+              <Table
+                rowKey="id"
+                dataSource={filteredData}
+                columns={columns}
+                pagination={{
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} của ${total} mục`,
+                  position: ["bottomCenter"],
+                }}
+                onChange={handleTableChange}
+                className="rounded-lg overflow-hidden"
+                scroll={{ x: 1000 }}
+                size="middle"
+                onRow={(record) => ({
+                  onClick: () => {
+                    setSelectedGym(record);
+                    setIsModalGymDetailOpen(true);
+                  },
+                  style: { cursor: "pointer" },
+                })}
+              />
+            </ConfigProvider>
+          </Card>
         </div>
 
         {/* Statistics Cards */}
