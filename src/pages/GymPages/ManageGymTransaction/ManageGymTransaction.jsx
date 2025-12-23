@@ -11,16 +11,46 @@ import {
   Descriptions,
   Row,
   Col,
+  Tabs,
+  Modal,
+  Form,
+  InputNumber,
+  Space,
+  Image,
 } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
-import { LoadingOutlined, SearchOutlined, EyeOutlined } from "@ant-design/icons";
-import { FaMoneyBillWave, FaFilter, FaUserCircle, FaInfoCircle, FaReceipt } from "react-icons/fa";
+import {
+  LoadingOutlined,
+  SearchOutlined,
+  EyeOutlined,
+  CheckCircleOutlined,
+  BankOutlined,
+  CalendarOutlined,
+  DollarOutlined,
+  MoneyCollectOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined,
+  UserOutlined,
+  ClockCircleOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
+import {
+  FaMoneyBillWave,
+  FaFilter,
+  FaUserCircle,
+  FaInfoCircle,
+  FaReceipt,
+} from "react-icons/fa";
 import { MdPayment } from "react-icons/md";
 import { ImStatsBars } from "react-icons/im";
 import transactionService from "../../../services/transactionServices";
+import paymentService from "../../../services/paymentService";
+import dashboardService from "../../../services/dashboardService";
 import FitBridgeModal from "../../../components/FitBridgeModal";
 import defaultAvatar from "../../../assets/LogoColor.png";
+import banks from "../../../constants/banks";
+import WalletBalanceTab from "./WalletBalanceTab";
 
 export default function ManageGymTransaction() {
   const [transactions, setTransactions] = useState([]);
@@ -31,12 +61,61 @@ export default function ManageGymTransaction() {
     useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [activeTab, setActiveTab] = useState("transactions");
+
+  // Withdrawal requests states
+  const [withdrawalRequests, setWithdrawalRequests] = useState([]);
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
+  const [withdrawalSearchText, setWithdrawalSearchText] = useState("");
+  const [selectedWithdrawalRequest, setSelectedWithdrawalRequest] =
+    useState(null);
+  const [isModalWithdrawalDetailOpen, setIsModalWithdrawalDetailOpen] =
+    useState(false);
+  const [isModalCreateWithdrawalOpen, setIsModalCreateWithdrawalOpen] =
+    useState(false);
+  const [formCreateWithdrawal] = Form.useForm();
+  const [loadingCreateWithdrawal, setLoadingCreateWithdrawal] = useState(false);
+  const [availableBalance, setAvailableBalance] = useState(0);
+  const [walletBalance, setWalletBalance] = useState({
+    totalAvailableBalance: 0,
+    totalPendingBalance: 0,
+  });
+  const [loadingWalletBalance, setLoadingWalletBalance] = useState(false);
 
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
+  const [withdrawalPagination, setWithdrawalPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+
+  // Wallet balance detail states
+  const [pendingItems, setPendingItems] = useState([]);
+  const [pendingTotalProfit, setPendingTotalProfit] = useState(0);
+  const [loadingPendingDetails, setLoadingPendingDetails] = useState(false);
+
+  const [availableItems, setAvailableItems] = useState([]);
+  const [availableTotalProfit, setAvailableTotalProfit] = useState(0);
+  const [loadingAvailableDetails, setLoadingAvailableDetails] = useState(false);
+
+  const [disbursementItems, setDisbursementItems] = useState([]);
+  const [disbursementTotalProfit, setDisbursementTotalProfit] = useState(0);
+  const [loadingDisbursementDetails, setLoadingDisbursementDetails] =
+    useState(false);
+  const [walletFilter, setWalletFilter] = useState("all");
+
+  const sortByDateDesc = (items, getDate) =>
+    (items || []).slice().sort((a, b) => {
+      const da = getDate(a);
+      const db = getDate(b);
+      const ta = da ? new Date(da).getTime() : 0;
+      const tb = db ? new Date(db).getTime() : 0;
+      return tb - ta; // desc
+    });
 
   const fetchTransactions = async (page = 1, pageSize = 10) => {
     setLoading(true);
@@ -44,6 +123,7 @@ export default function ManageGymTransaction() {
       const response = await transactionService.getGymOwnerTransaction({
         page,
         size: pageSize,
+        sortOrder: 'dsc'
       });
       const { items, total, page: currentPage, totalPages } = response.data;
       setTransactions(items || []);
@@ -65,18 +145,181 @@ export default function ManageGymTransaction() {
     }
   };
 
+  // Fetch wallet balance (available + pending)
+  const fetchWalletBalance = async () => {
+    setLoadingWalletBalance(true);
+    try {
+      const response = await dashboardService.getBalanceOfGym({});
+      const data = response.data || {};
+      setWalletBalance({
+        totalAvailableBalance: data.totalAvailableBalance || 0,
+        totalPendingBalance: data.totalPendingBalance || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching wallet balance:", error);
+      toast.error("Không thể tải số dư ví");
+      setWalletBalance({
+        totalAvailableBalance: 0,
+        totalPendingBalance: 0,
+      });
+    } finally {
+      setLoadingWalletBalance(false);
+    }
+  };
+
+  // Fetch withdrawal requests
+  const fetchWithdrawalRequests = useCallback(
+    async (page = 1, pageSize = 10) => {
+      setLoadingWithdrawals(true);
+      try {
+        const response = await paymentService.getAllWithdrawalRequests({
+          page,
+          size: pageSize,
+        });
+
+        const { items, total, page: currentPage, totalPages } = response.data;
+
+        setWithdrawalRequests(items || []);
+        setWithdrawalPagination({
+          current: currentPage,
+          pageSize,
+          total,
+          totalPages,
+        });
+      } catch (error) {
+        console.error("Error fetching withdrawal requests:", error);
+        toast.error("Không thể tải danh sách yêu cầu rút tiền");
+        setWithdrawalRequests([]);
+      } finally {
+        setLoadingWithdrawals(false);
+      }
+    },
+    []
+  );
+
+  // Fetch wallet balance details
+  const fetchPendingBalanceDetails = useCallback(async () => {
+    setLoadingPendingDetails(true);
+    try {
+      const response = await dashboardService.getPendingBalanceDetails({
+        page: 1,
+        size: 100,
+        sortOrder: 'dsc'
+      });
+      const data = response.data || {};
+      setPendingItems(
+        sortByDateDesc(
+          data.items || [],
+          (item) => item.transactionDetail?.transactionDate
+        )
+      );
+      setPendingTotalProfit(data.totalProfitSum || 0);
+    } catch (error) {
+      console.error("Error fetching pending balance details:", error);
+      toast.error("Không thể tải chi tiết số dư đang chờ");
+      setPendingItems([]);
+      setPendingTotalProfit(0);
+    } finally {
+      setLoadingPendingDetails(false);
+    }
+  }, []);
+
+  const fetchAvailableBalanceDetails = useCallback(async () => {
+    setLoadingAvailableDetails(true);
+    try {
+      const response = await dashboardService.getAvailableBalanceDetails({
+        page: 1,
+        size: 100,
+        sortOrder: 'dsc'
+      });
+      const data = response.data || {};
+      setAvailableItems(
+        sortByDateDesc(data.items || [], (item) => item.transactionDate)
+      );
+      setAvailableTotalProfit(data.totalProfitSum || 0);
+    } catch (error) {
+      console.error("Error fetching available balance details:", error);
+      toast.error("Không thể tải chi tiết số dư khả dụng");
+      setAvailableItems([]);
+      setAvailableTotalProfit(0);
+    } finally {
+      setLoadingAvailableDetails(false);
+    }
+  }, []);
+
+  const fetchDisbursementDetails = useCallback(async () => {
+    setLoadingDisbursementDetails(true);
+    try {
+      const response = await dashboardService.getDisbursementDetails({
+        page: 1,
+        size: 100,
+        sortOrder: 'dsc'
+      });
+      const data = response.data || {};
+      setDisbursementItems(
+        sortByDateDesc(data.items || [], (item) => item.transactionDate)
+      );
+      setDisbursementTotalProfit(data.totalProfitSum || 0);
+    } catch (error) {
+      console.error("Error fetching disbursement details:", error);
+      toast.error("Không thể tải chi tiết giải ngân");
+      setDisbursementItems([]);
+      setDisbursementTotalProfit(0);
+    } finally {
+      setLoadingDisbursementDetails(false);
+    }
+  }, []);
+
+  // Calculate available balance
+  useEffect(() => {
+    const totalProfit = transactions.reduce(
+      (sum, t) => sum + (t.profitAmount || 0),
+      0
+    );
+    const totalWithdrawn = withdrawalRequests.reduce((sum, item) => {
+      if (item.status === "Completed" || item.status === "Approved") {
+        return sum + (item.amount || 0);
+      }
+      return sum;
+    }, 0);
+    setAvailableBalance(Math.max(0, totalProfit - totalWithdrawn));
+  }, [transactions, withdrawalRequests]);
+
   useEffect(() => {
     fetchTransactions();
+    fetchWalletBalance();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "withdrawals") {
+      fetchWithdrawalRequests();
+    } else if (activeTab === "wallet") {
+      fetchPendingBalanceDetails();
+      fetchAvailableBalanceDetails();
+      fetchDisbursementDetails();
+    }
+  }, [
+    activeTab,
+    fetchWithdrawalRequests,
+    fetchPendingBalanceDetails,
+    fetchAvailableBalanceDetails,
+    fetchDisbursementDetails,
+  ]);
 
   const handleTableChange = (newPagination) => {
     fetchTransactions(newPagination.current, newPagination.pageSize);
   };
 
+  const handleWithdrawalTableChange = (newPagination) => {
+    fetchWithdrawalRequests(newPagination.current, newPagination.pageSize);
+  };
+
   const fetchTransactionDetail = async (transactionId) => {
     setLoadingDetail(true);
     try {
-      const response = await transactionService.getGymOwnerTransactionDetails(transactionId);
+      const response = await transactionService.getGymOwnerTransactionDetails(
+        transactionId
+      );
       setSelectedTransaction(response.data);
       setIsModalTransactionDetailOpen(true);
     } catch (error) {
@@ -93,15 +336,19 @@ export default function ManageGymTransaction() {
   const getTransactionTypeText = (type) => {
     switch (type) {
       case "ExtendCourse":
-        return "Gia hạn khóa học";
+        return "Khách gia hạn gói tập";
       case "DistributeProfit":
-        return "Phân phối lợi nhuận";
+        return "Nhận tiền quyết toán";
       case "GymCourse":
-        return "Gói tập Gym";
+        return "Khách mua gói tập";
       case "Withdraw":
         return "Rút tiền";
       case "ProductOrder":
         return "Đơn hàng sản phẩm";
+      case "PendingDeduction":
+        return "Khấu trừ tiền tạm giữ";
+      case "Disbursement":
+        return "Giải ngân doanh thu";
       default:
         return type || "N/A";
     }
@@ -227,15 +474,19 @@ export default function ManageGymTransaction() {
 
   const filteredData = transactions.filter((item) => {
     const matchesSearch = searchText
-      ? (item.transactionId?.toLowerCase() || "").includes(searchText.toLowerCase()) ||
+      ? (item.transactionId?.toLowerCase() || "").includes(
+          searchText.toLowerCase()
+        ) ||
         (item.orderCode?.toString() || "").includes(searchText) ||
-        (item.customerName?.toLowerCase() || "").includes(searchText.toLowerCase()) ||
+        (item.customerName?.toLowerCase() || "").includes(
+          searchText.toLowerCase()
+        ) ||
         (item.transactionType?.toLowerCase() || "").includes(
           searchText.toLowerCase()
         ) ||
-        (getTransactionTypeText(item.transactionType)?.toLowerCase() || "").includes(
-          searchText.toLowerCase()
-        )
+        (
+          getTransactionTypeText(item.transactionType)?.toLowerCase() || ""
+        ).includes(searchText.toLowerCase())
       : true;
 
     const matchesStatus =
@@ -248,12 +499,397 @@ export default function ManageGymTransaction() {
   // Calculate statistics
   const stats = {
     total: transactions.length,
-    totalRevenue: transactions.reduce((sum, t) => sum + (t.totalPaidAmount || 0), 0),
-    totalProfit: transactions.reduce((sum, t) => sum + (t.profitAmount || 0), 0),
-    totalWithdrawal: transactions.reduce((sum, t) => sum + (t.withdrawalAmount || 0), 0),
-    productOrders: transactions.filter((t) => t.transactionType === "ProductOrder").length,
-    extendCourse: transactions.filter((t) => t.transactionType === "ExtendCourse").length,
+    totalRevenue: transactions.reduce(
+      (sum, t) => sum + (t.totalPaidAmount || 0),
+      0
+    ),
+    totalProfit: transactions.reduce(
+      (sum, t) => sum + (t.profitAmount || 0),
+      0
+    ),
+    totalWithdrawal: transactions.reduce(
+      (sum, t) => sum + (t.withdrawalAmount || 0),
+      0
+    ),
+    productOrders: transactions.filter(
+      (t) => t.transactionType === "ProductOrder"
+    ).length,
+    extendCourse: transactions.filter(
+      (t) => t.transactionType === "ExtendCourse"
+    ).length,
   };
+
+  // Withdrawal request functions
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      minimumFractionDigits: 0,
+    }).format(amount || 0);
+  };
+
+  const renderSignedAmount = (value, positiveClass = "", negativeClass = "") => {
+    const amount = value || 0;
+    const isPositive = amount >= 0;
+    const displayValue = formatCurrency(Math.abs(amount));
+
+    return (
+      <span className={isPositive ? positiveClass : negativeClass}>
+        {isPositive ? "+" : "-"} {displayValue}
+      </span>
+    );
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getStatusTag = (status) => {
+    const statusConfig = {
+      Pending: { color: "gold", text: "Chờ duyệt" },
+      AdminApproved: { color: "blue", text: "Đã duyệt" },
+      Completed: { color: "green", text: "Đã xác nhận" },
+      Resolved: { color: "green", text: "Đã xử lý" },
+      Rejected: { color: "red", text: "Đã từ chối" },
+    };
+    const config = statusConfig[status] || {
+      color: "default",
+      text: status,
+    };
+    return <Tag color={config.color}>{config.text}</Tag>;
+  };
+
+  // Handle create withdrawal request
+  const handleCreateWithdrawal = async (values) => {
+    setLoadingCreateWithdrawal(true);
+    try {
+      await paymentService.createWithdrawalRequest({
+        amount: values.amount,
+        bankName: values.bankName,
+        accountNumber: values.accountNumber,
+        accountName: values.accountName,
+        note: values.note || "Rut tien",
+      });
+      toast.success("Tạo yêu cầu rút tiền thành công!");
+      setIsModalCreateWithdrawalOpen(false);
+      formCreateWithdrawal.resetFields();
+      fetchWithdrawalRequests(
+        withdrawalPagination.current,
+        withdrawalPagination.pageSize
+      );
+    } catch (error) {
+      console.error("Error creating withdrawal request:", error);
+      toast.error(
+        error.response?.data?.message || "Không thể tạo yêu cầu rút tiền"
+      );
+    } finally {
+      setLoadingCreateWithdrawal(false);
+    }
+  };
+
+  // Handle confirm withdrawal request (only for Approved status)
+  const handleConfirmWithdrawal = async (id) => {
+    Modal.confirm({
+      title: "Xác nhận rút tiền",
+      content: "Bạn có chắc chắn muốn xác nhận yêu cầu rút tiền này không?",
+      okText: "Xác nhận",
+      cancelText: "Hủy",
+      okType: "primary",
+      onOk: async () => {
+        try {
+          await paymentService.confirmWithdrawalRequest(id);
+          toast.success("Xác nhận yêu cầu rút tiền thành công!");
+          fetchWithdrawalRequests(
+            withdrawalPagination.current,
+            withdrawalPagination.pageSize
+          );
+          setIsModalWithdrawalDetailOpen(false);
+          setSelectedWithdrawalRequest(null);
+        } catch (error) {
+          console.error("Error confirming withdrawal request:", error);
+          toast.error("Không thể xác nhận yêu cầu rút tiền");
+        }
+      },
+    });
+  };
+
+  // View withdrawal details
+  const handleViewWithdrawalDetails = (record) => {
+    setSelectedWithdrawalRequest(record);
+    setIsModalWithdrawalDetailOpen(true);
+  };
+
+  // Withdrawal columns
+  const withdrawalColumns = [
+    {
+      title: "Số tiền",
+      dataIndex: "amount",
+      key: "amount",
+      align: "center",
+      width: 150,
+      sorter: (a, b) => (a.amount || 0) - (b.amount || 0),
+      render: (amount) => (
+        <div className="font-semibold text-green-600 text-lg">
+          {formatCurrency(amount)}
+        </div>
+      ),
+    },
+    {
+      title: "Ngân hàng",
+      key: "bank",
+      align: "left",
+      width: 200,
+      render: (_, record) => (
+        <div>
+          <div className="font-medium text-gray-900">{record.bankName}</div>
+          <div className="text-xs text-gray-600">{record.accountNumber}</div>
+          <div className="text-xs text-gray-500">{record.accountName}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      align: "center",
+      width: 120,
+      render: (status) => getStatusTag(status),
+    },
+    {
+      title: "Ngày tạo",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      align: "center",
+      width: 150,
+      sorter: (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      render: (date) => (
+        <div className="text-sm text-gray-600">{formatDateTime(date)}</div>
+      ),
+    },
+  ];
+
+  // Wallet detail columns
+  const pendingColumns = [
+    {
+      title: "Ngày giao dịch",
+      dataIndex: ["transactionDetail", "transactionDate"],
+      key: "transactionDate",
+      align: "center",
+      width: 180,
+      render: (date) => (
+        <div className="text-sm text-gray-700">{formatDateTime(date)}</div>
+      ),
+    },
+    {
+      title: "Khóa học",
+      dataIndex: "courseName",
+      key: "courseName",
+      align: "left",
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Khách hàng",
+      dataIndex: "customerFullName",
+      key: "customerFullName",
+      align: "left",
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Loại giao dịch",
+      dataIndex: "transactionType",
+      key: "transactionType",
+      align: "center",
+      render: (type) => getTransactionTypeText(type),
+    },
+    {
+      title: "Số tiền giao dịch",
+      dataIndex: "totalProfit",
+      key: "totalProfit",
+      align: "center",
+      render: (value) =>
+        renderSignedAmount(
+          value,
+          "font-semibold text-green-600",
+          "font-semibold text-red-600"
+        ),
+    },
+  ];
+
+  const simpleWalletColumns = [
+    {
+      title: "Ngày giao dịch",
+      dataIndex: "transactionDate",
+      key: "transactionDate",
+      align: "center",
+      width: 180,
+      render: (date) => (
+        <div className="text-sm text-gray-700">{formatDateTime(date)}</div>
+      ),
+    },
+    {
+      title: "Loại giao dịch",
+      dataIndex: "transactionType",
+      key: "transactionType",
+      align: "center",
+      render: (type) => getTransactionTypeText(type),
+    },
+    {
+      title: "Mô tả",
+      dataIndex: "description",
+      key: "description",
+      align: "left",
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Số tiền giao dịch",
+      dataIndex: "totalProfit",
+      key: "totalProfit",
+      align: "center",
+      render: (value) =>
+        renderSignedAmount(
+          value,
+          "font-semibold text-green-600",
+          "font-semibold text-red-600"
+        ),
+    },
+  ];
+
+  const filteredWithdrawals = withdrawalRequests.filter((item) => {
+    const matchesSearch = withdrawalSearchText
+      ? (item.accountFullName?.toLowerCase() || "").includes(
+          withdrawalSearchText.toLowerCase()
+        ) ||
+        (item.accountName?.toLowerCase() || "").includes(
+          withdrawalSearchText.toLowerCase()
+        ) ||
+        (item.bankName?.toLowerCase() || "").includes(
+          withdrawalSearchText.toLowerCase()
+        ) ||
+        (item.accountNumber || "").includes(withdrawalSearchText)
+      : true;
+
+
+    return matchesSearch;
+  });
+
+  const hasUnresolvedWithdrawal = withdrawalRequests.some(
+    (item) => item.status !== "Resolved"
+  );
+
+  // Reload all data (transactions, wallet, withdrawals)
+  const handleReloadAll = () => {
+    fetchTransactions(1, pagination.pageSize);
+    fetchWalletBalance();
+    fetchWithdrawalRequests(1, withdrawalPagination.pageSize);
+    fetchPendingBalanceDetails();
+    fetchAvailableBalanceDetails();
+    fetchDisbursementDetails();
+  };
+
+  // Filter controls UI
+  const transactionFilters = (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <Button
+        icon={<ReloadOutlined />}
+        onClick={handleReloadAll}
+        size="middle"
+      >
+        Làm mới
+      </Button>
+      <Input
+        placeholder="Tìm kiếm theo mã GD, khách hàng, loại giao dịch..."
+        prefix={<SearchOutlined />}
+        onChange={(e) => setSearchText(e.target.value)}
+        style={{ width: 280 }}
+        allowClear
+        size="middle"
+      />
+
+      <Select
+        placeholder="Lọc theo loại giao dịch"
+        value={statusFilter}
+        onChange={setStatusFilter}
+        style={{ width: 200 }}
+        size="middle"
+      >
+        <Select.Option value="all">Tất cả loại</Select.Option>
+        <Select.Option value="ProductOrder">Đơn hàng</Select.Option>
+        <Select.Option value="ExtendCourse">Gia hạn khóa học</Select.Option>
+        <Select.Option value="GymCourse">Gói tập Gym</Select.Option>
+        <Select.Option value="Withdraw">Rút tiền</Select.Option>
+        <Select.Option value="DistributeProfit">
+          Phân phối lợi nhuận
+        </Select.Option>
+      </Select>
+
+      <Button
+        icon={<ImStatsBars />}
+        className="bg-[#FF914D] text-white border-0 hover:bg-[#e8823d]"
+        size="middle"
+      >
+        Xuất báo cáo
+      </Button>
+    </div>
+  );
+
+  const withdrawalFilters = (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <Button
+        icon={<ReloadOutlined />}
+        onClick={handleReloadAll}
+        size="middle"
+      >
+        Làm mới
+      </Button>
+      <Input
+        placeholder="Tìm kiếm theo tên, ngân hàng, số tài khoản..."
+        prefix={<SearchOutlined />}
+        value={withdrawalSearchText}
+        onChange={(e) => setWithdrawalSearchText(e.target.value)}
+        style={{ width: 280 }}
+        allowClear
+        size="middle"
+      />
+      {/* <Select
+        value={withdrawalStatusFilter}
+        onChange={setWithdrawalStatusFilter}
+        style={{ width: 180 }}
+        size="middle"
+      >
+        <Select.Option value="All">Tất cả trạng thái</Select.Option>
+        <Select.Option value="Pending">Chờ duyệt</Select.Option>
+        <Select.Option value="AdminApproved">Đã duyệt</Select.Option>
+        <Select.Option value="Completed">Đã xác nhận</Select.Option>
+        <Select.Option value="Rejected">Đã từ chối</Select.Option>
+      </Select> */}
+
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        size="middle"
+        onClick={() => setIsModalCreateWithdrawalOpen(true)}
+        disabled={hasUnresolvedWithdrawal}
+        className={`border-0 ${
+          hasUnresolvedWithdrawal
+            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+            : "bg-[#ED2A46] text-white hover:bg-[#e43e56]"
+        }`}
+      >
+        {hasUnresolvedWithdrawal
+          ? "Bạn đã có yêu cầu đang chờ xử lý"
+          : "Tạo Yêu Cầu Rút Tiền"}
+      </Button>
+    </div>
+  );
 
   if (loading && transactions.length === 0) {
     return (
@@ -270,12 +906,54 @@ export default function ManageGymTransaction() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <MdPayment />
           Quản Lý Giao Dịch
         </h1>
+
+        {/* Wallet Balance Row */}
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={24} md={12}>
+            <Card className="border-0 shadow-md bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Số dư khả dụng
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-emerald-600">
+                    {loadingWalletBalance
+                      ? "Đang tải..."
+                      : formatCurrency(walletBalance.totalAvailableBalance)}
+                  </div>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+                  <DollarOutlined className="text-white text-2xl" />
+                </div>
+              </div>
+            </Card>
+          </Col>
+          <Col xs={24} md={12}>
+            <Card className="border-0 shadow-md bg-gradient-to-r from-amber-50 to-yellow-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">
+                    Số dư đang xử lý
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-amber-600">
+                    {loadingWalletBalance
+                      ? "Đang tải..."
+                      : formatCurrency(walletBalance.totalPendingBalance)}
+                  </div>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center shadow-md">
+                  <ClockCircleOutlined className="text-white text-2xl" />
+                </div>
+              </div>
+            </Card>
+          </Col>
+        </Row>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -321,78 +999,141 @@ export default function ManageGymTransaction() {
         </div>
       </div>
 
-      <ConfigProvider
-        theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
-      >
-        {/* Filters */}
-        <Card
-          style={{marginBottom: 20}}
-          title={
+      <Card className="border-0 shadow-lg">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  key: "transactions",
+                  label: (
             <span className="flex items-center gap-2">
-              <FaFilter /> Bộ lọc
+                      <MdPayment />
+                      Giao Dịch
             </span>
-          }
-        >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
-              <Input
-                placeholder="Tìm kiếm theo mã GD, khách hàng, loại giao dịch..."
-                prefix={<SearchOutlined />}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: 350 }}
-                allowClear
-              />
+                  ),
+                },
+                {
+                  key: "withdrawals",
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <MoneyCollectOutlined />
+                      Yêu Cầu Rút Tiền
+                    </span>
+                  ),
+                },
+                {
+                  key: "wallet",
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <FaMoneyBillWave />
+                      Số Dư Ví
+                    </span>
+                  ),
+                },
+              ]}
+            />
 
-              <Select
-                placeholder="Lọc theo loại giao dịch"
-                value={statusFilter}
-                onChange={setStatusFilter}
-                style={{ width: 200 }}
-              >
-                <Select.Option value="all">Tất cả loại</Select.Option>
-                <Select.Option value="ProductOrder">Đơn hàng</Select.Option>
-                <Select.Option value="ExtendCourse">Gia hạn khóa học</Select.Option>
-                <Select.Option value="GymCourse">Gói tập Gym</Select.Option>
-                <Select.Option value="Withdraw">Rút tiền</Select.Option>
-                <Select.Option value="DistributeProfit">Phân phối lợi nhuận</Select.Option>
-              </Select>
+            <div className="w-full md:w-auto">
+              {activeTab === "transactions"
+                ? transactionFilters
+                : activeTab === "withdrawals"
+                ? withdrawalFilters
+                : null}
             </div>
-
-            <Button
-              icon={<ImStatsBars />}
-              className="bg-[#FF914D] text-white border-0 hover:bg-[#e8823d]"
-            >
-              Xuất báo cáo
-            </Button>
           </div>
-        </Card>
 
-        <Table
-          dataSource={filteredData}
-          columns={columns}
-          loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            position: ["bottomCenter"],
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} giao dịch`,
-          }}
-          onChange={handleTableChange}
-          scroll={{ x: 800 }}
-          size="middle"
-          rowKey="transactionId"
-          onRow={(record) => ({
-            onClick: () => {
-              fetchTransactionDetail(record.transactionId);
-            },
-            style: { cursor: "pointer" },
-          })}
-        />
-      </ConfigProvider>
+          {activeTab === "transactions" ? (
+            <ConfigProvider
+              theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
+            >
+              <Table
+                dataSource={filteredData}
+                columns={columns}
+                loading={loading}
+                pagination={{
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  position: ["bottomCenter"],
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} của ${total} giao dịch`,
+                }}
+                onChange={handleTableChange}
+                scroll={{ x: 800 }}
+                size="middle"
+                rowKey="transactionId"
+                onRow={(record) => ({
+                  onClick: () => {
+                    fetchTransactionDetail(record.transactionId);
+                  },
+                  style: { cursor: "pointer" },
+                })}
+              />
+            </ConfigProvider>
+          ) : activeTab === "withdrawals" ? (
+            <ConfigProvider
+              theme={{
+                components: {
+                  Table: {
+                    headerBg:
+                      "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
+                    headerColor: "#333",
+                    rowHoverBg: "#FFF9FA",
+                  },
+                },
+              }}
+            >
+              <Table
+                dataSource={filteredWithdrawals}
+                columns={withdrawalColumns}
+                loading={loadingWithdrawals}
+                pagination={{
+                  current: withdrawalPagination.current,
+                  pageSize: withdrawalPagination.pageSize,
+                  total: withdrawalPagination.total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} của ${total} yêu cầu`,
+                  position: ["bottomCenter"],
+                }}
+                onChange={handleWithdrawalTableChange}
+                className="rounded-lg overflow-hidden"
+                scroll={{ x: 800 }}
+                rowKey="id"
+                onRow={(record) => ({
+                  onClick: () => {
+                    handleViewWithdrawalDetails(record);
+                  },
+                  style: { cursor: "pointer" },
+                })}
+              />
+            </ConfigProvider>
+          ) : (
+            <WalletBalanceTab
+              walletFilter={walletFilter}
+              setWalletFilter={setWalletFilter}
+              pendingTotalProfit={pendingTotalProfit}
+              pendingItems={pendingItems}
+              pendingColumns={pendingColumns}
+              loadingPendingDetails={loadingPendingDetails}
+              availableTotalProfit={availableTotalProfit}
+              availableItems={availableItems}
+              simpleWalletColumns={simpleWalletColumns}
+              loadingAvailableDetails={loadingAvailableDetails}
+              disbursementTotalProfit={disbursementTotalProfit}
+              disbursementItems={disbursementItems}
+              loadingDisbursementDetails={loadingDisbursementDetails}
+              renderSignedAmount={renderSignedAmount}
+            />
+          )}
+        </div>
+      </Card>
 
       {/* Transaction Detail Modal - Enhanced UI */}
       <FitBridgeModal
@@ -442,11 +1183,15 @@ export default function ManageGymTransaction() {
                       <span>Số Tiền Thanh Toán</span>
                     </div>
                     <div className="text-2xl font-bold text-[#ED2A46]">
-                      {selectedTransaction.totalPaidAmount !== null && selectedTransaction.totalPaidAmount !== undefined
-                        ? selectedTransaction.totalPaidAmount.toLocaleString("vi", {
+                      {selectedTransaction.totalPaidAmount !== null &&
+                      selectedTransaction.totalPaidAmount !== undefined
+                        ? selectedTransaction.totalPaidAmount.toLocaleString(
+                            "vi",
+                            {
                             style: "currency",
                             currency: "VND",
-                          })
+                            }
+                          )
                         : "N/A"}
                     </div>
                   </div>
@@ -486,48 +1231,68 @@ export default function ManageGymTransaction() {
                   
                   <Descriptions.Item label="Loại Giao Dịch">
                     <Tag 
-                      color={getTransactionTypeColor(selectedTransaction.transactionType)}
+                      color={getTransactionTypeColor(
+                        selectedTransaction.transactionType
+                      )}
                       className="text-sm px-3 py-1"
                     >
-                      {getTransactionTypeText(selectedTransaction.transactionType)}
+                      {getTransactionTypeText(
+                        selectedTransaction.transactionType
+                      )}
                     </Tag>
                   </Descriptions.Item>
                   
                   <Descriptions.Item label="Phương Thức">
-                    <Tag color="cyan" icon={<MdPayment />} className="text-sm px-3 py-1">
+                    <Tag
+                      color="cyan"
+                      icon={<MdPayment />}
+                      className="text-sm px-3 py-1"
+                    >
                       {selectedTransaction.paymentMethod || "N/A"}
                     </Tag>
                   </Descriptions.Item>
                   
                   <Descriptions.Item label="Số Tiền Thanh Toán">
                     <span className="text-lg font-bold text-[#ED2A46]">
-                      {selectedTransaction.totalPaidAmount !== null && selectedTransaction.totalPaidAmount !== undefined
-                        ? selectedTransaction.totalPaidAmount.toLocaleString("vi", {
+                      {selectedTransaction.totalPaidAmount !== null &&
+                      selectedTransaction.totalPaidAmount !== undefined
+                        ? selectedTransaction.totalPaidAmount.toLocaleString(
+                            "vi",
+                            {
                             style: "currency",
                             currency: "VND",
-                          })
+                            }
+                          )
                         : "N/A"}
                     </span>
                   </Descriptions.Item>
                   
                   <Descriptions.Item label="Lợi Nhuận">
                     <span className="text-lg font-bold text-green-600">
-                      {selectedTransaction.profitAmount !== null && selectedTransaction.profitAmount !== undefined
-                        ? selectedTransaction.profitAmount.toLocaleString("vi", {
+                      {selectedTransaction.profitAmount !== null &&
+                      selectedTransaction.profitAmount !== undefined
+                        ? selectedTransaction.profitAmount.toLocaleString(
+                            "vi",
+                            {
                             style: "currency",
                             currency: "VND",
-                          })
+                            }
+                          )
                         : "N/A"}
                     </span>
                   </Descriptions.Item>
 
-                  {selectedTransaction.withdrawalAmount !== null && selectedTransaction.withdrawalAmount !== undefined && (
+                  {selectedTransaction.withdrawalAmount !== null &&
+                    selectedTransaction.withdrawalAmount !== undefined && (
                     <Descriptions.Item label="Số Tiền Rút" span={2}>
                       <span className="text-lg font-bold text-purple-600">
-                        {selectedTransaction.withdrawalAmount.toLocaleString("vi", {
+                          {selectedTransaction.withdrawalAmount.toLocaleString(
+                            "vi",
+                            {
                           style: "currency",
                           currency: "VND",
-                        })}
+                            }
+                          )}
                       </span>
                     </Descriptions.Item>
                   )}
@@ -536,7 +1301,9 @@ export default function ManageGymTransaction() {
                     <div className="flex flex-col">
                       <span className="font-semibold">
                         {selectedTransaction.createdAt
-                          ? new Date(selectedTransaction.createdAt).toLocaleDateString("vi-VN", {
+                          ? new Date(
+                              selectedTransaction.createdAt
+                            ).toLocaleDateString("vi-VN", {
                               weekday: "long",
                               year: "numeric",
                               month: "long",
@@ -546,7 +1313,9 @@ export default function ManageGymTransaction() {
                       </span>
                       <span className="text-xs text-gray-500">
                         {selectedTransaction.createdAt
-                          ? new Date(selectedTransaction.createdAt).toLocaleTimeString("vi-VN")
+                          ? new Date(
+                              selectedTransaction.createdAt
+                            ).toLocaleTimeString("vi-VN")
                           : ""}
                       </span>
                     </div>
@@ -580,7 +1349,9 @@ export default function ManageGymTransaction() {
                     className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
                   />
                   <div className="flex-1">
-                    <div className="text-sm text-gray-500 mb-1">Họ Tên Khách Hàng</div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Họ Tên Khách Hàng
+                    </div>
                     <div className="text-xl font-bold text-gray-800">
                       {selectedTransaction.customerName || "Chưa có thông tin"}
                     </div>
@@ -595,11 +1366,357 @@ export default function ManageGymTransaction() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            Không có dữ liệu
-          </div>
+          <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
         )}
       </FitBridgeModal>
+
+      {/* Withdrawal Detail Modal - FitBridge style */}
+      <FitBridgeModal
+        open={isModalWithdrawalDetailOpen}
+        onCancel={() => {
+          setIsModalWithdrawalDetailOpen(false);
+          setSelectedWithdrawalRequest(null);
+        }}
+        title="Chi Tiết Yêu Cầu Rút Tiền"
+        titleIcon={<MoneyCollectOutlined />}
+        width={800}
+        logoSize="medium"
+        bodyStyle={{ padding: 0, maxHeight: "75vh", overflowY: "auto" }}
+      >
+        {selectedWithdrawalRequest ? (
+          <div className="flex flex-col">
+            {/* Header with key info */}
+            <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
+              <Row gutter={[24, 16]}>
+                <Col xs={24} md={12}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <FaMoneyBillWave className="text-[#FF914D]" />
+                      <span>Số Tiền Yêu Cầu</span>
+          </div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(selectedWithdrawalRequest.amount)}
+                    </div>
+                  </div>
+                </Col>
+                <Col xs={24} md={12}>
+                  <div className="flex flex-col gap-2 items-start md:items-end">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <CalendarOutlined className="text-[#FF914D]" />
+                      <span>Ngày Tạo</span>
+                    </div>
+                    <div className="font-semibold text-gray-800">
+                      {formatDateTime(selectedWithdrawalRequest.createdAt)}
+                    </div>
+                    <div className="mt-2">
+                      {getStatusTag(selectedWithdrawalRequest.status)}
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Main content */}
+            <div className="p-6 flex flex-col gap-5 space-y-6">
+              {/* Bank & account info */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title={
+                  <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                    <BankOutlined />
+                    Thông Tin Ngân Hàng
+                  </span>
+                }
+                bordered
+                style={{ borderColor: "#FFE5E9" }}
+              >
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item label="Ngân hàng">
+                    <span className="font-semibold">
+                      {selectedWithdrawalRequest.bankName}
+                    </span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tên tài khoản">
+                    <span className="font-semibold">
+                      {selectedWithdrawalRequest.accountName}
+                    </span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Số tài khoản">
+                    <span className="font-mono font-semibold">
+                      {selectedWithdrawalRequest.accountNumber}
+                    </span>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              {/* Proof image */}
+              {selectedWithdrawalRequest.imageUrl && (
+                <Card
+                  size="small"
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                  title={
+                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                      <FaInfoCircle />
+                      Hình Ảnh Chứng Từ
+                    </span>
+                  }
+                  bordered
+                  style={{ borderColor: "#FFE5E9" }}
+                >
+                  <Image
+                    src={selectedWithdrawalRequest.imageUrl}
+                    alt="Withdrawal proof"
+                    className="w-full rounded-lg"
+                  />
+                </Card>
+              )}
+
+              {/* Note / reason */}
+              {selectedWithdrawalRequest.reason && (
+                <Card
+                  size="small"
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                  title={
+                    <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
+                      <FaInfoCircle />
+                      Lý Do / Ghi Chú
+                    </span>
+                  }
+                  bordered
+                  style={{ borderColor: "#FFE5E9" }}
+                >
+                  <p className="text-gray-700 whitespace-pre-line">
+                    {selectedWithdrawalRequest.reason}
+                  </p>
+                </Card>
+              )}
+            </div>
+
+            {/* Footer actions */}
+            <div className="px-6 pb-4 flex justify-end gap-3 border-t border-gray-100 pt-4">
+              <Button
+                onClick={() => {
+                  setIsModalWithdrawalDetailOpen(false);
+                  setSelectedWithdrawalRequest(null);
+                }}
+              >
+                Đóng
+              </Button>
+              {selectedWithdrawalRequest?.status === "AdminApproved" && (
+                <Button
+                  key="confirm"
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  className="bg-green-500 hover:bg-green-600"
+                  onClick={() =>
+                    handleConfirmWithdrawal(selectedWithdrawalRequest.id)
+                  }
+                >
+                  Xác Nhận Rút Tiền
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
+        )}
+      </FitBridgeModal>
+
+      {/* Create Withdrawal Request Modal */}
+      <Modal
+        open={isModalCreateWithdrawalOpen}
+        onCancel={() => {
+          setIsModalCreateWithdrawalOpen(false);
+          formCreateWithdrawal.resetFields();
+        }}
+        title={
+          <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+            <div className="p-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg">
+              <MoneyCollectOutlined className="text-white text-xl" />
+    </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 m-0">
+                Tạo Yêu Cầu Rút Tiền
+              </h2>
+              <p className="text-sm text-gray-500 m-0">
+                Số dư khả dụng: {formatCurrency(availableBalance)}
+              </p>
+            </div>
+          </div>
+        }
+        footer={null}
+        width={700}
+      >
+        <Form
+          form={formCreateWithdrawal}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={handleCreateWithdrawal}
+        >
+          <Form.Item
+            label={
+              <span className="text-base font-semibold text-gray-700">
+                Số tiền rút (VNĐ)
+              </span>
+            }
+            name="amount"
+            rules={[
+              { required: true, message: "Vui lòng nhập số tiền" },
+              {
+                type: "number",
+                min: 10000,
+                message: "Số tiền tối thiểu là 10,000 VNĐ",
+              },
+              {
+                validator: (_, value) => {
+                  if (value && value > availableBalance) {
+                    return Promise.reject(
+                      new Error("Số tiền không được vượt quá số dư khả dụng")
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <InputNumber
+              min={10000}
+              max={availableBalance}
+              placeholder="Nhập số tiền muốn rút"
+              className="!w-full"
+              size="large"
+              formatter={(value) =>
+                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+              }
+              parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+              prefix={<DollarOutlined />}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <span className="text-base font-semibold text-gray-700">
+                Tên ngân hàng
+              </span>
+            }
+            name="bankName"
+            rules={[{ required: true, message: "Vui lòng chọn ngân hàng" }]}
+          >
+            <Select
+              showSearch
+              placeholder="Chọn ngân hàng"
+              style={{ width: "100%", height: 60 }}
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.label || "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              options={banks.map((b) => ({
+                label: (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={b.logo}
+                      alt={b.name}
+                      className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-gray-900">
+                        {b.name} ({b.code})
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {b.bankFullName}
+                      </span>
+                    </div>
+                  </div>
+                ),
+                value: b.name,
+              }))}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <span className="text-base font-semibold text-gray-700">
+                Số tài khoản
+              </span>
+            }
+            name="accountNumber"
+            rules={[
+              { required: true, message: "Vui lòng nhập số tài khoản" },
+              {
+                pattern: /^[0-9]+$/,
+                message: "Số tài khoản chỉ được chứa số",
+              },
+            ]}
+          >
+            <Input
+              placeholder="Nhập số tài khoản"
+              size="large"
+              prefix={<BankOutlined className="text-gray-400" />}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <span className="text-base font-semibold text-gray-700">
+                Tên chủ tài khoản
+              </span>
+            }
+            name="accountName"
+            rules={[
+              { required: true, message: "Vui lòng nhập tên chủ tài khoản" },
+            ]}
+          >
+            <Input
+              placeholder="Nhập tên chủ tài khoản"
+              size="large"
+              prefix={<UserOutlined className="text-gray-400" />}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={
+              <span className="text-base font-semibold text-gray-700">
+                Ghi chú (tùy chọn)
+              </span>
+            }
+            name="note"
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập lý do hoặc ghi chú..."
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+
+          <div className="text-center pt-6 border-t border-gray-200">
+            <Space size="middle">
+              <Button
+                size="large"
+                onClick={() => {
+                  setIsModalCreateWithdrawalOpen(false);
+                  formCreateWithdrawal.resetFields();
+                }}
+                className="px-8"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                loading={loadingCreateWithdrawal}
+                onClick={() => formCreateWithdrawal.submit()}
+                className="px-8 bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg"
+              >
+                {loadingCreateWithdrawal ? "Đang xử lý..." : "Tạo Yêu Cầu"}
+              </Button>
+            </Space>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 }

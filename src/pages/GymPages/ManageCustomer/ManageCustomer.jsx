@@ -8,7 +8,6 @@ import {
   Spin,
   Table,
   Tag,
-  Tooltip,
   Avatar,
 } from "antd";
 import React, { useEffect, useState } from "react";
@@ -18,10 +17,11 @@ import {
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { FaEye, FaUsers, FaFilter } from "react-icons/fa";
+import { FaUsers, FaFilter } from "react-icons/fa";
 import { ImStatsBars } from "react-icons/im";
 import { MdFitnessCenter } from "react-icons/md";
 import gymService from "../../../services/gymServices";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 
 export default function ManageGymCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -205,24 +205,6 @@ export default function ManageGymCustomers() {
       render: (date) =>
         date ? new Date(date).toLocaleDateString("vi-VN") : "N/A",
     },
-    {
-      title: "Hành Động",
-      key: "action",
-      align: "center",
-      width: 100,
-      render: (text, record) => (
-        <Tooltip title="Xem chi tiết">
-          <FaEye
-            onClick={() => {
-              setSelectedCustomer(record);
-              setIsModalCustomerDetailOpen(true);
-            }}
-            size={20}
-            className="cursor-pointer text-blue-500 hover:text-blue-700"
-          />
-        </Tooltip>
-      ),
-    },
   ];
 
   const filteredData = customers.filter((item) => {
@@ -269,7 +251,7 @@ export default function ManageGymCustomers() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <FaUsers />
@@ -311,198 +293,239 @@ export default function ManageGymCustomers() {
         </div>
       </div>
 
-      <ConfigProvider
-        theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
-      >
-        {/* Filters */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <Input
-              placeholder="Tìm kiếm theo tên, SĐT, gói tập, PT..."
-              prefix={<SearchOutlined />}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 320 }}
-              allowClear
-            />
+      <Card className="border-0 shadow-lg">
+        <ConfigProvider
+          theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
+        >
+          {/* Filters */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <Input
+                placeholder="Tìm kiếm theo tên, SĐT, gói tập, PT..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 320 }}
+                allowClear
+                size="middle"
+              />
 
-            <Select
-              placeholder="Lọc theo trạng thái"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 150 }}
-            >
-              <Select.Option value="all">Tất cả</Select.Option>
-              <Select.Option value="Active">Đang hoạt động</Select.Option>
-              <Select.Option value="Expired">Hết hạn</Select.Option>
-              <Select.Option value="Pending">Chờ xử lý</Select.Option>
-            </Select>
+              <Select
+                placeholder="Lọc theo trạng thái"
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: 180 }}
+                size="middle"
+              >
+                <Select.Option value="all">Tất cả</Select.Option>
+                <Select.Option value="Active">Đang hoạt động</Select.Option>
+                <Select.Option value="Expired">Hết hạn</Select.Option>
+                <Select.Option value="Pending">Chờ xử lý</Select.Option>
+              </Select>
 
-            <Select
-              placeholder="Lọc theo giới tính"
-              value={genderFilter}
-              onChange={setGenderFilter}
-              style={{ width: 150 }}
+              <Select
+                placeholder="Lọc theo giới tính"
+                value={genderFilter}
+                onChange={setGenderFilter}
+                style={{ width: 150 }}
+                size="middle"
+              >
+                <Select.Option value="all">Tất cả</Select.Option>
+                <Select.Option value="Male">Nam</Select.Option>
+                <Select.Option value="Female">Nữ</Select.Option>
+              </Select>
+            </div>
+
+            <Button
+              icon={<ImStatsBars />}
+              className="bg-[#FF914D] text-white border-0 hover:bg-[#e8823d]"
+              size="middle"
             >
-              <Select.Option value="all">Tất cả</Select.Option>
-              <Select.Option value="Male">Nam</Select.Option>
-              <Select.Option value="Female">Nữ</Select.Option>
-            </Select>
+              Xuất báo cáo
+            </Button>
           </div>
 
-          <Button
-            icon={<ImStatsBars />}
-            className="!bg-[#FF914D] !text-white !border-0 hover:!bg-[#e8823d]"
-          >
-            Xuất báo cáo
-          </Button>
-        </div>
-
-        <Table
-          dataSource={filteredData}
-          columns={columns}
-          rowKey="id"
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            position: ["bottomCenter"],
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} khách hàng`,
-          }}
-          onChange={handleTableChange}
-          scroll={{ x: 1400 }}
-          size="middle"
-        />
-      </ConfigProvider>
+          <Table
+            dataSource={filteredData}
+            columns={columns}
+            rowKey="id"
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              position: ["bottomCenter"],
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} của ${total} khách hàng`,
+            }}
+            onChange={handleTableChange}
+            scroll={{ x: 1200 }}
+            size="middle"
+            onRow={(record) => ({
+              onClick: () => {
+                setSelectedCustomer(record);
+                setIsModalCustomerDetailOpen(true);
+              },
+              style: { cursor: "pointer" },
+            })}
+          />
+        </ConfigProvider>
+      </Card>
 
       {/* Customer Detail Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalCustomerDetailOpen}
         onCancel={() => setIsModalCustomerDetailOpen(false)}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <UserOutlined />
-            Chi Tiết Khách Hàng
-          </p>
-        }
-        footer={null}
-        width={800}
+        title="Chi Tiết Khách Hàng"
+        titleIcon={<UserOutlined />}
+        width={900}
+        logoSize="medium"
+        bodyStyle={{ padding: 0, maxHeight: "75vh", overflowY: "auto" }}
       >
-        {selectedCustomer && (
-          <div className="space-y-4">
-            <Card title="Thông tin cá nhân" size="small">
-              <div className="flex items-center gap-6 mb-4">
+        {selectedCustomer ? (
+          <div className="flex flex-col">
+            {/* Header Section */}
+            <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
+              <div className="flex items-center gap-4">
                 <Avatar
-                  size={100}
+                  size={80}
                   src={selectedCustomer.avatarUrl}
                   icon={!selectedCustomer.avatarUrl && <UserOutlined />}
+                  className="border-2 border-white shadow-md"
                 />
                 <div>
-                  <h3 className="text-xl font-bold">
-                    {selectedCustomer.fullName}
-                  </h3>
-                  <Tag color={getStatusColor(selectedCustomer.status)}>
-                    {getStatusText(selectedCustomer.status)}
-                  </Tag>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <strong>Số điện thoại:</strong>
-                  <div className="mt-1">{selectedCustomer.phone || "N/A"}</div>
-                </div>
-                <div>
-                  <strong>Giới tính:</strong>
-                  <div className="mt-1">
-                    {getGenderText(selectedCustomer.gender)}
+                  <div className="text-sm text-gray-500">Họ và tên</div>
+                  <div className="text-2xl font-bold text-gray-800">
+                    {selectedCustomer.fullName || "Chưa có thông tin"}
                   </div>
-                </div>
-                <div>
-                  <strong>Ngày sinh:</strong>
-                  <div className="mt-1">
-                    {selectedCustomer.dob
-                      ? new Date(selectedCustomer.dob).toLocaleDateString(
-                          "vi-VN"
-                        )
-                      : "N/A"}
-                  </div>
-                </div>
-                <div>
-                  <strong>Ngày tham gia:</strong>
-                  <div className="mt-1">
-                    {selectedCustomer.joinedAt
-                      ? new Date(selectedCustomer.joinedAt).toLocaleDateString(
-                          "vi-VN"
-                        )
-                      : "N/A"}
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card title="Thông tin gói tập" size="small">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <strong>Tên gói:</strong>
-                  <div className="mt-1 text-blue-600 font-medium">
-                    {selectedCustomer.packageName || "N/A"}
-                  </div>
-                </div>
-                <div>
-                  <strong>Huấn luyện viên:</strong>
-                  <div className="mt-1">
-                    {selectedCustomer.ptName || "Không có"}
-                  </div>
-                </div>
-                <div>
-                  <strong>Ngày hết hạn:</strong>
-                  <div className="mt-1 text-red-600 font-medium">
-                    {selectedCustomer.expirationDate
-                      ? new Date(
-                          selectedCustomer.expirationDate
-                        ).toLocaleDateString("vi-VN")
-                      : "N/A"}
-                  </div>
-                </div>
-                <div>
-                  <strong>Số buổi còn lại:</strong>
-                  <div
-                    className={`mt-1 font-bold text-lg ${
-                      selectedCustomer.ptGymAvailableSession <= 2
-                        ? "text-red-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {selectedCustomer.ptGymAvailableSession} buổi
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card title="Thông tin giao dịch" size="small">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <strong>Mã giao dịch gần nhất:</strong>
-                  <div className="font-mono text-xs bg-gray-100 p-2 rounded mt-1">
-                    {selectedCustomer.latestCustomerPurchasedId || "N/A"}
-                  </div>
-                </div>
-                <div>
-                  <strong>Trạng thái gói:</strong>
-                  <div className="mt-1">
+                  <div className="mt-2">
                     <Tag color={getStatusColor(selectedCustomer.status)}>
                       {getStatusText(selectedCustomer.status)}
                     </Tag>
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
+
+            {/* Main Content */}
+            <div className="p-6 flex flex-col gap-5 space-y-6">
+              {/* Personal Info */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title="Thông tin cá nhân"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-gray-500">Số điện thoại</div>
+                    <div className="font-medium">
+                      {selectedCustomer.phone || "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Giới tính</div>
+                    <div className="font-medium">
+                      {getGenderText(selectedCustomer.gender)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Ngày sinh</div>
+                    <div className="font-medium">
+                      {selectedCustomer.dob
+                        ? new Date(selectedCustomer.dob).toLocaleDateString(
+                            "vi-VN"
+                          )
+                        : "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Ngày tham gia</div>
+                    <div className="font-medium">
+                      {selectedCustomer.joinedAt
+                        ? new Date(
+                            selectedCustomer.joinedAt
+                          ).toLocaleDateString("vi-VN")
+                        : "N/A"}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Package Info */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title="Thông tin gói tập"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-gray-500">Tên gói</div>
+                    <div className="font-medium text-blue-600">
+                      {selectedCustomer.packageName || "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Huấn luyện viên</div>
+                    <div className="font-medium">
+                      {selectedCustomer.ptName || "Không có"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Ngày hết hạn</div>
+                    <div className="font-medium text-red-600">
+                      {selectedCustomer.expirationDate
+                        ? new Date(
+                            selectedCustomer.expirationDate
+                          ).toLocaleDateString("vi-VN")
+                        : "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Số buổi còn lại</div>
+                    <div
+                      className={`font-bold text-lg ${
+                        selectedCustomer.ptGymAvailableSession <= 2
+                          ? "text-red-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {selectedCustomer.ptGymAvailableSession} buổi
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Transaction Info */}
+              <Card
+                size="small"
+                className="shadow-sm hover:shadow-md transition-shadow"
+                title="Thông tin giao dịch"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-gray-500">
+                      Mã giao dịch gần nhất
+                    </div>
+                    <div className="font-mono text-xs bg-gray-100 p-2 rounded mt-1">
+                      {selectedCustomer.latestCustomerPurchasedId || "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Trạng thái gói</div>
+                    <div className="mt-1">
+                      <Tag color={getStatusColor(selectedCustomer.status)}>
+                        {getStatusText(selectedCustomer.status)}
+                      </Tag>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
           </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
         )}
-      </Modal>
+      </FitBridgeModal>
     </div>
   );
 }

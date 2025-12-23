@@ -11,6 +11,7 @@ import {
   Space,
   ConfigProvider,
   DatePicker,
+  Typography,
 } from "antd";
 import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
@@ -31,7 +32,10 @@ import gymService from "../../../services/gymServices";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../../redux/features/userSlice";
 import defaultAvatar from "../../../assets/LogoColor.png";
+import { IoBarbell } from "react-icons/io5";
 import dayjs from "dayjs";
+
+const { Title } = Typography;
 
 export default function ManagePTSchedule() {
   const [pts, setPts] = useState([]);
@@ -448,11 +452,20 @@ export default function ManagePTSchedule() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+      <div style={{ marginBottom: 24 }}>
+        <Title
+          level={2}
+          style={{
+            margin: 0,
+            color: "#ed2a46",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <IoBarbell style={{ marginRight: 12, color: "#ed2a46" }} />
           Quản Lý Lịch PT
-        </h1>
-        <p className="text-gray-600">
+        </Title>
+        <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
           Quản lý và xem lịch làm việc của các huấn luyện viên
         </p>
       </div>

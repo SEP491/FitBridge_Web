@@ -11,6 +11,7 @@ import {
   Col,
   Statistic,
   Popconfirm,
+  Typography,
 } from "antd";
 import {
   FileTextOutlined,
@@ -30,6 +31,8 @@ import jsPDF from "jspdf";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../../redux/features/userSlice";
+
+const { Title } = Typography;
 
 const ContractSigningPage = () => {
   const contractRef = useRef(null);
@@ -346,9 +349,23 @@ const ContractSigningPage = () => {
   return (
     <div className="p-6 min-h-screen">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-          <FileTextOutlined /> Quản lý hợp đồng
-        </h1>
+        <div style={{ marginBottom: 24 }}>
+          <Title
+            level={2}
+            style={{
+              margin: 0,
+              color: "#ed2a46",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <FileTextOutlined style={{ marginRight: 12, color: "#ed2a46" }} />
+            Quản lý hợp đồng
+          </Title>
+          <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
+            Quản lý, xem và ký các hợp đồng liên quan đến phòng gym
+          </p>
+        </div>
 
         <Row gutter={16} className="mb-6">
           <Col xs={24} sm={12} md={6}>

@@ -6,7 +6,6 @@ import {
   Form,
   Input,
   InputNumber,
-  Modal,
   Select,
   Space,
   Spin,
@@ -36,7 +35,6 @@ import { IoBarbell } from "react-icons/io5";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
-const { confirm } = Modal;
 
 export default function ManageSlotGym() {
   const [slots, setSlots] = useState([]);
@@ -91,47 +89,6 @@ export default function ManageSlotGym() {
     fetchSlotsGym(newPagination.current, newPagination.pageSize, searchText);
   };
 
-  const handleDelete = async (record) => {
-    confirm({
-      title: "Xác nhận xóa slot",
-      content: (
-        <div>
-          <p>
-            Bạn có chắc chắn muốn xóa slot <strong>"{record.name}"</strong>{" "}
-            không?
-          </p>
-          <p className="text-gray-500 mt-2">
-            Thời gian: {record.startTime?.slice(0, 5)} -{" "}
-            {record.endTime?.slice(0, 5)}
-          </p>
-        </div>
-      ),
-      icon: <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />,
-      okText: "Xóa",
-      cancelText: "Hủy",
-      okType: "danger",
-      onOk: async () => {
-        try {
-          await gymService.deleteSlot(record.id);
-          toast.success(`Đã xóa slot "${record.name}" thành công`);
-          // Refresh current page or go to previous page if current page becomes empty
-          const newTotal = pagination.total - 1;
-          const maxPage = Math.ceil(newTotal / pagination.pageSize);
-          const targetPage =
-            pagination.current > maxPage ? maxPage : pagination.current;
-          fetchSlotsGym(
-            Math.max(1, targetPage),
-            pagination.pageSize,
-            searchText
-          );
-        } catch (error) {
-          console.error("Error deleting slot:", error);
-          toast.error(error.response?.data?.message || "Xóa slot thất bại");
-        }
-      },
-    });
-  };
-
   const handleEdit = (record) => {
     setEditingSlot(record);
     formEdit.setFieldsValue({
@@ -181,7 +138,7 @@ export default function ManageSlotGym() {
       align: "center",
       ellipsis: true,
       render: (text) => (
-        <Text strong className="text-gray-800">
+        <Text strong style={{ color: "#1f2937" }}>
           {text}
         </Text>
       ),
@@ -220,38 +177,12 @@ export default function ManageSlotGym() {
         const minutes = duration % 60;
 
         return (
-          <Text className="text-gray-600">
+          <Text style={{ color: "#4b5563" }}>
             {hours > 0 ? `${hours}h ` : ""}
             {minutes > 0 ? `${minutes}m` : ""}
           </Text>
         );
       },
-    },
-    {
-      title: "Hành động",
-      key: "action",
-      align: "center",
-      width: 120,
-      render: (_, record) => (
-        <div className="flex justify-center items-center gap-3">
-          <Tooltip title="Chỉnh sửa">
-            <MdEdit
-              onClick={() => handleEdit(record)}
-              className="cursor-pointer hover:scale-110 transition-transform"
-              size={20}
-              color="#FF914D"
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <ImBin
-              onClick={() => handleDelete(record)}
-              className="cursor-pointer hover:scale-110 transition-transform"
-              color="#ED2A46"
-              size={18}
-            />
-          </Tooltip>
-        </div>
-      ),
     },
   ];
 
@@ -329,104 +260,125 @@ export default function ManageSlotGym() {
     slot.name.toLowerCase().includes(searchText.toLowerCase())
   );
   return (
-    <div className="  min-h-screen">
-      <div className="">
-        <div className="mb-6">
-          <Title level={2} className="!mb-2 flex items-center gap-2">
-            <IoBarbell className="text-[#FF914D]" />
+    <div style={{ padding: 16 }}>
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          <Title
+            level={2}
+            style={{
+              margin: 0,
+              color: "#ed2a46",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <IoBarbell style={{ marginRight: 12, color: "#ed2a46" }} />
             Quản lý Slot Gym
           </Title>
-          <Text type="secondary">
+          <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
             Quản lý các khung giờ tập luyện tại phòng gym
-          </Text>
+          </p>
         </div>
 
-        <Row gutter={[16, 16]} className="mb-6">
-          <Col xs={24} sm={12} md={8}>
-            <Input.Search
-              placeholder="Tìm kiếm slot..."
-              allowClear
-              size="middle"
-              onChange={(e) => {
-                if (!e.target.value) {
-                  setSearchText(e.target.value);
-                }
-              }}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={16} className="text-right">
-            <Button
-              type="primary"
-              icon={<FaPlus />}
-              size="middle"
-              className="bg-[#FF914D] hover:bg-[#e8822d] border-[#FF914D]"
-              onClick={() => setIsModalAddSlotOpen(true)}
+        <Card style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+            <Col xs={24} sm={12} md={8}>
+              <Input.Search
+                placeholder="Tìm kiếm slot..."
+                allowClear
+                size="middle"
+                onChange={(e) => {
+                  const value = e.target.value || "";
+                  setSearchText(value);
+                }}
+              />
+            </Col>
+            <Col
+              xs={24}
+              sm={12}
+              md={16}
+              style={{ textAlign: "right", display: "flex", justifyContent: "flex-end" }}
             >
-              Thêm Slot Mới
-            </Button>
-          </Col>
-        </Row>
+              <Button
+                type="primary"
+                icon={<FaPlus />}
+                size="middle"
+                onClick={() => setIsModalAddSlotOpen(true)}
+                style={{
+                  borderRadius: 8,
+                  background:
+                    "linear-gradient(135deg, #FF914D 0%, #e8822d 100%)",
+                  border: "none",
+                }}
+              >
+                Thêm Slot Mới
+              </Button>
+            </Col>
+          </Row>
 
-        <ConfigProvider
-          theme={{
-            components: {
-              Table: {
-                headerBg: "#FFE5E9",
-                headerColor: "#ED2A46",
+          <ConfigProvider
+            theme={{
+              components: {
+                Table: {
+                  headerBg: "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
+                  headerColor: "#333",
+                  rowHoverBg: "#FFF9FA",
+                },
               },
-            },
-          }}
-        >
-          <Table
-            dataSource={filteredSlot}
-            columns={columns}
-            rowKey="id"
-            loading={loading}
-            pagination={{
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-              total: pagination.total,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} của ${total} slot`,
-              position: ["bottomCenter"],
-              pageSizeOptions: ["10", "20", "50"],
             }}
-            onChange={handleTableChange}
-            locale={{
-              emptyText: (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="Chưa có slot nào"
-                />
-              ),
-            }}
-            scroll={{ x: 600 }}
-          />
-        </ConfigProvider>
+          >
+            <Table
+              dataSource={filteredSlot}
+              columns={columns}
+              rowKey="id"
+              loading={loading}
+              pagination={{
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} của ${total} slot`,
+                position: ["bottomCenter"],
+                pageSizeOptions: ["10", "20", "50"],
+              }}
+              onChange={handleTableChange}
+              locale={{
+                emptyText: (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="Chưa có slot nào"
+                  />
+                ),
+              }}
+              scroll={{ x: 600 }}
+              onRow={(record) => ({
+                onClick: () => handleEdit(record),
+                style: { cursor: "pointer" },
+              })}
+            />
+          </ConfigProvider>
+        </Card>
       </div>
 
       {/* Add Slot Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalAddSlotOpen}
         onCancel={handleCloseAddModal}
-        title={
-          <div className="text-xl font-bold text-[#ED2A46] flex items-center gap-2 border-b pb-3">
-            <IoBarbell />
-            Thêm Slot Mới
-          </div>
-        }
+        title="Thêm Slot Mới"
+        titleIcon={<IoBarbell />}
+        width={650}
+        logoSize="medium"
         footer={null}
-        width={600}
-        destroyOnClose
+        bodyStyle={{ padding: 0 }}
       >
         <Form
           form={formAdd}
           layout="vertical"
           requiredMark={false}
           onFinish={handleAddSlot}
-          className="pt-4"
+          style={{ padding: 24, paddingTop: 16 }}
         >
           <Form.Item
             label={
@@ -493,42 +445,54 @@ export default function ManageSlotGym() {
             </Col>
           </Row>
 
-          <div className="text-center pt-4 border-t">
+          <div
+            style={{
+              marginTop: 24,
+              paddingTop: 16,
+              borderTop: "1px solid #f0f0f0",
+              textAlign: "right",
+            }}
+          >
             <Space>
-              <Button onClick={handleCloseAddModal}>Hủy</Button>
+              <Button onClick={handleCloseAddModal} size="large">
+                Hủy
+              </Button>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loadingAdd}
-                className="bg-[#FF914D] hover:bg-[#e8822d] border-[#FF914D] px-8"
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  background:
+                    "linear-gradient(135deg, #FF914D 0%, #e8822d 100%)",
+                  border: "none",
+                }}
               >
                 Thêm Slot
               </Button>
             </Space>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Edit Slot Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalEditSlotOpen}
         onCancel={handleCloseEditModal}
-        title={
-          <div className="text-xl font-bold text-[#ED2A46] flex items-center gap-2 border-b pb-3">
-            <MdEdit />
-            Chỉnh sửa Slot
-          </div>
-        }
+        title="Chỉnh sửa Slot"
+        titleIcon={<MdEdit />}
+        width={650}
+        logoSize="medium"
         footer={null}
-        width={600}
-        destroyOnClose
+        bodyStyle={{ padding: 0 }}
       >
         <Form
           form={formEdit}
           layout="vertical"
           requiredMark={false}
           onFinish={handleEditSlot}
-          className="pt-4"
+          style={{ padding: 24, paddingTop: 16 }}
         >
           <Form.Item
             label={
@@ -593,21 +557,36 @@ export default function ManageSlotGym() {
             </Col>
           </Row>
 
-          <div className="text-center pt-4 border-t">
+          <div
+            style={{
+              marginTop: 24,
+              paddingTop: 16,
+              borderTop: "1px solid #f0f0f0",
+              textAlign: "right",
+            }}
+          >
             <Space>
-              <Button onClick={handleCloseEditModal}>Hủy</Button>
+              <Button onClick={handleCloseEditModal} size="large">
+                Hủy
+              </Button>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loadingEdit}
-                className="bg-[#FF914D] hover:bg-[#e8822d] border-[#FF914D] px-8"
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  background:
+                    "linear-gradient(135deg, #FF914D 0%, #e8822d 100%)",
+                  border: "none",
+                }}
               >
                 Cập nhật
               </Button>
             </Space>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
     </div>
   );
 }

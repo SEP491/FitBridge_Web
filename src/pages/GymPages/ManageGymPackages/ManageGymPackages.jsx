@@ -52,8 +52,10 @@ import { IoBarbell } from "react-icons/io5";
 import { selectUser } from "../../../redux/features/userSlice";
 import { useSelector } from "react-redux";
 import { IdcardOutlined } from "@ant-design/icons";
+import { Typography } from "antd";
 
 const { Option } = Select;
+const { Title } = Typography;
 
 export default function ManageGymPackages() {
   const user = useSelector(selectUser);
@@ -514,11 +516,20 @@ export default function ManageGymPackages() {
     <div className="">
       <div className="">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div style={{ marginBottom: 24 }}>
+          <Title
+            level={2}
+            style={{
+              margin: 0,
+              color: "#ed2a46",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <IoBarbell style={{ marginRight: 12, color: "#ed2a46" }} />
             Quản Lý Gói Tập Gym
-          </h1>
-          <p className="text-gray-600">
+          </Title>
+          <p style={{ color: "#6b7280", marginTop: 8, marginBottom: 0 }}>
             Quản lý và theo dõi các gói tập luyện tại phòng gym
           </p>
         </div>
