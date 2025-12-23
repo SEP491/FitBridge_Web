@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const THEME_COLORS = {
   primary: "#ED2A46",
@@ -11,37 +12,54 @@ const THEME_COLORS = {
 };
 
 export default function OrderProcessPage() {
-  const [orderStatus, setOrderStatus] = useState("processing"); // 'processing', 'success', 'failed'
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [orderStatus, setOrderStatus] = useState("processing");
   const [orderData, setOrderData] = useState(null);
 
-  // Simulate order processing
+  // Parse URL parameters from webhook
   useEffect(() => {
+    const code = searchParams.get("code");
+    const status = searchParams.get("status");
+    const cancel = searchParams.get("cancel");
+    const orderCode = searchParams.get("orderCode");
+    const amount = searchParams.get("amount");
+    const id = searchParams.get("id");
+    const message = searchParams.get("message");
+
+    // Small delay to show processing state
     const timer = setTimeout(() => {
-      // Randomly simulate success or failure for demo
-      const isSuccess = Math.random() > 0.99; // 70% success rate
+      // Determine if payment was successful
+      // Success: code=00, status=PAID, cancel=false
+      const isSuccess = code === "00" && status === "PAID" && cancel !== "true";
+      const isCancelled = cancel === "true";
 
       if (isSuccess) {
         setOrderStatus("success");
         setOrderData({
-          orderCode:
-            "ORD" + Math.random().toString(36).substr(2, 6).toUpperCase(),
-          amount: 2850000,
-          description: "Thanh toán đơn hàng thực phẩm",
-          paymentMethod: "Thẻ tín dụng",
+          orderCode: orderCode || "N/A",
+          amount: parseInt(amount) || 0,
+          transactionId: id || "N/A",
+          message: message || "Thanh toán thành công",
+          status: status,
         });
       } else {
         setOrderStatus("failed");
         setOrderData({
-          orderCode:
-            "ORD" + Math.random().toString(36).substr(2, 6).toUpperCase(),
-          amount: 2850000,
-          description: "Thanh toán đơn hàng thực phẩm",
+          orderCode: orderCode || "N/A",
+          amount: parseInt(amount) || 0,
+          transactionId: id || "N/A",
+          message:
+            message ||
+            (isCancelled ? "Giao dịch đã bị hủy" : "Thanh toán thất bại"),
+          status: status || "FAILED",
+          isCancelled: isCancelled,
         });
       }
-    }, 3000);
+    }, 1500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [searchParams]);
 
   const formatAmount = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -50,37 +68,12 @@ export default function OrderProcessPage() {
     }).format(amount);
   };
 
-  const handleGoBack = () => {
-    alert("Navigating to home page...");
+  const handleGoHome = () => {
+    navigate("/");
   };
 
-  const handleRetry = () => {
-    setOrderStatus("processing");
-    setOrderData(null);
-
-    // Restart the process
-    setTimeout(() => {
-      const isSuccess = Math.random() > 0.3;
-
-      if (isSuccess) {
-        setOrderStatus("success");
-        setOrderData({
-          orderCode:
-            "ORD" + Math.random().toString(36).substr(2, 6).toUpperCase(),
-          amount: 2850000,
-          description: "Thanh toán đơn hàng thực phẩm",
-          paymentMethod: "Thẻ tín dụng",
-        });
-      } else {
-        setOrderStatus("failed");
-        setOrderData({
-          orderCode:
-            "ORD" + Math.random().toString(36).substr(2, 6).toUpperCase(),
-          amount: 2850000,
-          description: "Thanh toán đơn hàng thực phẩm",
-        });
-      }
-    }, 3000);
+  const handleGoToOrders = () => {
+    navigate("/orders");
   };
 
   // Processing State
@@ -121,7 +114,7 @@ export default function OrderProcessPage() {
 
           {/* Order Details */}
           {orderData && (
-            <div className=" rounded-xl p-6 mb-8 shadow-sm">
+            <div className="bg-gray-50 rounded-xl p-6 mb-8 shadow-sm">
               <h3 className="text-xl font-bold text-black mb-4">
                 Chi tiết đơn hàng
               </h3>
@@ -142,26 +135,47 @@ export default function OrderProcessPage() {
                 </div>
 
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Mô tả:</span>
-                  <span className="font-semibold text-black text-right max-w-48">
-                    {orderData.description}
+                  <span className="text-gray-600">Mã giao dịch:</span>
+                  <span className="font-semibold text-black text-sm">
+                    {orderData.transactionId}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">Phương thức:</span>
-                  <span className="font-semibold text-black">
-                    {orderData.paymentMethod}
+                  <span className="text-gray-600">Trạng thái:</span>
+                  <span className="font-semibold text-green-500">
+                    {orderData.status}
                   </span>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="text-center">
+          <div className="text-center mb-6">
             <p className="text-gray-700 text-lg font-medium leading-tight">
-              Bạn đã thanh toán thành công và có thể quay lại APP
+              Bạn đã thanh toán thành công và có thể quay lại
             </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleGoHome}
+              className="w-full py-3 px-6 rounded-xl font-semibold text-white text-lg transition-all hover:opacity-90"
+              style={{ backgroundColor: THEME_COLORS.primary }}
+            >
+              Về trang chủ
+            </button>
+            <button
+              onClick={handleGoToOrders}
+              className="w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all border-2 hover:bg-gray-50"
+              style={{
+                borderColor: THEME_COLORS.primary,
+                color: THEME_COLORS.primary,
+              }}
+            >
+              Xem đơn hàng
+            </button>
           </div>
         </div>
       </div>
@@ -186,10 +200,14 @@ export default function OrderProcessPage() {
           className="text-3xl font-bold text-center mb-3"
           style={{ color: THEME_COLORS.primary }}
         >
-          Thanh toán thất bại!
+          {orderData?.isCancelled
+            ? "Giao dịch đã hủy!"
+            : "Thanh toán thất bại!"}
         </h1>
         <p className="text-gray-600 text-center mb-8 text-lg">
-          Đã xảy ra lỗi khi xử lý thanh toán của bạn
+          {orderData?.isCancelled
+            ? "Bạn đã hủy giao dịch thanh toán"
+            : "Đã xảy ra lỗi khi xử lý thanh toán của bạn"}
         </p>
 
         {/* Order Details */}
@@ -214,23 +232,53 @@ export default function OrderProcessPage() {
                 </span>
               </div>
 
+              {orderData.transactionId && orderData.transactionId !== "N/A" && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                  <span className="text-gray-600">Mã giao dịch:</span>
+                  <span className="font-semibold text-black text-sm">
+                    {orderData.transactionId}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center py-2">
                 <span className="text-gray-600">Trạng thái:</span>
                 <span
                   className="font-semibold"
                   style={{ color: THEME_COLORS.primary }}
                 >
-                  Thất bại
+                  {orderData.isCancelled ? "Đã hủy" : "Thất bại"}
                 </span>
               </div>
             </div>
           </div>
         )}
 
-        <div className="text-center">
+        <div className="text-center mb-6">
           <p className="text-gray-700 text-lg font-medium leading-relaxed">
-            Vui lòng kiểm tra lại hoặc thông báo hotline
+            Vui lòng thử lại hoặc liên hệ hotline để được hỗ trợ
           </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          <button
+            onClick={handleGoHome}
+            className="w-full py-3 px-6 rounded-xl font-semibold text-white text-lg transition-all hover:opacity-90"
+            style={{ backgroundColor: THEME_COLORS.primary }}
+          >
+            Về trang chủ
+          </button>
+          <button
+            onClick={handleGoToOrders}
+            className="w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all border-2 hover:bg-gray-50"
+            style={{
+              borderColor: THEME_COLORS.primary,
+              color: THEME_COLORS.primary,
+            }}
+          >
+            Xem đơn hàng
+          </button>
         </div>
       </div>
     </div>

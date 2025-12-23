@@ -37,8 +37,6 @@ const adminService = {
     request("GET", "/v1/transactions", null, {}, params),
 
   getAllReports: (params) => request("GET", "/v1/reports", null, {}, params),
-  updateReportStatus: (reportId, data) =>
-    request("PUT", `/v1/reports/${reportId}/status`, data),
 
   getAllProducts: (params) =>
     request("GET", "/v1/products/admin", null, {}, params),

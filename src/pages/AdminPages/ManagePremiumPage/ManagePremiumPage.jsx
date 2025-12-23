@@ -1,300 +1,273 @@
+import React, { useEffect, useState } from "react";
 import {
-  ConfigProvider,
-  Input,
-  Spin,
-  Table,
+  Button,
   Card,
+  Form,
+  Input,
+  InputNumber,
+  Space,
+  Table,
   Row,
   Col,
   Statistic,
-  Button,
-  Space,
   Tag,
   Tooltip,
-  Modal,
-  Form,
-  InputNumber,
-  message,
-  Progress,
+  Avatar,
+  Typography,
+  Upload,
+  Spin,
+  Empty,
+  Image,
 } from "antd";
-import React, { useEffect, useState, useCallback } from "react";
-import membershipService from "../../../services/membershipServices";
 import {
   LoadingOutlined,
   SearchOutlined,
+  EditOutlined,
   CrownOutlined,
   DollarOutlined,
-  PlusOutlined,
-  EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  StarOutlined,
+  ClockCircleOutlined,
+  FireOutlined,
+  PictureOutlined,
+  UploadOutlined,
+  FileTextOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
+import { FaGem } from "react-icons/fa";
+import toast from "react-hot-toast";
+import hotResearchService from "../../../services/hotResearchService";
+import FitBridgeModal from "../../../components/FitBridgeModal";
 
+const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 export default function ManagePremiumPage() {
-  const [premiumPackages, setPremiumPackages] = useState([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingPackage, setEditingPackage] = useState(null);
-  const [form] = Form.useForm();
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
-
-  // Premium package statistics
+  const [isModalEditOpen, setIsModalEditOpen] = useState(false);
+  const [isModalDetailOpen, setIsModalDetailOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [formEdit] = Form.useForm();
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [statistics, setStatistics] = useState({
-    totalPackages: 0,
-    averagePrice: 0,
-    highestPrice: 0,
-    lowestPrice: 0,
+    totalPlans: 0,
+    averageCharge: 0,
+    averageDuration: 0,
   });
 
-  const calculateStatistics = useCallback((data) => {
-    if (data.length === 0) {
-      setStatistics({
-        totalPackages: 0,
-        averagePrice: 0,
-        highestPrice: 0,
-        lowestPrice: 0,
-      });
-      return;
-    }
-
-    const prices = data.map((pkg) => pkg.serviceCharge || 0);
-    const totalPackages = data.length;
-    const averagePrice =
-      prices.reduce((sum, price) => sum + price, 0) / totalPackages;
-    const highestPrice = Math.max(...prices);
-    const lowestPrice = Math.min(...prices);
-
-    setStatistics({
-      totalPackages,
-      averagePrice,
-      highestPrice,
-      lowestPrice,
-    });
-  }, []);
-
-  // API service functions
-  const fetchPremiumPackages = useCallback(async (page = 1, pageSize = 10) => {
+  // Fetch subscription plans
+  const fetchSubscriptionPlans = async () => {
     setLoading(true);
     try {
-      // Using membership API
-      const response = await membershipService.getAllMemberships({
-        page,
-        size: pageSize,
+      const response = await hotResearchService.getSubscriptionPlan();
+      const plans = response.data || [];
+
+      setSubscriptionPlans(plans);
+
+      // Calculate statistics
+      const totalPlans = plans.length;
+      const avgCharge =
+        totalPlans > 0
+          ? plans.reduce((sum, plan) => sum + (plan.planCharge || 0), 0) /
+            totalPlans
+          : 0;
+      const avgDuration =
+        totalPlans > 0
+          ? plans.reduce((sum, plan) => sum + (plan.duration || 0), 0) /
+            totalPlans
+          : 0;
+
+      setStatistics({
+        totalPlans,
+        averageCharge: Math.round(avgCharge),
+        averageDuration: Math.round(avgDuration),
       });
-
-      const { items, total, page: currentPage, totalPages } = response.data;
-
-      setPremiumPackages(items);
-      setPagination({
-        current: currentPage,
-        pageSize,
-        total,
-        totalPages,
-      });
-
-      // Calculate statistics from the data
-      calculateStatistics(items);
     } catch (error) {
-      console.error("Error fetching memberships:", error);
-      message.error("Không thể tải danh sách gói membership");
+      console.error("Error fetching subscription plans:", error);
+      toast.error("Lỗi khi lấy danh sách gói đăng ký");
     } finally {
       setLoading(false);
-    }
-  }, [calculateStatistics]);
-
-  const createPremiumPackage = async (values) => {
-    try {
-      await membershipService.createMembership(values);
-      message.success("Tạo gói membership thành công!");
-      setModalVisible(false);
-      form.resetFields();
-      fetchPremiumPackages(pagination.current, pagination.pageSize);
-    } catch (error) {
-      console.error("Error creating membership:", error);
-      message.error("Không thể tạo gói membership");
-    }
-  };
-
-  const updatePremiumPackage = async (id, values) => {
-    try {
-      await membershipService.updateMembership(id, values);
-      message.success("Cập nhật gói membership thành công!");
-      setModalVisible(false);
-      setEditingPackage(null);
-      form.resetFields();
-      fetchPremiumPackages(pagination.current, pagination.pageSize);
-    } catch (error) {
-      console.error("Error updating membership:", error);
-      message.error("Không thể cập nhật gói membership");
-    }
-  };
-
-  const deletePremiumPackage = async (id) => {
-    try {
-      await membershipService.deleteMembership(id);
-      message.success("Xóa gói membership thành công!");
-      fetchPremiumPackages(pagination.current, pagination.pageSize);
-    } catch (error) {
-      console.error("Error deleting membership:", error);
-      message.error("Không thể xóa gói membership");
     }
   };
 
   useEffect(() => {
-    fetchPremiumPackages();
-  }, [fetchPremiumPackages]);
+    fetchSubscriptionPlans();
+  }, []);
 
-  const handleTableChange = (pagination) => {
-    fetchPremiumPackages(pagination.current, pagination.pageSize);
-  };
-
-  const formatCurrency = (amount) => {
+  // Format currency
+  const formatCurrency = (value) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-      minimumFractionDigits: 0,
-    }).format(amount || 0);
+    }).format(value || 0);
   };
 
-  const handleAddPackage = () => {
-    setEditingPackage(null);
-    form.resetFields();
-    setModalVisible(true);
-  };
-
-  const handleEditPackage = (record) => {
-    setEditingPackage(record);
-    form.setFieldsValue({
-      serviceName: record.serviceName,
-      serviceCharge: record.serviceCharge,
-      maximumHotResearchSlot: record.maximumHotResearchSlot,
-      availableHotResearchSlot: record.availableHotResearchSlot,
+  // Handle open edit modal
+  const handleOpenEditModal = (record) => {
+    setSelectedPlan(record);
+    setImagePreview(record.imageUrl);
+    setImageFile(null);
+    formEdit.setFieldsValue({
+      name: record.planName,
+      charge: record.planCharge,
+      duration: record.duration,
+      description: record.description,
     });
-    setModalVisible(true);
+    setIsModalEditOpen(true);
   };
 
-  const handleDeletePackage = (record) => {
-    Modal.confirm({
-      title: "Xác nhận xóa gói membership",
-      content: `Bạn có chắc chắn muốn xóa gói "${record.serviceName}"?`,
-      okText: "Xóa",
-      cancelText: "Hủy",
-      okType: "danger",
-      onOk: () => deletePremiumPackage(record.id),
-    });
+  // Handle open detail modal
+  const handleOpenDetailModal = (record) => {
+    setSelectedPlan(record);
+    setIsModalDetailOpen(true);
   };
 
-  const handleSubmit = (values) => {
-    if (editingPackage) {
-      updatePremiumPackage(editingPackage.id, values);
-    } else {
-      createPremiumPackage(values);
+  // Handle edit subscription plan
+  const handleEditPlan = async (values) => {
+    setLoadingEdit(true);
+
+    const formData = new FormData();
+    formData.append("id", selectedPlan.id);
+    formData.append("name", values.name);
+    formData.append("charge", values.charge);
+    formData.append("duration", values.duration);
+    formData.append("description", values.description || "");
+
+    if (imageFile) {
+      formData.append("imageUrl", imageFile);
+    }
+
+    try {
+      await hotResearchService.editSubscriptionPlan(formData);
+      toast.success("Cập nhật gói đăng ký thành công!");
+      setIsModalEditOpen(false);
+      formEdit.resetFields();
+      setImageFile(null);
+      setImagePreview(null);
+      fetchSubscriptionPlans();
+    } catch (error) {
+      console.error("Error updating subscription plan:", error);
+      toast.error(
+        error.response?.data?.message || "Không thể cập nhật gói đăng ký"
+      );
+    } finally {
+      setLoadingEdit(false);
     }
   };
 
+  // Handle image upload
+  const handleImageChange = (info) => {
+    const file = info.file.originFileObj || info.file;
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Table columns
   const columns = [
     {
-      title: "Tên Gói",
-      dataIndex: "serviceName",
-      key: "serviceName",
-      align: "left",
-      render: (text) => (
+      title: "Gói Đăng Ký",
+      dataIndex: "planName",
+      key: "planName",
+      width: 250,
+      render: (text, record) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-            <CrownOutlined className="text-white text-lg" />
-          </div>
-          <div>
-            <div className="font-medium text-gray-900">{text}</div>
-            <Tag color="gold" size="small">
-              Membership
-            </Tag>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Số lượng Slot",
-      key: "hotResearchSlot",
-      align: "center",
-      render: (_, record) => (
-        <div className="text-center">
-          <div className="text-gray-700">
-            <span className="font-semibold text-blue-600">
-              {record.availableHotResearchSlot || 0}
-            </span>
-            <span className="text-gray-500"> / </span>
-            <span className="font-semibold text-gray-600">
-              {record.maximumHotResearchSlot || 0}
-            </span>
-          </div>
-          <div className="text-xs text-gray-500 mt-1">Có sẵn / Tối đa</div>
-          <Progress
-            percent={
-              record.maximumHotResearchSlot
-                ? (record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100
-                : 0
-            }
-            strokeColor={(record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100 > 50 ? '#52c41a' : (record.availableHotResearchSlot / record.maximumHotResearchSlot) * 100 > 20 ? '#faad14' : '#f5222d'}
-              showInfo={false}
+          <Avatar
+            src={record.imageUrl}
+            size={48}
+            shape="square"
+            icon={<CrownOutlined />}
+            className="bg-gradient-to-r from-orange-400 to-red-500"
           />
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-gray-800 truncate">{text}</div>
+            <div className="text-xs text-gray-500 flex items-center gap-1">
+              <ThunderboltOutlined className="text-orange-500" />
+              {record.featureKeyName || "N/A"}
+            </div>
+          </div>
         </div>
       ),
     },
     {
       title: "Giá",
-      dataIndex: "serviceCharge",
-      key: "serviceCharge",
+      dataIndex: "planCharge",
+      key: "planCharge",
+      width: 150,
       align: "center",
-      sorter: (a, b) => (a.serviceCharge || 0) - (b.serviceCharge || 0),
-      render: (price) => (
-        <div className="font-semibold text-green-600 text-lg">
-          {formatCurrency(price)}
+      render: (charge) => (
+        <Tag
+          color="green"
+          className="text-sm font-semibold px-3 py-1"
+          icon={<DollarOutlined />}
+        >
+          {formatCurrency(charge)}
+        </Tag>
+      ),
+    },
+    {
+      title: "Thời Hạn",
+      dataIndex: "duration",
+      key: "duration",
+      width: 120,
+      align: "center",
+      render: (duration) => (
+        <div className="flex items-center justify-center gap-1 text-blue-600">
+          <ClockCircleOutlined />
+          <span className="font-semibold">{duration} ngày</span>
         </div>
       ),
     },
     {
-      title: "Thao Tác",
-      key: "actions",
+      title: "Mô Tả",
+      dataIndex: "description",
+      key: "description",
+      width: 300,
+      render: (description) => (
+        <Tooltip title={description}>
+          <div className="text-gray-600 line-clamp-2 text-sm">
+            {description || "Không có mô tả"}
+          </div>
+        </Tooltip>
+      ),
+    },
+    {
+      title: "Tính Năng",
+      dataIndex: "featureKeyName",
+      key: "featureKeyName",
+      width: 150,
+      align: "center",
+      render: (feature) => (
+        <Tag
+          color={feature === "HotResearch" ? "volcano" : "blue"}
+          icon={feature === "HotResearch" ? <FireOutlined /> : <FaGem />}
+        >
+          {feature || "N/A"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Hành Động",
+      key: "action",
+      width: 120,
       align: "center",
       render: (_, record) => (
         <Space>
           <Tooltip title="Xem chi tiết">
             <Button
               type="text"
-              icon={<EyeOutlined />}
-              className="text-blue-600 hover:bg-blue-50"
-              onClick={() => {
-                Modal.info({
-                  title: `Chi tiết gói: ${record.serviceName}`,
-                  content: (
-                    <div className="mt-4">
-                      <p>
-                        <strong>Tên gói:</strong> {record.serviceName}
-                      </p>
-                      <p>
-                        <strong>Giá:</strong> {formatCurrency(record.serviceCharge)}
-                      </p>
-                      <p>
-                        <strong>Slot Hot Research tối đa:</strong> {record.maximumHotResearchSlot}
-                      </p>
-                      <p>
-                        <strong>Slot Hot Research có sẵn:</strong> {record.availableHotResearchSlot}
-                      </p>
-                      <p>
-                        <strong>ID:</strong> {record.id}
-                      </p>
-                    </div>
-                  ),
-                  width: 500,
-                });
+              icon={<FileTextOutlined />}
+              className="text-blue-500 hover:bg-blue-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDetailModal(record);
               }}
             />
           </Tooltip>
@@ -302,16 +275,11 @@ export default function ManagePremiumPage() {
             <Button
               type="text"
               icon={<EditOutlined />}
-              className="text-orange-600 hover:bg-orange-50"
-              onClick={() => handleEditPackage(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              className="text-red-600 hover:bg-red-50"
-              onClick={() => handleDeletePackage(record)}
+              className="text-orange-500 hover:bg-orange-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenEditModal(record);
+              }}
             />
           </Tooltip>
         </Space>
@@ -319,291 +287,285 @@ export default function ManagePremiumPage() {
     },
   ];
 
-  const filteredData = premiumPackages.filter((item) => {
-    const matchesSearch = searchText
-      ? (item.serviceName?.toLowerCase() || "").includes(searchText.toLowerCase())
-      : true;
+  // Filter data
+  const filteredData = searchText
+    ? subscriptionPlans.filter(
+        (item) =>
+          (item.planName?.toLowerCase() || "").includes(
+            searchText.toLowerCase()
+          ) ||
+          (item.description?.toLowerCase() || "").includes(
+            searchText.toLowerCase()
+          ) ||
+          (item.featureKeyName?.toLowerCase() || "").includes(
+            searchText.toLowerCase()
+          )
+      )
+    : subscriptionPlans;
 
-    return matchesSearch;
-  });
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spin
-          indicator={
-            <LoadingOutlined style={{ fontSize: 48, color: "#FF914D" }} spin />
-          }
-          tip="Đang tải dữ liệu..."
-          size="large"
-        />
-      </div>
-    );
-  }
+  // Upload props
+  const uploadProps = {
+    beforeUpload: (file) => {
+      const isImage = file.type.startsWith("image/");
+      if (!isImage) {
+        toast.error("Chỉ được upload file ảnh!");
+        return Upload.LIST_IGNORE;
+      }
+      const isLt5M = file.size / 1024 / 1024 < 5;
+      if (!isLt5M) {
+        toast.error("Ảnh phải nhỏ hơn 5MB!");
+        return Upload.LIST_IGNORE;
+      }
+      return false;
+    },
+    maxCount: 1,
+    showUploadList: false,
+    onChange: handleImageChange,
+  };
 
   return (
     <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#ED2A46] mb-2">
-          Quản Lý Gói Membership
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-2">
+          <CrownOutlined />
+          Quản Lý Gói Đăng Ký Premium
         </h1>
         <p className="text-gray-600">
-          Quản lý các gói membership có sẵn trong hệ thống
+          Quản lý và cấu hình các gói đăng ký dịch vụ premium trong hệ thống
         </p>
       </div>
 
-      <div className="">
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]} className="mb-8">
-          <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <Statistic
-                title="Tổng Số Gói"
-                value={statistics.totalPackages}
-                prefix={<StarOutlined style={{ color: "#FFD700" }} />}
-                valueStyle={{
-                  color: "#FFD700",
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <Statistic
-                title="Giá Trung Bình"
-                value={statistics.averagePrice}
-                prefix={<StarOutlined style={{ color: "#fa8c16" }} />}
-                formatter={(value) => formatCurrency(value)}
-                valueStyle={{
-                  color: "#fa8c16",
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <Statistic
-                title="Giá Cao Nhất"
-                value={statistics.highestPrice}
-                prefix={<DollarOutlined style={{ color: "#52c41a" }} />}
-                formatter={(value) => formatCurrency(value)}
-                valueStyle={{
-                  color: "#52c41a",
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <Statistic
-                title="Giá Thấp Nhất"
-                value={statistics.lowestPrice}
-                prefix={<DollarOutlined style={{ color: "#FF914D" }} />}
-                formatter={(value) => formatCurrency(value)}
-                valueStyle={{
-                  color: "#FF914D",
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Main Content Card */}
-        <Card className="border-0 shadow-lg">
-          {/* Filters and Actions */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Input
-                placeholder="Tìm kiếm theo tên gói..."
-                prefix={<SearchOutlined className="text-gray-400" />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: 300 }}
-                allowClear
-                className="rounded-lg"
-              />
-            </div>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              className="bg-orange-500 hover:bg-orange-600 border-orange-500"
-              onClick={handleAddPackage}
-            >
-              Thêm Gói Membership
-            </Button>
-          </div>
-
-          {/* Results Summary */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <span className="text-gray-600">
-              Hiển thị{" "}
-              <span className="font-semibold text-orange-600">
-                {filteredData.length}
-              </span>{" "}
-              trong tổng số{" "}
-              <span className="font-semibold">{statistics.totalPackages}</span>{" "}
-              gói membership
-              {searchText && (
-                <span>
-                  {" "}
-                  | Tìm kiếm: "
-                  <span className="font-semibold text-blue-600">
-                    {searchText}
-                  </span>
-                  "
-                </span>
-              )}
-            </span>
-          </div>
-
-          {/* Table */}
-          <ConfigProvider
-            theme={{
-              components: {
-                Table: {
-                  headerBg: "linear-gradient(90deg, #FFE5E9 0%, #FFF0F2 100%)",
-                  headerColor: "#333",
-                  rowHoverBg: "#FFF9FA",
-                },
-              },
-            }}
-          >
-            <Table
-              dataSource={filteredData}
-              columns={columns}
-              pagination={{
-                current: pagination.current,
-                pageSize: pagination.pageSize,
-                total: pagination.total,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} của ${total} mục`,
-                position: ["bottomCenter"],
-                className: "custom-pagination",
+      {/* Statistics Cards */}
+      <Row gutter={[16, 16]} className="mb-6">
+        <Col xs={24} sm={12} lg={8}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Statistic
+              title="Tổng Số Gói"
+              value={statistics.totalPlans}
+              prefix={<CrownOutlined style={{ color: "#FF914D" }} />}
+              valueStyle={{
+                color: "#FF914D",
+                fontSize: "24px",
+                fontWeight: "bold",
               }}
-              onChange={handleTableChange}
-              className="rounded-lg overflow-hidden"
-              scroll={{ x: 800 }}
-              rowKey="id"
             />
-          </ConfigProvider>
-        </Card>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Statistic
+              title="Giá Trung Bình"
+              value={formatCurrency(statistics.averageCharge)}
+              prefix={<DollarOutlined style={{ color: "#52c41a" }} />}
+              valueStyle={{
+                color: "#52c41a",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <Statistic
+              title="Thời Hạn Trung Bình"
+              value={`${statistics.averageDuration} ngày`}
+              prefix={<ClockCircleOutlined style={{ color: "#1890ff" }} />}
+              valueStyle={{
+                color: "#1890ff",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-        {/* Add/Edit Modal */}
-        <FitBridgeModal
-          open={modalVisible}
-          onCancel={() => {
-            setModalVisible(false);
-            setEditingPackage(null);
-            form.resetFields();
-          }}
-          title={
-            editingPackage
-              ? "Chỉnh Sửa Gói Membership"
-              : "Thêm Gói Membership Mới"
-          }
-          titleIcon={<CrownOutlined />}
-          width={600}
-          logoSize="medium"
-          bodyStyle={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}
-          footer={null}
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            className="p-6"
+      {/* Search and Table */}
+      <Card className="border-0 shadow-lg">
+        {/* Search Bar */}
+        <div className="mb-4 flex justify-between items-center">
+          <Input
+            placeholder="Tìm kiếm theo tên, mô tả, tính năng..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="max-w-md"
+            allowClear
+          />
+          <Button
+            type="default"
+            icon={<LoadingOutlined spin={loading} />}
+            onClick={fetchSubscriptionPlans}
+            disabled={loading}
           >
-            <Form.Item
-              label="Tên Gói"
-              name="serviceName"
-              rules={[
-                { required: true, message: "Vui lòng nhập tên gói!" },
-                { min: 2, message: "Tên gói phải có ít nhất 2 ký tự!" },
-              ]}
-            >
-              <Input
-                placeholder="Nhập tên gói membership"
-                prefix={<CrownOutlined />}
-              />
-            </Form.Item>
+            Làm mới
+          </Button>
+        </div>
 
-            <Form.Item
-              label="Giá (VND)"
-              name="serviceCharge"
-              rules={[
-                { required: true, message: "Vui lòng nhập giá!" },
-                {
-                  type: "number",
-                  min: 1000,
-                  message: "Giá phải lớn hơn 1,000 VND!",
-                },
-              ]}
-            >
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Nhập giá gói membership"
-                formatter={(value) =>
-                  `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                }
-                parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                prefix={<DollarOutlined />}
+        {/* Table */}
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} của ${total} gói`,
+            pageSizeOptions: ["10", "20", "50"],
+          }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="Không có gói đăng ký nào"
               />
-            </Form.Item>
+            ),
+          }}
+          scroll={{ x: 1000 }}
+          className="custom-table"
+        />
+      </Card>
 
-            <Form.Item
-              label="Slot Hot Research Tối Đa"
-              name="maximumHotResearchSlot"
-              rules={[
-                { required: true, message: "Vui lòng nhập số slot tối đa!" },
-                {
-                  type: "number",
-                  min: 0,
-                  message: "Số slot phải lớn hơn hoặc bằng 0!",
-                },
-              ]}
-            >
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Nhập số slot tối đa"
-                min={0}
-              />
-            </Form.Item>
+      {/* Edit Modal */}
+      <FitBridgeModal
+        open={isModalEditOpen}
+        onCancel={() => {
+          setIsModalEditOpen(false);
+          formEdit.resetFields();
+          setImageFile(null);
+          setImagePreview(null);
+        }}
+        title="Chỉnh Sửa Gói Đăng Ký"
+        titleIcon={<EditOutlined />}
+        width={600}
+        footer={null}
+      >
+        <Form
+          form={formEdit}
+          layout="vertical"
+          onFinish={handleEditPlan}
+          className="mt-4"
+        >
+          {/* Image Upload */}
+          <Form.Item label="Hình Ảnh Gói">
+            <div className="flex items-start gap-4">
+              <div className="relative">
+                {imagePreview ? (
+                  <Image
+                    src={imagePreview}
+                    alt="Preview"
+                    width={120}
+                    height={120}
+                    className="rounded-lg object-cover border-2 border-gray-200"
+                    preview={false}
+                  />
+                ) : (
+                  <div className="w-[120px] h-[120px] bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                    <PictureOutlined className="text-3xl text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <Upload {...uploadProps}>
+                  <Button icon={<UploadOutlined />}>Chọn ảnh mới</Button>
+                </Upload>
+                <p className="text-xs text-gray-500 mt-2">
+                  Định dạng: JPG, PNG. Tối đa 5MB.
+                </p>
+              </div>
+            </div>
+          </Form.Item>
 
-            <Form.Item
-              label="Slot Hot Research Có Sẵn"
-              name="availableHotResearchSlot"
-              rules={[
-                { required: true, message: "Vui lòng nhập số slot có sẵn!" },
-                {
-                  type: "number",
-                  min: 0,
-                  message: "Số slot phải lớn hơn hoặc bằng 0!",
-                },
-              ]}
-            >
-              <InputNumber
-                style={{ width: "100%" }}
-                placeholder="Nhập số slot có sẵn"
-                min={0}
-              />
-            </Form.Item>
+          {/* Plan Name */}
+          <Form.Item
+            name="name"
+            label="Tên Gói"
+            rules={[
+              { required: true, message: "Vui lòng nhập tên gói!" },
+              { max: 100, message: "Tên gói không được quá 100 ký tự!" },
+            ]}
+          >
+            <Input
+              placeholder="Nhập tên gói đăng ký"
+              prefix={<CrownOutlined className="text-gray-400" />}
+              size="large"
+            />
+          </Form.Item>
 
-            <div className="flex justify-end gap-2 mt-6">
+          {/* Charge */}
+          <Form.Item
+            name="charge"
+            label="Giá (VNĐ)"
+            rules={[
+              { required: true, message: "Vui lòng nhập giá gói!" },
+              {
+                type: "number",
+                min: 0,
+                message: "Giá phải lớn hơn hoặc bằng 0!",
+              },
+            ]}
+          >
+            <InputNumber
+              placeholder="Nhập giá gói"
+              className="w-full"
+              size="large"
+              formatter={(value) =>
+                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+              }
+              parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+              addonAfter="VNĐ"
+            />
+          </Form.Item>
+
+          {/* Duration */}
+          <Form.Item
+            name="duration"
+            label="Thời Hạn (ngày)"
+            rules={[
+              { required: true, message: "Vui lòng nhập thời hạn!" },
+              {
+                type: "number",
+                min: 1,
+                message: "Thời hạn phải ít nhất 1 ngày!",
+              },
+            ]}
+          >
+            <InputNumber
+              placeholder="Nhập số ngày"
+              className="w-full"
+              size="large"
+              min={1}
+              addonAfter="ngày"
+            />
+          </Form.Item>
+
+          {/* Description */}
+          <Form.Item
+            name="description"
+            label="Mô Tả"
+            rules={[{ max: 500, message: "Mô tả không được quá 500 ký tự!" }]}
+          >
+            <TextArea
+              placeholder="Nhập mô tả chi tiết về gói đăng ký..."
+              rows={4}
+              showCount
+              maxLength={500}
+            />
+          </Form.Item>
+
+          {/* Submit Buttons */}
+          <Form.Item className="mb-0 mt-6">
+            <div className="flex justify-end gap-3">
               <Button
                 onClick={() => {
-                  setModalVisible(false);
-                  setEditingPackage(null);
-                  form.resetFields();
+                  setIsModalEditOpen(false);
+                  formEdit.resetFields();
+                  setImageFile(null);
+                  setImagePreview(null);
                 }}
               >
                 Hủy
@@ -611,30 +573,139 @@ export default function ManagePremiumPage() {
               <Button
                 type="primary"
                 htmlType="submit"
-                className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
+                loading={loadingEdit}
+                className="bg-gradient-to-r from-orange-400 to-red-500 border-0"
               >
-                {editingPackage ? "Cập Nhật" : "Tạo Mới"}
+                Cập Nhật
               </Button>
             </div>
-          </Form>
-        </FitBridgeModal>
-      </div>
+          </Form.Item>
+        </Form>
+      </FitBridgeModal>
 
-      <style jsx>{`
-        .custom-pagination .ant-pagination-item-active {
-          background: #ff914d;
-          border-color: #ff914d;
+      {/* Detail Modal */}
+      <FitBridgeModal
+        open={isModalDetailOpen}
+        onCancel={() => {
+          setIsModalDetailOpen(false);
+          setSelectedPlan(null);
+        }}
+        title="Chi Tiết Gói Đăng Ký"
+        titleIcon={<FileTextOutlined />}
+        width={600}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button onClick={() => setIsModalDetailOpen(false)}>Đóng</Button>
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setIsModalDetailOpen(false);
+                handleOpenEditModal(selectedPlan);
+              }}
+              className="bg-gradient-to-r from-orange-400 to-red-500 border-0"
+            >
+              Chỉnh Sửa
+            </Button>
+          </div>
         }
-        .custom-pagination .ant-pagination-item-active a {
-          color: white;
-        }
-        .custom-pagination .ant-pagination-item:hover {
-          border-color: #ff914d;
-        }
-        .custom-pagination .ant-pagination-item:hover a {
-          color: #ff914d;
-        }
-      `}</style>
+      >
+        {selectedPlan && (
+          <div className="mt-4">
+            {/* Header with Image */}
+            <div className="flex items-start gap-4 mb-6">
+              <Avatar
+                src={selectedPlan.imageUrl}
+                size={100}
+                shape="square"
+                icon={<CrownOutlined />}
+                className="bg-gradient-to-r from-orange-400 to-red-500 rounded-lg"
+              />
+              <div className="flex-1">
+                <Title level={4} className="mb-1">
+                  {selectedPlan.planName}
+                </Title>
+                <Tag
+                  color={
+                    selectedPlan.featureKeyName === "HotResearch"
+                      ? "volcano"
+                      : "blue"
+                  }
+                  icon={
+                    selectedPlan.featureKeyName === "HotResearch" ? (
+                      <FireOutlined />
+                    ) : (
+                      <FaGem />
+                    )
+                  }
+                  className="text-sm"
+                >
+                  {selectedPlan.featureKeyName || "N/A"}
+                </Tag>
+              </div>
+            </div>
+
+            {/* Info Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <Card size="small" className="bg-green-50 border-green-200">
+                <div className="text-center">
+                  <DollarOutlined className="text-2xl text-green-600 mb-2" />
+                  <div className="text-sm text-gray-600">Giá</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {formatCurrency(selectedPlan.planCharge)}
+                  </div>
+                </div>
+              </Card>
+              <Card size="small" className="bg-blue-50 border-blue-200">
+                <div className="text-center">
+                  <ClockCircleOutlined className="text-2xl text-blue-600 mb-2" />
+                  <div className="text-sm text-gray-600">Thời Hạn</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {selectedPlan.duration} ngày
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Description */}
+            <div className="mb-4">
+              <Text strong className="text-gray-700 block mb-2">
+                Mô Tả:
+              </Text>
+              <Paragraph className="text-gray-600 bg-gray-50 p-3 rounded-lg mb-0">
+                {selectedPlan.description || "Không có mô tả"}
+              </Paragraph>
+            </div>
+
+            {/* Additional Info */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <Text strong className="text-gray-700 block mb-3">
+                Thông Tin Bổ Sung:
+              </Text>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">ID:</span>
+                  <span className="text-gray-700 font-mono text-xs">
+                    {selectedPlan.id}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Feature Key ID:</span>
+                  <span className="text-gray-700 font-mono text-xs">
+                    {selectedPlan.featureKeyId || "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Giới Hạn Sử Dụng:</span>
+                  <span className="text-gray-700">
+                    {selectedPlan.limitUsage || "Không giới hạn"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </FitBridgeModal>
     </div>
   );
 }

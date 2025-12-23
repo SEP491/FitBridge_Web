@@ -82,11 +82,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           `${route.admin}/${route.manageWithdrawal}`,
           <MdOutlineAccountBalanceWallet className="text-lg" />
         ),
-        // getItem(
-        //   "Gói Premium",
-        //   `${route.admin}/manage-premium`,
-        //   <DropboxOutlined className="text-lg" />
-        // ),
+        getItem(
+          "Quản Lý Premium & Hot Gym",
+          `${route.admin}/manage-premium`,
+          <DropboxOutlined className="text-lg" />
+        ),
         getItem(
           "Quản Lý Voucher",
           `${route.admin}/${route.manageVoucher}`,
@@ -121,6 +121,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Quản Lý Cấu Hình Hệ Thống",
           `${route.admin}/manage-system-config`,
           <HiDocumentText className="text-lg" />
+        ),
+        getItem(
+          "Quản Lý Blog",
+          `${route.admin}/manage-blog`,
+          <NotificationOutlined className="text-lg" />
         ),
       ]);
     } else if (user?.role === "GymOwner") {
@@ -179,6 +184,11 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
           "Ký Hợp Đồng",
           `${route.gym}/${route.contractSigning}`,
           <LiaFileContractSolid className="text-lg" />
+        ),
+        getItem(
+          "Đăng ký Gói Hot Gym",
+          `${route.gym}/subscription-registration`,
+          <MdReport className="text-lg" />
         ),
       ]);
     } else if (user?.role === "FreelancePT") {

@@ -48,6 +48,8 @@ import ManageCerPage from "./pages/AdminPages/ManageCerPage/ManageCerPage";
 import ManageAssetsPage from "./pages/GymPages/ManageAssetsPage/ManageAssetsPage";
 import ManageSystemConfigPage from "./pages/AdminPages/ManageSystemConfigPage/ManageSystemConfigPage";
 import ManagePTSchedule from "./pages/GymPages/ManagePTSchedule/ManagePTSchedule";
+import SubscriptionRegisPage from "./pages/GymPages/SubscriptionRegisPage/SubscriptionRegisPage";
+import ManageBlogPage from "./pages/AdminPages/ManageBlogPage/ManageBlogPage";
 
 // JWT Decode function with expiration validation
 const decodeJWT = (token) => {
@@ -397,6 +399,14 @@ function App() {
               ),
             },
             {
+              path: "manage-blog",
+              element: (
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <ManageBlogPage />
+                </ProtectedRoute>
+              ),
+            },
+            {
               path: "manage-system-config",
               element: (
                 <ProtectedRoute allowedRoles={["Admin"]}>
@@ -517,6 +527,14 @@ function App() {
               element: (
                 <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
                   <ManagePTSchedule />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "subscription-registration",
+              element: (
+                <ProtectedRoute allowedRoles={["GymOwner", "GYM"]}>
+                  <SubscriptionRegisPage />
                 </ProtectedRoute>
               ),
             },
