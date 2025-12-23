@@ -332,7 +332,7 @@ export default function ManageReportPage() {
   const getReportTypeTag = (type) => {
     const typeConfig = {
       GymCourseReport: { color: "blue", text: "Báo cáo Gói Tập Gym" },
-      FreelancePTReport: { color: "purple", text: "Báo cáo PT Tự Do" },
+      FreelancePtReport: { color: "purple", text: "Báo cáo PT Tự Do" },
       GymReport: { color: "cyan", text: "Báo cáo Phòng Gym" },
       UserReport: { color: "magenta", text: "Báo cáo Người Dùng" },
     };
@@ -567,7 +567,7 @@ export default function ManageReportPage() {
               <Select.Option value="Pending">Chờ xử lý</Select.Option>
               <Select.Option value="Processing">Đang xử lý</Select.Option>
               <Select.Option value="Resolved">Đã xử lý</Select.Option>
-              <Select.Option value="Rejected">Từ chối</Select.Option>
+              {/* <Select.Option value="Rejected">Từ chối</Select.Option> */}
               <Select.Option value="FraudConfirmed">
                 Xác nhận gian lận
               </Select.Option>
@@ -583,7 +583,7 @@ export default function ManageReportPage() {
               <Select.Option value="GymCourseReport">
                 Báo cáo Gói Tập Gym
               </Select.Option>
-              <Select.Option value="FreelancePTReport">
+              <Select.Option value="FreelancePtReport">
                 Báo cáo PT Tự Do
               </Select.Option>
               <Select.Option value="GymReport">Báo cáo Phòng Gym</Select.Option>
@@ -929,6 +929,46 @@ export default function ManageReportPage() {
                     </div>
                   </Card>
                 )}
+
+              {/* Resolved Evidence Image Card */}
+              {selectedReport.resolvedEvidenceImageUrls && (
+                <Card
+                  size="small"
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                  title={
+                    <span className="flex items-center gap-2 text-base font-semibold text-green-600">
+                      <CheckCircleOutlined />
+                      Hình Ảnh Bằng Chứng Hoàn Tiền
+                    </span>
+                  }
+                  bordered={true}
+                  style={{ borderColor: "#D1FAE5" }}
+                >
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <Image.PreviewGroup>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div className="relative overflow-hidden rounded-lg border border-gray-200 hover:border-green-500 transition-colors">
+                          <Image
+                            src={selectedReport.resolvedEvidenceImageUrls}
+                            alt="Bằng chứng hoàn tiền"
+                            className="object-cover"
+                            style={{
+                              width: "100%",
+                              objectFit: "cover",
+                            }}
+                            placeholder={
+                              <div className="flex items-center justify-center h-[120px] bg-gray-100">
+                                <LoadingOutlined className="text-2xl text-gray-400" />
+                              </div>
+                            }
+                            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgesAADcsSURBVHic7d15fFTVvf/x13dmksm+ECAhrAnIJm6A7AQFVKy21rW1amttba1dvPdWu9y2t/Xetra/3tvWWq221rpRpdWioihoFRBk3zdZA0lIICHJJJnMev7+yCQECJBkkjkzyef5eMxjMjNnzvmckHfOnDlzjhhjUEq1Xg59F0ApBSoESqlAhaCUQqFCME0Z5bq++iFZwQAAAABJRU5ErkJggg=="
+                          />
+                        </div>
+                      </div>
+                    </Image.PreviewGroup>
+                  </div>
+                </Card>
+              )}
             </div>
           </div>
         )}
