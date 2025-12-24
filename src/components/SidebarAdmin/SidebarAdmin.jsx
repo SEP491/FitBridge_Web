@@ -227,22 +227,12 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
 
   return (
     <Sider
-      style={{
-        overflow: "auto",
-        height: "100vh",
-        position: "sticky",
-        insetInlineStart: 0,
-        top: 0,
-        bottom: 0,
-        scrollbarWidth: "thin",
-        scrollbarGutter: "stable",
-      }}
       collapsible
       collapsed={internalCollapsed}
       onCollapse={handleCollapse}
       width={280}
       collapsedWidth={80}
-      className="sidebar !bg-[#1D1D1D] shadow-xl !transition-all !duration-300 !h-screen !fixed !left-0 !top-0 !z-50"
+      className="sidebar !bg-[#1D1D1D] shadow-xl !transition-all !duration-300 !h-screen"
     >
       {/* Logo Section */}
       <div className="flex items-center justify-center py-6 border-b border-gray-700">

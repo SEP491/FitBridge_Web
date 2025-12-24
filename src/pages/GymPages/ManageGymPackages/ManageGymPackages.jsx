@@ -43,7 +43,13 @@ import {
   UserAddOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
-import { FaEye, FaPlus, FaPlusCircle, FaInfoCircle, FaDumbbell } from "react-icons/fa";
+import {
+  FaEye,
+  FaPlus,
+  FaPlusCircle,
+  FaInfoCircle,
+  FaDumbbell,
+} from "react-icons/fa";
 import gymService from "../../../services/gymServices";
 import uploadService from "../../../services/uploadService";
 import { ImBin } from "react-icons/im";
@@ -222,7 +228,6 @@ export default function ManageGymPackages() {
       width: 250,
       render: (text, record) => (
         <div className="flex items-center gap-3">
-
           <Avatar
             size={40}
             icon={<IoBarbell />}
@@ -339,7 +344,7 @@ export default function ManageGymPackages() {
       duration: values.duration,
       type: values.type,
       description: values.description,
-      imageUrl: uploadedImageUrl // Include imageUrl if uploaded
+      imageUrl: uploadedImageUrl, // Include imageUrl if uploaded
     };
 
     try {
@@ -608,8 +613,15 @@ export default function ManageGymPackages() {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={() => setIsModalAddCourseOpen(true)}
+              onClick={() => {
+                if (user?.isContractSigned === "False") {
+                  toast.error("Hợp đồng chưa ký, không thể thêm Gói Tập.");
+                  return;
+                }
+                setIsModalAddCourseOpen(true);
+              }}
               className="bg-orange-500 hover:bg-orange-600 border-orange-500 hover:border-orange-600 rounded-lg"
+              disabled={user?.isContractSigned === "False"}
             >
               Thêm Gói Tập
             </Button>
@@ -860,7 +872,9 @@ export default function ManageGymPackages() {
                 </div>
               )}
             </Upload>
-            <div className="text-xs text-gray-400">JPG, PNG, WEBP &lt; 20MB</div>
+            <div className="text-xs text-gray-400">
+              JPG, PNG, WEBP &lt; 20MB
+            </div>
           </Form.Item>
 
           <div className="text-center pt-4">

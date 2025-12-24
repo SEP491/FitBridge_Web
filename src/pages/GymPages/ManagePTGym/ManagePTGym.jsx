@@ -312,7 +312,9 @@ export default function ManagePTGym() {
           </span>
           <span className="text-xs text-gray-500">
             {date
-              ? `${new Date().getFullYear() - new Date(date).getFullYear()} tuổi`
+              ? `${
+                  new Date().getFullYear() - new Date(date).getFullYear()
+                } tuổi`
               : ""}
           </span>
         </div>
@@ -507,9 +509,16 @@ export default function ManagePTGym() {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={() => setIsModalAddGymOpen(true)}
+              onClick={() => {
+                if (user?.isContractSigned === "False") {
+                  toast.error("Hợp đồng chưa ký, không thể thêm PT.");
+                  return;
+                }
+                setIsModalAddGymOpen(true);
+              }}
               className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg hover:shadow-xl transition-all duration-300"
               size="large"
+              disabled={user?.isContractSigned === "False"}
             >
               Thêm PT Mới
             </Button>
@@ -801,13 +810,13 @@ export default function ManagePTGym() {
                   {selectedPT.goalTraining && (
                     <Descriptions.Item label="Chuyên Môn Tập Luyện">
                       <div className="flex flex-wrap gap-2">
-                        {selectedPT.goalTraining.split(", ").map(
-                          (goal, index) => (
+                        {selectedPT.goalTraining
+                          .split(", ")
+                          .map((goal, index) => (
                             <Tag key={index} color="blue" className="px-2 py-1">
                               {goal}
                             </Tag>
-                          )
-                        )}
+                          ))}
                       </div>
                     </Descriptions.Item>
                   )}
@@ -845,7 +854,9 @@ export default function ManagePTGym() {
                           {selectedPT.gender === "Male" ? "👨" : "👩"}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {selectedPT.gender === "Male" ? "Nam Giới" : "Nữ Giới"}
+                          {selectedPT.gender === "Male"
+                            ? "Nam Giới"
+                            : "Nữ Giới"}
                         </div>
                       </div>
                     </Col>

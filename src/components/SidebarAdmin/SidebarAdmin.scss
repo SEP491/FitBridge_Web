@@ -1,14 +1,11 @@
 .sidebar {
   // Selected menu item styling
+
   .ant-menu-item-selected {
     background: linear-gradient(135deg, #ed2a46 0%, #c73148 100%) !important;
     color: white !important;
     border-radius: 8px !important;
     box-shadow: 0 2px 8px rgba(237, 42, 70, 0.3) !important;
-
-    &::after {
-      display: none !important; // Remove the default right border
-    }
 
     .ant-menu-item-icon {
       color: white !important;
@@ -19,39 +16,6 @@
     }
   }
 
-  // Menu customization
-  // .ant-menu {
-  //   height: calc(100vh - 180px) !important;
-  //   padding: 8px 0 !important;
-
-  //   .ant-menu-item {
-  //     height: 48px !important;
-  //     line-height: 48px !important;
-  //     margin: 2px 8px 4px 8px !important;
-  //     width: calc(100% - 16px) !important;
-  //     border-radius: 8px !important;
-
-  //     .ant-menu-item-icon {
-  //       font-size: 18px !important;
-  //       margin-inline-end: 12px !important;
-  //     }
-  //   }
-  // }
-
-  // Collapsed state adjustments
-  &.ant-layout-sider-collapsed {
-    .ant-menu-item {
-      // padding: 0 !important;
-      justify-content: center !important;
-      align-items: center !important;
-
-      .ant-menu-item-icon {
-        margin-inline-end: 0 !important;
-      }
-    }
-  }
-
-  // Sider trigger (collapse button) styling - using default Ant Design trigger
   .ant-layout-sider-trigger {
     background: #2a2a2a !important;
     color: #ed2a46 !important;

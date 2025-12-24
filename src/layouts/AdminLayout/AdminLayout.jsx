@@ -38,15 +38,10 @@ export default function AdminLayout() {
   };
 
   return (
-    <Layout className="min-h-screen ">
+    <Layout className="min-h-screen !bg-[#1D1D1D]">
       <SidebarAdmin collapsed={collapsed} onCollapse={setCollapsed} />
 
-      <Layout
-        className="transition-all duration-300"
-        style={{
-          marginLeft: collapsed ? 80 : 280,
-        }}
-      >
+      <Layout>
         <HeaderAdmin />
 
         <Content className="">
