@@ -64,13 +64,14 @@ const LoginForm = ({
       let decodedToken = null;
       if (response.data.idToken) {
         decodedToken = decodeJWT(response.data.idToken);
+        console.log("Decoded token:", decodedToken);
       }
 
       // Use decoded token data if available, otherwise use response data
       const userData = decodedToken || response.data;
       const userRole = userData.role || response.data.role;
 
-      console.log("User role:", userRole);
+      console.log("User role:", userData);
 
       // Route based on role
       if (userRole === "Admin") {
@@ -86,10 +87,10 @@ const LoginForm = ({
 
       // Create user object from decoded token or response data
       const user = {
-        id: userData.sub || userData.id || response.data.id,
-        fullName: userData.name || userData.fullName || response.data.fullName,
-        email: userData.email || response.data.email,
-        phone: userData.phone_number || userData.phone || response.data.phone,
+        id: response.data.id,
+        fullName: response.data.fullName,
+        email: response.data.email,
+        phone: response.data.phone,
         role: userRole,
         gymName: userData.gymName,
         gender: userData.gender,

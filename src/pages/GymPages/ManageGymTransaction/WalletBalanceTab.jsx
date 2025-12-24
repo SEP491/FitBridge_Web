@@ -33,21 +33,21 @@ export default function WalletBalanceTab({
           onClick={() => setWalletFilter("available")}
           size="middle"
         >
-          Khả dụng
+          Số dư khả dụng
         </Button>
         <Button
           type={walletFilter === "pending" ? "primary" : "default"}
           onClick={() => setWalletFilter("pending")}
           size="middle"
         >
-          Đang xử lý
+          Số dư đang xử lý
         </Button>
         <Button
           type={walletFilter === "disbursement" ? "primary" : "default"}
           onClick={() => setWalletFilter("disbursement")}
           size="middle"
         >
-          Giải ngân
+         So tiền đã giải ngân
         </Button>
       </div>
 

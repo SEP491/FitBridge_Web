@@ -35,14 +35,6 @@ export default function HomeLoginPage() {
       const response = await authService.login(requestData);
       console.log("Login response:", response);
       console.log(response.data.role);
-      if (response.data.role === "ADMIN") {
-        navigate(`${route.admin}/${route.dashboard}`);
-      } else if (response.data.role === "GYM") {
-        navigate(`${route.gym}/${route.dashboardGym}`);
-      } else {
-        toast.error("Tài khoản không có quyền truy cập");
-        return;
-      }
       const user = {
         id: response.data.id,
         fullName: response.data.fullName,
@@ -53,8 +45,18 @@ export default function HomeLoginPage() {
 
       Cookies.set("user", JSON.stringify(user));
       dispatch(login(user));
-
+      console.log("User in HomeLoginPage:", user);
       toast.success("Đăng nhập thành công");
+      if (response.data.role === "ADMIN") {
+        navigate(`${route.admin}/${route.dashboard}`);
+      } else if (response.data.role === "GYM") {
+        navigate(`${route.gym}/${route.dashboardGym}`);
+      } else {
+        toast.error("Tài khoản không có quyền truy cập");
+        return;
+      }
+      
+
     } catch (error) {
       console.log("Login error:", error);
       toast.error(error.response?.data?.message || "Đăng nhập thất bại");
