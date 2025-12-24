@@ -19,6 +19,8 @@ import {
   Modal,
   Form,
   Divider,
+  Upload,
+  DatePicker,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import adminService from "../../../services/adminServices";
@@ -147,6 +149,8 @@ export default function ManagePTPage() {
   const [isModalAddPTOpen, setIsModalAddPTOpen] = useState(false);
   const [formAddPT] = Form.useForm();
   const [loadingAddPT, setLoadingAddPT] = useState(false);
+  const [frontCitizenFileList, setFrontCitizenFileList] = useState([]);
+  const [backCitizenFileList, setBackCitizenFileList] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -265,6 +269,19 @@ export default function ManagePTPage() {
   const handleAddPT = async (values) => {
     setLoadingAddPT(true);
 
+    // Only create Freelance PT from this modal
+    const role = "FreelancePT";
+
+    // Validate required citizen ID images
+    if (
+      !frontCitizenFileList[0]?.originFileObj ||
+      !backCitizenFileList[0]?.originFileObj
+    ) {
+      toast.error("Vui lòng tải lên ảnh CCCD mặt trước và mặt sau");
+      setLoadingAddPT(false);
+      return;
+    }
+
     const formData = new FormData();
 
     // PT Information
@@ -276,8 +293,30 @@ export default function ManagePTPage() {
     formData.append("longitude", values.longitude || 0);
     formData.append("latitude", values.latitude || 0);
 
-    // Role - GymPT or FreelancePT
-    formData.append("role", values.role || "GymPT");
+    // Identity card information (Freelance PT)
+    formData.append("citizenIdNumber", values.citizenIdNumber || "");
+    formData.append("identityCardPlace", values.identityCardPlace || "");
+    formData.append(
+      "citizenCardPermanentAddress",
+      values.citizenCardPermanentAddress || ""
+    );
+    formData.append("taxCode", values.taxCode || "");
+    formData.append(
+      "identityCardDate",
+      values.identityCardDate
+        ? values.identityCardDate.format("YYYY-MM-DD")
+        : ""
+    );
+
+    // Citizen ID images
+    formData.append(
+      "frontCitizenIdFile",
+      frontCitizenFileList[0].originFileObj
+    );
+    formData.append("backCitizenIdFile", backCitizenFileList[0].originFileObj);
+
+    // Role - always FreelancePT from this modal
+    formData.append("role", role);
 
     try {
       const response = await adminService.registerOtherAccounts(formData);
@@ -286,6 +325,8 @@ export default function ManagePTPage() {
       fetchPTs();
       setIsModalAddPTOpen(false);
       formAddPT.resetFields();
+      setFrontCitizenFileList([]);
+      setBackCitizenFileList([]);
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Không thể thêm Personal Trainer"
@@ -726,15 +767,17 @@ export default function ManagePTPage() {
                 <Option value="busy">Bận</Option>
               </Select>
             </div>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              size="large"
-              className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 rounded-lg px-6 shadow-lg hover:shadow-xl transition-all duration-300"
-              onClick={() => setIsModalAddPTOpen(true)}
-            >
-              Thêm Personal Trainer
-            </Button>
+            {ptType === "freelance" && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                size="large"
+                className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 rounded-lg px-6 shadow-lg hover:shadow-xl transition-all duration-300"
+                onClick={() => setIsModalAddPTOpen(true)}
+              >
+                Thêm Freelance PT
+              </Button>
+            )}
           </div>
 
           {/* Results Summary */}
@@ -1202,6 +1245,8 @@ export default function ManagePTPage() {
         onCancel={() => {
           setIsModalAddPTOpen(false);
           formAddPT.resetFields();
+          setFrontCitizenFileList([]);
+          setBackCitizenFileList([]);
         }}
         title={
           <div className="flex items-center gap-3 pb-4">
@@ -1210,10 +1255,10 @@ export default function ManagePTPage() {
             </div>
             <div>
               <h3 className="m-0 text-gray-800 text-xl font-bold">
-                Thêm Personal Trainer Mới
+                Thêm Freelance Personal Trainer
               </h3>
               <p className="text-gray-500 text-sm">
-                Điền thông tin để thêm PT vào hệ thống
+                Điền thông tin để thêm Freelance PT vào hệ thống
               </p>
             </div>
           </div>
@@ -1319,31 +1364,9 @@ export default function ManagePTPage() {
                 </Col>
               </Row>
 
-              <Form.Item
-                label={
-                  <span className="font-semibold text-gray-700">Loại PT</span>
-                }
-                name="role"
-                rules={[{ required: true, message: "Vui lòng chọn loại PT" }]}
-              >
-                <Select
-                  placeholder="Chọn loại Personal Trainer"
-                  size="large"
-                  suffixIcon={<TeamOutlined className="text-gray-400" />}
-                >
-                  <Option value="GymPT">
-                    <div className="flex items-center gap-2">
-                      <HomeOutlined className="text-blue-500" />
-                      <span>Gym PT - Huấn luyện viên phòng gym</span>
-                    </div>
-                  </Option>
-                  <Option value="FreelancePT">
-                    <div className="flex items-center gap-2">
-                      <UserOutlined className="text-green-500" />
-                      <span>Freelance PT - Huấn luyện viên tự do</span>
-                    </div>
-                  </Option>
-                </Select>
+              {/* Hidden role field - always FreelancePT */}
+              <Form.Item name="role" initialValue="FreelancePT" hidden>
+                <Input />
               </Form.Item>
 
               <Form.Item
@@ -1375,6 +1398,180 @@ export default function ManagePTPage() {
               <Form.Item name="latitude" hidden>
                 <Input />
               </Form.Item>
+            </div>
+
+            {/* Thông tin căn cước công dân */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <IdcardOutlined className="text-orange-500 text-lg" />
+                <span className="font-bold text-lg text-gray-800">
+                  Thông Tin Căn Cước Công Dân
+                </span>
+              </div>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Số CCCD
+                      </span>
+                    }
+                    name="citizenIdNumber"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập số CCCD" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<IdcardOutlined className="text-gray-400" />}
+                      placeholder="0123456789"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Mã số thuế
+                      </span>
+                    }
+                    name="taxCode"
+                    rules={[{ required: true, message: "Vui lòng mã số thuế" }]}
+                  >
+                    <Input
+                      prefix={<IdcardOutlined className="text-gray-400" />}
+                      placeholder="Mã số thuế"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Ngày cấp
+                      </span>
+                    }
+                    name="identityCardDate"
+                    rules={[
+                      { required: true, message: "Vui lòng chọn ngày cấp" },
+                    ]}
+                  >
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      format="DD/MM/YYYY"
+                      placeholder="Chọn ngày cấp"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Nơi cấp
+                      </span>
+                    }
+                    name="identityCardPlace"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập nơi cấp" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<EnvironmentOutlined className="text-gray-400" />}
+                      placeholder="Cục Cảnh sát QLHC về TTXH"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Địa chỉ thường trú
+                      </span>
+                    }
+                    name="citizenCardPermanentAddress"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập địa chỉ thường trú",
+                      },
+                    ]}
+                  >
+                    <Input
+                      prefix={<HomeOutlined className="text-gray-400" />}
+                      placeholder="Địa chỉ trên CCCD"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Ảnh CCCD mặt trước
+                      </span>
+                    }
+                    required
+                  >
+                    <Upload
+                      listType="picture-card"
+                      fileList={frontCitizenFileList}
+                      beforeUpload={() => false}
+                      onChange={({ fileList }) =>
+                        setFrontCitizenFileList(fileList.slice(-1))
+                      }
+                      accept="image/*"
+                      maxCount={1}
+                    >
+                      {frontCitizenFileList.length < 1 && (
+                        <div>
+                          <PlusOutlined />
+                          <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                        </div>
+                      )}
+                    </Upload>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Ảnh CCCD mặt sau
+                      </span>
+                    }
+                    required
+                  >
+                    <Upload
+                      listType="picture-card"
+                      fileList={backCitizenFileList}
+                      beforeUpload={() => false}
+                      onChange={({ fileList }) =>
+                        setBackCitizenFileList(fileList.slice(-1))
+                      }
+                      accept="image/*"
+                      maxCount={1}
+                    >
+                      {backCitizenFileList.length < 1 && (
+                        <div>
+                          <PlusOutlined />
+                          <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                        </div>
+                      )}
+                    </Upload>
+                  </Form.Item>
+                </Col>
+              </Row>
             </div>
 
             <div className="text-center pt-6 border-t mt-6">

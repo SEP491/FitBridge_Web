@@ -16,10 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { route } from "../../routes/index";
 import Cookies from "js-cookie";
 
-const LoginForm = ({
-  title = "FitBridge",
-  subtitle = "Đăng Nhập",
-}) => {
+const LoginForm = ({ title = "FitBridge", subtitle = "Đăng Nhập" }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
@@ -71,6 +68,7 @@ const LoginForm = ({
       const userRole = userData.role || response.data.role;
 
       console.log("User role:", userRole);
+      console.log("User data:", userData);
 
       // Route based on role
       if (userRole === "Admin") {
@@ -95,6 +93,7 @@ const LoginForm = ({
         gender: userData.gender,
         birthdate: userData.birthdate,
         senderAvatar: userData.senderAvatar,
+        isContractSigned: userData.isContractSigned,
       };
 
       console.log("Final user object:", user);
@@ -231,7 +230,6 @@ const LoginForm = ({
               </Button>
             </motion.div>
           </motion.div>
-
         </Form>
       </motion.div>
     </motion.div>
