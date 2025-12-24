@@ -206,6 +206,20 @@ export default function ManageBlogPage() {
       setActionLoading(false);
     }
   };
+  const handleEnableBlog = async (blog) => {
+    try {
+      setActionLoading(true);
+      await blogService.enableBlog(blog.id);
+      toast.success("Đã kích hoạt blog thành công");
+      if (isDetailModalOpen) setIsDetailModalOpen(false);
+      await fetchBlogs();
+    } catch (error) {
+      console.error("Error enabling blog:", error);
+      toast.error("Không thể kích hoạt blog");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const columns = [
     {
@@ -300,16 +314,28 @@ export default function ManageBlogPage() {
               onClick={() => openEditModal(record)}
             />
           </Tooltip>
-          <Tooltip title="Xóa">
-            <Button
-              danger
-              shape="circle"
-              icon={<DeleteOutlined />}
-              loading={actionLoading}
-              onClick={() => handleDeleteBlog(record)}
-              disabled={record.isEnabled === false}
-            />
-          </Tooltip>
+          {record.isEnabled === false && (
+            <Tooltip title="Kích hoạt">
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<CheckCircleOutlined />}
+                loading={actionLoading}
+                onClick={() => handleEnableBlog(record)}
+              />
+            </Tooltip>
+          )}
+          {record.isEnabled === true && (
+            <Tooltip title="Tạm ẩn">
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<CloseCircleOutlined />}
+                loading={actionLoading}
+                onClick={() => handleDeleteBlog(record)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
