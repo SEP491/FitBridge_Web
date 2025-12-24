@@ -25,6 +25,7 @@ import {
 import React, { useEffect, useState } from "react";
 import adminService from "../../../services/adminServices";
 import toast from "react-hot-toast";
+import dayjs from "dayjs";
 import {
   LoadingOutlined,
   SearchOutlined,
@@ -289,6 +290,11 @@ export default function ManagePTPage() {
     formData.append("phoneNumber", values.phoneNumber || "");
     formData.append("fullName", values.fullName || "");
     formData.append("password", values.password || "");
+    formData.append(
+      "dob",
+      values.dob ? dayjs(values.dob).format("YYYY-MM-DD") : ""
+    );
+    formData.append("isMale", values.isMale !== undefined ? values.isMale : "");
     formData.append("businessAddress", values.businessAddress || "");
     formData.append("longitude", values.longitude || 0);
     formData.append("latitude", values.latitude || 0);
@@ -1360,6 +1366,46 @@ export default function ManagePTPage() {
                     ]}
                   >
                     <Input.Password placeholder="Nhập mật khẩu" size="large" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Ngày sinh
+                      </span>
+                    }
+                    name="dob"
+                    rules={[
+                      { required: true, message: "Vui lòng chọn ngày sinh" },
+                    ]}
+                  >
+                    <DatePicker
+                      format="DD-MM-YYYY"
+                      className="w-full"
+                      placeholder="Chọn ngày sinh"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-gray-700">
+                        Giới tính
+                      </span>
+                    }
+                    name="isMale"
+                    rules={[
+                      { required: true, message: "Vui lòng chọn giới tính" },
+                    ]}
+                  >
+                    <Select placeholder="Chọn giới tính" size="large">
+                      <Select.Option value={true}>Nam</Select.Option>
+                      <Select.Option value={false}>Nữ</Select.Option>
+                    </Select>
                   </Form.Item>
                 </Col>
               </Row>
