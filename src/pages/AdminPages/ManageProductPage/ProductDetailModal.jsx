@@ -156,6 +156,234 @@ export default function ProductDetailModal({
     }
   };
 
+  // Helper function to render detail content
+  const renderDetailContent = (detail, expirationStatus, isExpired, isNearExpired, daysDiff) => {
+    return (
+      <Row gutter={[24, 16]}>
+        {/* Product Image and Price */}
+        <Col xs={24} md={8}>
+          <div className="flex flex-col gap-3">
+            {detail.imageUrl ? (
+              <Image
+                width="100%"
+                height={180}
+                src={detail.imageUrl}
+                alt={`${selectedProduct.name} - ${detail.flavourName}`}
+                className="rounded-lg object-cover border-2 border-gray-100"
+                style={{ objectFit: "contain" }}
+              />
+            ) : (
+              <div className="w-full h-[180px] bg-gray-200 rounded-lg flex items-center justify-center">
+                <ShoppingOutlined className="text-4xl text-gray-400" />
+              </div>
+            )}
+
+            {/* Price Section */}
+            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <div className="text-sm font-semibold text-gray-700 mb-2">
+                Thông Tin Giá
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <div className="text-xs text-gray-600">Giá Gốc</div>
+                  <div className=" text-gray-500 font-medium">
+                    {detail.originalPrice?.toLocaleString("vi-VN")}₫
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-600">Giá Hiển Thị</div>
+                  <div className="font-bold text-orange-600 text-lg">
+                    {detail.displayPrice?.toLocaleString("vi-VN")}₫
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-600">Giá Sale</div>
+                  <div className="font-bold text-green-600 text-lg">
+                    {detail.salePrice?.toLocaleString("vi-VN")}₫
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Day to Expire Section */}
+            {expirationStatus && (
+              <div
+                className={`p-3 rounded-lg items-center border ${
+                  isExpired
+                    ? "bg-red-50 border-red-200"
+                    : isNearExpired
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-green-50 border-green-200"
+                }`}
+              >
+                <div className="text-sm flex items-center justify-center gap-2 font-semibold text-gray-700">
+                  {isExpired ? "Đã hết hạn:" : "Hạn Sử Dụng Còn Lại:"}
+                  <p
+                    className={`font-bold text-sm ${
+                      isExpired
+                        ? "text-red-600"
+                        : isNearExpired
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                    }`}
+                  >
+                    {daysDiff} ngày
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </Col>
+
+        {/* Product Details */}
+        <Col xs={24} md={16}>
+          <div className="space-y-4">
+            {/* Stock & Sales Section */}
+            <div className="bg-blue-50 px-6 py-4 rounded-lg border border-blue-200">
+              <div className="text-sm font-semibold text-gray-700 mb-2">
+                Kho Hàng & Bán Hàng
+              </div>
+              <Row gutter={[16, 12]}>
+                <Col span={8}>
+                  <div className="text-xs text-gray-600">Tồn Kho</div>
+                  <div className="font-bold text-blue-600 text-xl">
+                    {detail.quantity}
+                  </div>
+                </Col>
+                <Col span={8}>
+                  <div className="text-xs text-gray-600">Đã Bán</div>
+                  <div className="font-bold text-green-600 text-xl">
+                    {detail.soldQuantity || 0}
+                  </div>
+                </Col>
+                <Col span={8}>
+                  <div className="text-xs text-gray-600">Hạn Sử Dụng</div>
+                  <div className="font-semibold text-gray-800">
+                    {detail.expirationDate
+                      ? new Date(detail.expirationDate).toLocaleDateString(
+                          "vi-VN"
+                        )
+                      : "N/A"}
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Serving Information Section */}
+            <div className="bg-purple-50 px-6 py-4 rounded-lg border border-purple-200">
+              <div className="text-sm font-semibold text-gray-700 mb-2">
+                Thông Tin Khẩu Phần
+              </div>
+              <Row gutter={[16, 12]}>
+                <Col span={12}>
+                  <div className="text-xs text-gray-600 mb-1">
+                    Kích Thước Khẩu Phần
+                  </div>
+                  <div className="font-medium text-gray-800">
+                    {detail.servingSizeInformation || "N/A"}
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div className="text-xs text-gray-600 mb-1">
+                    Số Lần Dùng Mỗi Hộp
+                  </div>
+                  <div className="font-medium text-gray-800">
+                    {detail.servingsPerContainerInformation || "N/A"}
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Nutritional Info Section */}
+            <div className="bg-green-50 px-6 py-4 rounded-lg border border-green-200">
+              <div className="text-sm font-semibold text-gray-700 mb-2">
+                Thông Tin Dinh Dưỡng (Mỗi Khẩu Phần)
+              </div>
+              <Row gutter={[16, 12]}>
+                <Col span={8}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div>
+                      <div className="text-xs text-gray-600">Protein</div>
+                      <div className="font-bold text-green-700">
+                        {detail.proteinPerServingGrams}g
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+                <Col span={8}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <div>
+                      <div className="text-xs text-gray-600">Calories</div>
+                      <div className="font-bold text-orange-700">
+                        {detail.caloriesPerServingKcal} kcal
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+                <Col span={8}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div>
+                      <div className="text-xs text-gray-600">BCAA</div>
+                      <div className="font-bold text-blue-700">
+                        {detail.bcaaPerServingGrams}g
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Additional Information Section */}
+            <div className="bg-gray-50 px-6 py-4 rounded-lg border border-gray-200">
+              <div className="text-sm font-semibold text-gray-700 mb-2">
+                Thông Tin Bổ Sung
+              </div>
+              <Row gutter={[16, 12]}>
+                <Col span={12}>
+                  <div className="text-xs text-gray-600">Ngày Tạo</div>
+                  <div className="font-medium text-gray-800">
+                    {detail.createdAt
+                      ? new Date(detail.createdAt).toLocaleDateString(
+                          "vi-VN",
+                          {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )
+                      : "N/A"}
+                  </div>
+                </Col>
+                <Col span={12}>
+                  <div className="text-xs text-gray-600">Cập Nhật Lần Cuối</div>
+                  <div className="font-medium text-gray-800">
+                    {detail.updatedAt
+                      ? new Date(detail.updatedAt).toLocaleDateString(
+                          "vi-VN",
+                          {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )
+                      : "N/A"}
+                  </div>
+                </Col>
+              </Row>
+            </div>
+          </div>
+        </Col>
+      </Row>
+    );
+  };
+
   return (
     <FitBridgeModal
       open={isOpen}
@@ -313,339 +541,129 @@ export default function ProductDetailModal({
             >
               {selectedProduct.productDetails &&
               selectedProduct.productDetails.length > 0 ? (
-                <Collapse
-                  accordion
-                  className="bg-transparent"
-                  items={selectedProduct.productDetails.map((detail, index) => {
-                    const expirationStatus = getExpirationStatus(
-                      detail.expirationDate,
-                      nearExpiredWarningDays
-                    );
-                    const isExpired = expirationStatus?.isExpired || false;
-                    const isNearExpired =
-                      expirationStatus?.isNearExpired || false;
-                    const daysDiff = expirationStatus?.daysDiff || 0;
-                    // shouldStopBusiness is true if:
-                    // 1. Product is expired, OR
-                    // 2. Product is not displayed, OR
-                    // 3. Days to expire < autoHideDays (configured value)
-                    const shouldStopBusiness =
-                      isExpired ||
-                      !detail.isDisplayed ||
-                      (!isExpired && daysDiff < autoHideDays);
+                (() => {
+                  // Group product details by flavour
+                  const groupedByFlavour = {};
+                  selectedProduct.productDetails.forEach((detail) => {
+                    const flavourName = detail.flavourName || "Không có hương vị";
+                    if (!groupedByFlavour[flavourName]) {
+                      groupedByFlavour[flavourName] = [];
+                    }
+                    groupedByFlavour[flavourName].push(detail);
+                  });
 
-                    return {
-                      key: index.toString(),
-                      label: (
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3">
-                            <span className="text-base font-semibold text-gray-800">
-                              #{index + 1} - {detail.flavourName} (
-                              {detail.weightValue}
-                              {detail.weightUnit})
-                            </span>
-                            {isExpired && (
-                              <Tag color="error" icon={<StopOutlined />}>
-                                Đã hết hạn ({daysDiff} ngày)
-                              </Tag>
-                            )}
-                            {!isExpired && isNearExpired && (
-                              <Tag color="warning" icon={<StopOutlined />}>
-                                Sắp hết hạn ({daysDiff} ngày)
-                              </Tag>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {shouldStopBusiness ? (
-                              <Tag color="error" icon={<StopOutlined />}>
-                                Ngừng kinh doanh
-                              </Tag>
-                            ) : (
-                              <Tag
-                                color={detail.isDisplayed ? "success" : "error"}
-                                icon={
-                                  detail.isDisplayed ? (
-                                    <CheckCircleOutlined />
-                                  ) : (
-                                    <StopOutlined />
-                                  )
-                                }
-                              >
-                                {detail.isDisplayed ? "Hiển thị" : "Ẩn"}
-                              </Tag>
-                            )}
-                            <span className="text-sm text-gray-600">
-                              HSD:{" "}
-                              {detail.expirationDate
-                                ? new Date(
-                                    detail.expirationDate
-                                  ).toLocaleDateString("vi-VN")
-                                : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                      ),
-                      children: (
-                        <Row gutter={[24, 16]}>
-                          {/* Product Image and Price */}
-                          <Col xs={24} md={8}>
-                            <div className="flex flex-col gap-3">
-                              {detail.imageUrl ? (
-                                <Image
-                                  width="100%"
-                                  height={180}
-                                  src={detail.imageUrl}
-                                  alt={`${selectedProduct.name} - ${detail.flavourName}`}
-                                  className="rounded-lg object-cover border-2 border-gray-100"
-                                  style={{ objectFit: "contain" }}
-                                />
-                              ) : (
-                                <div className="w-full h-[180px] bg-gray-200 rounded-lg flex items-center justify-center">
-                                  <ShoppingOutlined className="text-4xl text-gray-400" />
-                                </div>
-                              )}
+                  // Create collapse items grouped by flavour
+                  const flavourItems = Object.keys(groupedByFlavour)
+                    .sort()
+                    .map((flavourName, flavourIndex) => {
+                      const details = groupedByFlavour[flavourName];
+                      
+                      // Create weight items for this flavour
+                      const weightItems = details.map((detail, weightIndex) => {
+                        const expirationStatus = getExpirationStatus(
+                          detail.expirationDate,
+                          nearExpiredWarningDays
+                        );
+                        const isExpired = expirationStatus?.isExpired || false;
+                        const isNearExpired =
+                          expirationStatus?.isNearExpired || false;
+                        const daysDiff = expirationStatus?.daysDiff || 0;
+                        const shouldStopBusiness =
+                          isExpired ||
+                          !detail.isDisplayed ||
+                          (!isExpired && daysDiff < autoHideDays);
 
-                              {/* Price Section */}
-                              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                                <div className="text-sm font-semibold text-gray-700 mb-2">
-                                  Thông Tin Giá
-                                </div>
-                                <div className="space-y-2">
-                                  <div>
-                                    <div className="text-xs text-gray-600">
-                                      Giá Gốc
-                                    </div>
-                                    <div className=" text-gray-500 font-medium">
-                                      {detail.originalPrice?.toLocaleString(
-                                        "vi-VN"
-                                      )}
-                                      ₫
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="text-xs text-gray-600">
-                                      Giá Hiển Thị
-                                    </div>
-                                    <div className="font-bold text-orange-600 text-lg">
-                                      {detail.displayPrice?.toLocaleString(
-                                        "vi-VN"
-                                      )}
-                                      ₫
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="text-xs text-gray-600">
-                                      Giá Sale
-                                    </div>
-                                    <div className="font-bold text-green-600 text-lg">
-                                      {detail.salePrice?.toLocaleString(
-                                        "vi-VN"
-                                      )}
-                                      ₫
-                                    </div>
-                                  </div>
-                                </div>
+                        return {
+                          key: `weight-${flavourIndex}-${weightIndex}`,
+                          label: (
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-3">
+                                <span className="text-base font-semibold text-gray-800">
+                                  {detail.weightValue} {detail.weightUnit}
+                                </span>
+                                {isExpired && (
+                                  <Tag color="error" icon={<StopOutlined />}>
+                                    Đã hết hạn ({daysDiff} ngày)
+                                  </Tag>
+                                )}
+                                {!isExpired && isNearExpired && (
+                                  <Tag color="warning" icon={<StopOutlined />}>
+                                    Sắp hết hạn ({daysDiff} ngày)
+                                  </Tag>
+                                )}
                               </div>
-
-                              {/* {Day to Expire Section} */}
-                              {expirationStatus && (
-                                <div
-                                  className={`p-3 rounded-lg items-center border ${
-                                    isExpired
-                                      ? "bg-red-50 border-red-200"
-                                      : isNearExpired
-                                      ? "bg-yellow-50 border-yellow-200"
-                                      : "bg-green-50 border-green-200"
-                                  }`}
-                                >
-                                  <div className="text-sm flex items-center justify-center gap-2 font-semibold text-gray-700">
-                                    {isExpired
-                                      ? "Đã hết hạn:"
-                                      : "Hạn Sử Dụng Còn Lại:"}
-                                    <p
-                                      className={`font-bold text-sm ${
-                                        isExpired
-                                          ? "text-red-600"
-                                          : isNearExpired
-                                          ? "text-yellow-600"
-                                          : "text-green-600"
-                                      }`}
-                                    >
-                                      {isExpired
-                                        ? `${daysDiff} ngày`
-                                        : `${daysDiff} ngày`}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </Col>
-
-                          {/* Product Details */}
-                          <Col xs={24} md={16}>
-                            <div className="space-y-4">
-                              {/* Stock & Sales Section */}
-                              <div className="bg-blue-50 px-6 py-4 rounded-lg border border-blue-200">
-                                <div className="text-sm font-semibold text-gray-700 mb-2">
-                                  Kho Hàng & Bán Hàng
-                                </div>
-                                <Row gutter={[16, 12]}>
-                                  <Col span={8}>
-                                    <div className="text-xs text-gray-600">
-                                      Tồn Kho
-                                    </div>
-                                    <div className="font-bold text-blue-600 text-xl">
-                                      {detail.quantity}
-                                    </div>
-                                  </Col>
-                                  <Col span={8}>
-                                    <div className="text-xs text-gray-600">
-                                      Đã Bán
-                                    </div>
-                                    <div className="font-bold text-green-600 text-xl">
-                                      {detail.soldQuantity || 0}
-                                    </div>
-                                  </Col>
-                                  <Col span={8}>
-                                    <div className="text-xs text-gray-600">
-                                      Hạn Sử Dụng
-                                    </div>
-                                    <div className="font-semibold text-gray-800">
-                                      {detail.expirationDate
-                                        ? new Date(
-                                            detail.expirationDate
-                                          ).toLocaleDateString("vi-VN")
-                                        : "N/A"}
-                                    </div>
-                                  </Col>
-                                </Row>
-                              </div>
-
-                              {/* Serving Information Section */}
-                              <div className="bg-purple-50 px-6 py-4 rounded-lg border border-purple-200">
-                                <div className="text-sm font-semibold text-gray-700 mb-2">
-                                  Thông Tin Khẩu Phần
-                                </div>
-                                <Row gutter={[16, 12]}>
-                                  <Col span={12}>
-                                    <div className="text-xs text-gray-600 mb-1">
-                                      Kích Thước Khẩu Phần
-                                    </div>
-                                    <div className="font-medium text-gray-800">
-                                      {detail.servingSizeInformation || "N/A"}
-                                    </div>
-                                  </Col>
-                                  <Col span={12}>
-                                    <div className="text-xs text-gray-600 mb-1">
-                                      Số Lần Dùng Mỗi Hộp
-                                    </div>
-                                    <div className="font-medium text-gray-800">
-                                      {detail.servingsPerContainerInformation ||
-                                        "N/A"}
-                                    </div>
-                                  </Col>
-                                </Row>
-                              </div>
-
-                              {/* Nutritional Info Section */}
-                              <div className="bg-green-50 px-6 py-4 rounded-lg border border-green-200">
-                                <div className="text-sm font-semibold text-gray-700 mb-2">
-                                  Thông Tin Dinh Dưỡng (Mỗi Khẩu Phần)
-                                </div>
-                                <Row gutter={[16, 12]}>
-                                  <Col span={8}>
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                      <div>
-                                        <div className="text-xs text-gray-600">
-                                          Protein
-                                        </div>
-                                        <div className="font-bold text-green-700">
-                                          {detail.proteinPerServingGrams}g
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </Col>
-                                  <Col span={8}>
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                                      <div>
-                                        <div className="text-xs text-gray-600">
-                                          Calories
-                                        </div>
-                                        <div className="font-bold text-orange-700">
-                                          {detail.caloriesPerServingKcal} kcal
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </Col>
-                                  <Col span={8}>
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                      <div>
-                                        <div className="text-xs text-gray-600">
-                                          BCAA
-                                        </div>
-                                        <div className="font-bold text-blue-700">
-                                          {detail.bcaaPerServingGrams}g
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </Col>
-                                </Row>
-                              </div>
-
-                              {/* Additional Information Section */}
-                              <div className="bg-gray-50 px-6 py-4 rounded-lg border border-gray-200">
-                                <div className="text-sm font-semibold text-gray-700 mb-2">
-                                  Thông Tin Bổ Sung
-                                </div>
-                                <Row gutter={[16, 12]}>
-                                  <Col span={12}>
-                                    <div className="text-xs text-gray-600">
-                                      Ngày Tạo
-                                    </div>
-                                    <div className="font-medium text-gray-800">
-                                      {detail.createdAt
-                                        ? new Date(
-                                            detail.createdAt
-                                          ).toLocaleDateString("vi-VN", {
-                                            year: "numeric",
-                                            month: "2-digit",
-                                            day: "2-digit",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })
-                                        : "N/A"}
-                                    </div>
-                                  </Col>
-                                  <Col span={12}>
-                                    <div className="text-xs text-gray-600">
-                                      Cập Nhật Lần Cuối
-                                    </div>
-                                    <div className="font-medium text-gray-800">
-                                      {detail.updatedAt
-                                        ? new Date(
-                                            detail.updatedAt
-                                          ).toLocaleDateString("vi-VN", {
-                                            year: "numeric",
-                                            month: "2-digit",
-                                            day: "2-digit",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })
-                                        : "N/A"}
-                                    </div>
-                                  </Col>
-                                </Row>
+                              <div className="flex items-center gap-2">
+                                {shouldStopBusiness ? (
+                                  <Tag color="error" icon={<StopOutlined />}>
+                                    Ngừng kinh doanh
+                                  </Tag>
+                                ) : (
+                                  <Tag
+                                    color={detail.isDisplayed ? "success" : "error"}
+                                    icon={
+                                      detail.isDisplayed ? (
+                                        <CheckCircleOutlined />
+                                      ) : (
+                                        <StopOutlined />
+                                      )
+                                    }
+                                  >
+                                    {detail.isDisplayed ? "Hiển thị" : "Ẩn"}
+                                  </Tag>
+                                )}
+                                <span className="text-sm text-gray-600">
+                                  HSD:{" "}
+                                  {detail.expirationDate
+                                    ? new Date(
+                                        detail.expirationDate
+                                      ).toLocaleDateString("vi-VN")
+                                    : "N/A"}
+                                </span>
                               </div>
                             </div>
-                          </Col>
-                        </Row>
-                      ),
-                    };
-                  })}
-                />
+                          ),
+                          children: renderDetailContent(
+                            detail,
+                            expirationStatus,
+                            isExpired,
+                            isNearExpired,
+                            daysDiff
+                          ),
+                        };
+                      });
+
+                      return {
+                        key: `flavour-${flavourIndex}`,
+                        label: (
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg font-bold text-[#ED2A46]">
+                                {flavourName}
+                              </span>
+                              <Tag color="blue">
+                                {details.length} trọng lượng
+                              </Tag>
+                            </div>
+                          </div>
+                        ),
+                        children: (
+                          <Collapse
+                            accordion
+                            className="bg-transparent"
+                            items={weightItems}
+                          />
+                        ),
+                      };
+                    });
+
+                  return (
+                    <Collapse
+                      accordion
+                      className="bg-transparent"
+                      items={flavourItems}
+                    />
+                  );
+                })()
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 px-4">
                   <div className="bg-gray-100 rounded-full p-6 mb-4">
