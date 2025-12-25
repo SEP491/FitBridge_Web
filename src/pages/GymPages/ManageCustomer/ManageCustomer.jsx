@@ -198,6 +198,17 @@ export default function ManageGymCustomers() {
       ),
     },
     {
+      title: "Gói Hết Hạn",
+      dataIndex: "isCourseExpired",
+      key: "isCourseExpired",
+      align: "center",
+      render: (isExpired) => (
+        <Tag color={isExpired ? "red" : "green"}>
+          {isExpired ? "Đã hết hạn" : "Còn hiệu lực"}
+        </Tag>
+      ),
+    },
+    {
       title: "Ngày Tham Gia",
       dataIndex: "joinedAt",
       key: "joinedAt",
@@ -490,6 +501,20 @@ export default function ManageGymCustomers() {
                       }`}
                     >
                       {selectedCustomer.ptGymAvailableSession} buổi
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Trạng thái gói</div>
+                    <div className="mt-1">
+                      <Tag
+                        color={
+                          selectedCustomer.isCourseExpired ? "red" : "green"
+                        }
+                      >
+                        {selectedCustomer.isCourseExpired
+                          ? "Đã hết hạn"
+                          : "Còn hiệu lực"}
+                      </Tag>
                     </div>
                   </div>
                 </div>
