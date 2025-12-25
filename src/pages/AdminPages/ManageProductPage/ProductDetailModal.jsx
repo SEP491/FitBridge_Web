@@ -558,6 +558,22 @@ export default function ProductDetailModal({
                     .map((flavourName, flavourIndex) => {
                       const details = groupedByFlavour[flavourName];
                       
+                      // Count expired and near expired weights for this flavour
+                      let expiredCount = 0;
+                      let nearExpiredCount = 0;
+                      
+                      details.forEach((detail) => {
+                        const expirationStatus = getExpirationStatus(
+                          detail.expirationDate,
+                          nearExpiredWarningDays
+                        );
+                        if (expirationStatus?.isExpired) {
+                          expiredCount++;
+                        } else if (expirationStatus?.isNearExpired) {
+                          nearExpiredCount++;
+                        }
+                      });
+                      
                       // Create weight items for this flavour
                       const weightItems = details.map((detail, weightIndex) => {
                         const expirationStatus = getExpirationStatus(
@@ -636,13 +652,23 @@ export default function ProductDetailModal({
                         key: `flavour-${flavourIndex}`,
                         label: (
                           <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 flex-wrap">
                               <span className="text-lg font-bold text-[#ED2A46]">
                                 {flavourName}
                               </span>
                               <Tag color="blue">
                                 {details.length} trọng lượng
                               </Tag>
+                              {nearExpiredCount > 0 && (
+                                <Tag color="warning" icon={<StopOutlined />}>
+                                  {nearExpiredCount} trọng lượng sắp hết hạn
+                                </Tag>
+                              )}
+                              {expiredCount > 0 && (
+                                <Tag color="error" icon={<StopOutlined />}>
+                                  {expiredCount} trọng lượng đã hết hạn
+                                </Tag>
+                              )}
                             </div>
                           </div>
                         ),
