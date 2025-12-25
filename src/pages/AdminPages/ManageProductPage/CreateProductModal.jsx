@@ -45,7 +45,7 @@ export default function CreateProductModal({
   imageFile,
   onImageUpload,
   onImageRemove,
-  onRefreshCategories, 
+  onRefreshCategories,
   onRefreshSubcategories,
 }) {
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -72,15 +72,15 @@ export default function CreateProductModal({
       const response = await adminService.createCategory({
         name: newCategoryName.trim(),
       });
-      
+
       toast.success("Thêm danh mục thành công");
       setNewCategoryName("");
-      
+
       // Refresh categories list
       if (onRefreshCategories) {
         await onRefreshCategories();
       }
-      
+
       // Set the newly created category as selected
       if (response.data?.id) {
         form.setFieldsValue({ categoryId: response.data.id });
@@ -95,35 +95,34 @@ export default function CreateProductModal({
   };
 
   const handleAddSubCategory = async (e) => {
-  e.preventDefault();
-  if (!newSubCategoryName.trim()) {
-    toast.error("Vui lòng nhập tên danh mục phụ");
-    return;
-  }
+    e.preventDefault();
+    if (!newSubCategoryName.trim()) {
+      toast.error("Vui lòng nhập tên danh mục phụ");
+      return;
+    }
 
-  if (!selectedCategoryId) {
-    toast.error("Vui lòng chọn danh mục chính trước");
-    return;
-  }
+    if (!selectedCategoryId) {
+      toast.error("Vui lòng chọn danh mục chính trước");
+      return;
+    }
 
-  setAddingSubCategory(true);
-  try {
-    await adminService.createSubCategory({
-      name: newSubCategoryName.trim(),
-      categoryId: selectedCategoryId,
-    });
-    
-    toast.success("Thêm danh mục phụ thành công");
-    setNewSubCategoryName("");
-    onRefreshSubcategories(selectedCategoryId);
+    setAddingSubCategory(true);
+    try {
+      await adminService.createSubCategory({
+        name: newSubCategoryName.trim(),
+        categoryId: selectedCategoryId,
+      });
 
-  } catch (error) {
-    console.error("Error creating subcategory:", error);
-    toast.error(error.response?.data?.message || "Lỗi khi tạo danh mục phụ");
-  } finally {
-    setAddingSubCategory(false);
-  }
-};
+      toast.success("Thêm danh mục phụ thành công");
+      setNewSubCategoryName("");
+      onRefreshSubcategories(selectedCategoryId);
+    } catch (error) {
+      console.error("Error creating subcategory:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi tạo danh mục phụ");
+    } finally {
+      setAddingSubCategory(false);
+    }
+  };
   return (
     <FitBridgeModal
       open={isOpen}
@@ -135,25 +134,31 @@ export default function CreateProductModal({
       }
       width={900}
       footer={
-         <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button size="large" onClick={handleCancel} className="px-6">
-              Hủy
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={creating}
-              size="large"
-              icon={<CheckCircleOutlined />}
-              className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 px-8 shadow-lg hover:shadow-xl"
-            >
-              Tạo Sản Phẩm
-            </Button>
-          </div>
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button size="large" onClick={handleCancel} className="px-6">
+            Hủy
+          </Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={creating}
+            size="large"
+            icon={<CheckCircleOutlined />}
+            className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 px-8 shadow-lg hover:shadow-xl"
+            onClick={() => form.submit()}
+          >
+            Tạo Sản Phẩm
+          </Button>
+        </div>
       }
       className="create-product-modal "
     >
-      <Form form={form} style={{overflowY:'scroll', maxHeight:'60vh'}} layout="vertical" onFinish={onSubmit}>
+      <Form
+        form={form}
+        style={{ overflowY: "scroll", maxHeight: "60vh" }}
+        layout="vertical"
+        onFinish={onSubmit}
+      >
         {/* Basic Info Section */}
         <Card
           size="small"
@@ -294,7 +299,9 @@ export default function CreateProductModal({
               <Form.Item
                 label={<span className="font-medium">Danh Mục Chính</span>}
                 name="categoryId"
-                rules={[{ required: true, message: "Vui lòng chọn danh mục chính" }]}
+                rules={[
+                  { required: true, message: "Vui lòng chọn danh mục chính" },
+                ]}
               >
                 <Select
                   placeholder="Chọn danh mục chính"
@@ -345,7 +352,9 @@ export default function CreateProductModal({
               <Form.Item
                 label={<span className="font-medium">Danh Mục Phụ</span>}
                 name="subCategoryId"
-                rules={[{ required: true, message: "Vui lòng chọn danh mục phụ" }]}
+                rules={[
+                  { required: true, message: "Vui lòng chọn danh mục phụ" },
+                ]}
               >
                 <Select
                   placeholder="Chọn danh mục phụ"
@@ -362,7 +371,9 @@ export default function CreateProductModal({
                         <Input
                           placeholder="Tên danh mục phụ mới"
                           value={newSubCategoryName}
-                          onChange={(e) => setNewSubCategoryName(e.target.value)}
+                          onChange={(e) =>
+                            setNewSubCategoryName(e.target.value)
+                          }
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               handleAddSubCategory(e);
