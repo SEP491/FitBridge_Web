@@ -260,6 +260,7 @@ export default function ManageGymTransaction() {
   useEffect(() => {
     fetchTransactions();
     fetchWalletBalance();
+    fetchDisbursementDetails()
   }, []);
 
   useEffect(() => {
@@ -341,6 +342,11 @@ export default function ManageGymTransaction() {
     }
   };
 
+  // Get unique transaction types for filter
+  const transactionTypes = [
+    ...new Set(transactions.map((t) => t.transactionType).filter(Boolean)),
+  ];
+
   const columns = [
     {
       title: "Mã Đơn Hàng",
@@ -348,6 +354,40 @@ export default function ManageGymTransaction() {
       key: "orderCode",
       align: "left",
       width: 120,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm mã đơn hàng"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.orderCode || "")
+          .toString()
+          .toLowerCase()
+          .includes(value.toLowerCase()),
       render: (orderCode) => (
         <span className="font-mono text-sm font-semibold text-blue-600">
           {orderCode || "N/A"}
@@ -359,6 +399,39 @@ export default function ManageGymTransaction() {
       key: "customer",
       align: "center",
       width: 200,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm tên khách hàng"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.customerName || "")
+          .toLowerCase()
+          .includes(value.toLowerCase()),
       render: (record) => (
         <div className="flex items-center gap-2 justify-start">
           <img
@@ -380,6 +453,11 @@ export default function ManageGymTransaction() {
       key: "transactionType",
       align: "center",
       width: 150,
+      filters: transactionTypes.map((type) => ({
+        text: getTransactionTypeText(type),
+        value: type,
+      })),
+      onFilter: (value, record) => record.transactionType === value,
       render: (type) => (
         <Tag color={getTransactionTypeColor(type)}>
           {getTransactionTypeText(type)}
@@ -392,7 +470,39 @@ export default function ManageGymTransaction() {
       key: "totalPaidAmount",
       align: "center",
       width: 150,
-      sorter: (a, b) => (a.totalPaidAmount || 0) - (b.totalPaidAmount || 0),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm số tiền"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.totalPaidAmount || 0)
+          .toString()
+          .includes(value),
       render: (value) => (
         <span className="font-bold text-green-600">
           {value !== null && value !== undefined
@@ -410,7 +520,39 @@ export default function ManageGymTransaction() {
       key: "profitAmount",
       align: "center",
       width: 130,
-      sorter: (a, b) => (a.profitAmount || 0) - (b.profitAmount || 0),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm lợi nhuận"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.profitAmount || 0)
+          .toString()
+          .includes(value),
       render: (value) => (
         <span className="font-bold text-orange-600">
           {value !== null && value !== undefined
@@ -428,7 +570,39 @@ export default function ManageGymTransaction() {
       key: "withdrawalAmount",
       align: "center",
       width: 130,
-      sorter: (a, b) => (a.withdrawalAmount || 0) - (b.withdrawalAmount || 0),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm số tiền rút"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.withdrawalAmount || 0)
+          .toString()
+          .includes(value),
       render: (value) => (
         <span className="font-bold text-purple-600">
           {value !== null && value !== undefined
@@ -438,6 +612,51 @@ export default function ManageGymTransaction() {
               })
             : "N/A"}
         </span>
+      ),
+    },
+    {
+      title: "Ngày tạo",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      align: "center",
+      width: 150,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm ngày (DD/MM/YYYY)"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        record.createdAt
+          ? formatDateTime(record.createdAt).includes(value)
+          : false,
+      render: (date) => (
+        <div className="text-sm text-gray-600">
+          {date ? formatDateTime(date) : "N/A"}
+        </div>
       ),
     },
   ];
@@ -522,6 +741,17 @@ export default function ManageGymTransaction() {
     });
   };
 
+  const getStatusText = (status) => {
+    const statusConfig = {
+      Pending: "Chờ duyệt",
+      AdminApproved: "Đã duyệt",
+      Completed: "Đã xác nhận",
+      Resolved: "Đã xử lý",
+      Rejected: "Đã từ chối",
+    };
+    return statusConfig[status] || status;
+  };
+
   const getStatusTag = (status) => {
     const statusConfig = {
       Pending: { color: "gold", text: "Chờ duyệt" },
@@ -597,6 +827,14 @@ export default function ManageGymTransaction() {
     setIsModalWithdrawalDetailOpen(true);
   };
 
+  // Get unique statuses for withdrawal filter
+  const uniqueWithdrawalStatuses = [
+    ...new Set(withdrawalRequests.map((w) => w.status).filter(Boolean)),
+  ];
+  const uniqueBanks = [
+    ...new Set(withdrawalRequests.map((w) => w.bankName).filter(Boolean)),
+  ];
+
   // Withdrawal columns
   const withdrawalColumns = [
     {
@@ -605,7 +843,39 @@ export default function ManageGymTransaction() {
       key: "amount",
       align: "center",
       width: 150,
-      sorter: (a, b) => (a.amount || 0) - (b.amount || 0),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm số tiền"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.amount || 0)
+          .toString()
+          .includes(value),
       render: (amount) => (
         <div className="font-semibold text-green-600 text-lg">
           {formatCurrency(amount)}
@@ -617,6 +887,11 @@ export default function ManageGymTransaction() {
       key: "bank",
       align: "left",
       width: 200,
+      filters: uniqueBanks.map((bank) => ({
+        text: bank,
+        value: bank,
+      })),
+      onFilter: (value, record) => record.bankName === value,
       render: (_, record) => (
         <div>
           <div className="font-medium text-gray-900">{record.bankName}</div>
@@ -631,6 +906,11 @@ export default function ManageGymTransaction() {
       key: "status",
       align: "center",
       width: 120,
+      filters: uniqueWithdrawalStatuses.map((status) => ({
+        text: getStatusText(status),
+        value: status,
+      })),
+      onFilter: (value, record) => record.status === value,
       render: (status) => getStatusTag(status),
     },
     {
@@ -639,12 +919,54 @@ export default function ManageGymTransaction() {
       key: "createdAt",
       align: "center",
       width: 150,
-      sorter: (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm ngày (DD/MM/YYYY)"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        record.createdAt
+          ? formatDateTime(record.createdAt).includes(value)
+          : false,
       render: (date) => (
         <div className="text-sm text-gray-600">{formatDateTime(date)}</div>
       ),
     },
+  ];
+
+  // Get unique values for pending columns filters
+  const uniquePendingTypes = [
+    ...new Set(pendingItems.map((p) => p.transactionType).filter(Boolean)),
+  ];
+  const uniqueCourseNames = [
+    ...new Set(pendingItems.map((p) => p.courseName).filter(Boolean)),
+  ];
+  const uniqueCustomerNames = [
+    ...new Set(pendingItems.map((p) => p.customerFullName).filter(Boolean)),
   ];
 
   // Wallet detail columns
@@ -654,7 +976,40 @@ export default function ManageGymTransaction() {
       dataIndex: ["transactionDetail", "transactionDate"],
       key: "transactionDate",
       align: "center",
-      width: 180,
+      width: 120,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm ngày (DD/MM/YYYY)"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        record.transactionDetail?.transactionDate
+          ? formatDateTime(record.transactionDetail.transactionDate).includes(value)
+          : false,
       render: (date) => (
         <div className="text-sm text-gray-700">{formatDateTime(date)}</div>
       ),
@@ -664,6 +1019,12 @@ export default function ManageGymTransaction() {
       dataIndex: "courseName",
       key: "courseName",
       align: "left",
+      width: 200,
+      filters: uniqueCourseNames.map((name) => ({
+        text: name,
+        value: name,
+      })),
+      onFilter: (value, record) => record.courseName === value,
       render: (value) => value || "N/A",
     },
     {
@@ -671,6 +1032,12 @@ export default function ManageGymTransaction() {
       dataIndex: "customerFullName",
       key: "customerFullName",
       align: "left",
+      width: 140,
+      filters: uniqueCustomerNames.map((name) => ({
+        text: name,
+        value: name,
+      })),
+      onFilter: (value, record) => record.customerFullName === value,
       render: (value) => value || "N/A",
     },
     {
@@ -678,13 +1045,93 @@ export default function ManageGymTransaction() {
       dataIndex: "transactionType",
       key: "transactionType",
       align: "center",
+      width: 170,
+      filters: uniquePendingTypes.map((type) => ({
+        text: getTransactionTypeText(type),
+        value: type,
+      })),
+      onFilter: (value, record) => record.transactionType === value,
       render: (type) => getTransactionTypeText(type),
+    },
+    {
+      title :"Thông tin chi tiết",
+      dataIndex: "transactionDetail",
+      key: "transactionDetail",
+      align: "left",
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm mô tả"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.transactionDetail?.description || "")
+          .toLowerCase()
+          .includes(value.toLowerCase()),
+      render: (value) => value.description || "N/A",
     },
     {
       title: "Số tiền giao dịch",
       dataIndex: "totalProfit",
       key: "totalProfit",
       align: "center",
+      width: 180,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm số tiền"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.totalProfit || 0)
+          .toString()
+          .includes(value),
       render: (value) =>
         renderSignedAmount(
           value,
@@ -694,6 +1141,14 @@ export default function ManageGymTransaction() {
     },
   ];
 
+  // Get unique values for simple wallet columns filters
+  const uniqueAvailableTypes = [
+    ...new Set(availableItems.map((a) => a.transactionType).filter(Boolean)),
+  ];
+  const uniqueDisbursementTypes = [
+    ...new Set(disbursementItems.map((d) => d.transactionType).filter(Boolean)),
+  ];
+
   const simpleWalletColumns = [
     {
       title: "Ngày giao dịch",
@@ -701,6 +1156,39 @@ export default function ManageGymTransaction() {
       key: "transactionDate",
       align: "center",
       width: 180,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm ngày (DD/MM/YYYY)"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        record.transactionDate
+          ? formatDateTime(record.transactionDate).includes(value)
+          : false,
       render: (date) => (
         <div className="text-sm text-gray-700">{formatDateTime(date)}</div>
       ),
@@ -710,6 +1198,11 @@ export default function ManageGymTransaction() {
       dataIndex: "transactionType",
       key: "transactionType",
       align: "center",
+      filters: [...new Set([...uniqueAvailableTypes, ...uniqueDisbursementTypes])].map((type) => ({
+        text: getTransactionTypeText(type),
+        value: type,
+      })),
+      onFilter: (value, record) => record.transactionType === value,
       render: (type) => getTransactionTypeText(type),
     },
     {
@@ -717,6 +1210,39 @@ export default function ManageGymTransaction() {
       dataIndex: "description",
       key: "description",
       align: "left",
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm mô tả"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.description || "")
+          .toLowerCase()
+          .includes(value.toLowerCase()),
       render: (value) => value || "N/A",
     },
     {
@@ -724,6 +1250,39 @@ export default function ManageGymTransaction() {
       dataIndex: "totalProfit",
       key: "totalProfit",
       align: "center",
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm số tiền"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) =>
+        (record.totalProfit || 0)
+          .toString()
+          .includes(value),
       render: (value) =>
         renderSignedAmount(
           value,
