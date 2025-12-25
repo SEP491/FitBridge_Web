@@ -34,6 +34,7 @@ import {
   UploadOutlined,
 } from "@ant-design/icons";
 import FitBridgeModal from "../../../components/FitBridgeModal";
+import { MdAdminPanelSettings } from "react-icons/md";
 
 const { TextArea } = Input;
 
@@ -362,15 +363,12 @@ export default function ManageWithdrawalPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#ED2A46] mb-2 flex items-center gap-2">
-          <MoneyCollectOutlined className="text-orange-500" />
+        <MdAdminPanelSettings />
           Quản Lý Yêu Cầu Rút Tiền
         </h1>
-        <p className="text-gray-600">
-          Quản lý và xử lý các yêu cầu rút tiền từ người dùng
-        </p>
       </div>
 
       <div className="">

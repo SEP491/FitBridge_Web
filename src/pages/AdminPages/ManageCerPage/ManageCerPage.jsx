@@ -25,6 +25,7 @@ import {
   LoadingOutlined,
   FileProtectOutlined,
   ClockCircleOutlined as ClockIcon,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import { FaCertificate } from "react-icons/fa";
 import FitBridgeModal from "../../../components/FitBridgeModal";
@@ -362,11 +363,11 @@ export default function ManageCerPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] mb-2 flex items-center gap-2">
-          <FaCertificate className="text-orange-500" />
+          <FileTextOutlined className="text-orange-500" />
           Quản Lý Chứng Chỉ
         </h1>
         <p className="text-gray-600">

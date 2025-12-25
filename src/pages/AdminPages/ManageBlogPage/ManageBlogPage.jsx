@@ -342,7 +342,7 @@ export default function ManageBlogPage() {
   ];
 
   return (
-    <div className="p-6">
+    <div className="">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2">

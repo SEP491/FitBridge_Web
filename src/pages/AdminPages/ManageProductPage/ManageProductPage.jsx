@@ -637,14 +637,12 @@ export default function ManageProductPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#ED2A46] mb-2">
+        <h1 className="text-3xl font-bold flex gap-2  text-[#ED2A46] mb-2">
+          <ShoppingOutlined />
           Quản Lý Sản Phẩm
         </h1>
-        <p className="text-gray-600">
-          Quản lý và theo dõi các sản phẩm trong hệ thống thương mại điện tử
-        </p>
       </div>
 
       <div className="">

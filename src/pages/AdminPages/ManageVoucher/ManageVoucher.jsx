@@ -368,12 +368,10 @@ export default function ManageVoucher() {
       <div className="">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#ED2A46] mb-2">
+          <h1 className="text-3xl font-bold flex gap-2 text-[#ED2A46] mb-2">
+          <GiftOutlined />
             Quản Lý Coupon Voucher
           </h1>
-          <p className="text-gray-600">
-            Quản lý và theo dõi các coupon giảm giá cho khách hàng
-          </p>
         </div>
 
         {/* Statistics Cards */}

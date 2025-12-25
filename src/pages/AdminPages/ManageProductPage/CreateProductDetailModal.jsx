@@ -162,7 +162,7 @@ export default function CreateProductDetailModal({
           </Button>
           <Button
             type="primary"
-            htmlType="submit"
+            onClick={() => form.submit()}
             loading={creating}
             size="large"
             icon={<CheckCircleOutlined />}

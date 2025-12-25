@@ -319,6 +319,21 @@ export default function ManageReportPage() {
         icon: <CloseCircleOutlined />,
         text: "Xác nhận gian lận",
       },
+      ProductReport: {
+        color: "volcano",
+        icon: <CloseCircleOutlined />,
+        text: "Báo cáo Sản Phẩm",
+      },
+      GymReport: {
+        color: "volcano",
+        icon: <CloseCircleOutlined />,
+        text: "Báo cáo Phòng Gym",
+      },
+      UserReport: {
+        color: "volcano",
+        icon: <CloseCircleOutlined />,
+        text: "Báo cáo Người Dùng",
+      },
     };
     const config = statusConfig[status] || statusConfig.Pending;
     return (
@@ -335,6 +350,7 @@ export default function ManageReportPage() {
       FreelancePtReport: { color: "purple", text: "Báo cáo PT Tự Do" },
       GymReport: { color: "cyan", text: "Báo cáo Phòng Gym" },
       UserReport: { color: "magenta", text: "Báo cáo Người Dùng" },
+      ProductReport: { color: "cyan", text: "Báo cáo Sản Phẩm" },
     };
     const config = typeConfig[type] || { color: "default", text: type };
     return <Tag color={config.color}>{config.text}</Tag>;
@@ -385,7 +401,7 @@ export default function ManageReportPage() {
       ),
     },
     {
-      title: "Người Bị Báo Cáo",
+      title: "Đối Tượng Bị Báo Cáo",
       key: "reportedUser",
       align: "center",
       width: 200,
@@ -399,7 +415,9 @@ export default function ManageReportPage() {
           />
           <div className="text-left">
             <div className="font-medium">
-              {record.reportedUserName || "Chưa có thông tin"}
+              {record.reportedUserName
+                ? record.reportedUserName
+                : record.reportedProduct || "Chưa có thông tin"}
             </div>
           </div>
         </div>
@@ -488,7 +506,7 @@ export default function ManageReportPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <MdReport />
@@ -853,7 +871,7 @@ export default function ManageReportPage() {
                 title={
                   <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
                     <UserOutlined />
-                    Thông Tin Người Bị Báo Cáo
+                    Thông Tin Đối Tượng Bị Báo Cáo
                   </span>
                 }
                 bordered={true}
@@ -872,10 +890,10 @@ export default function ManageReportPage() {
                   />
                   <div className="flex-1">
                     <div className="text-sm text-gray-500 mb-1">
-                      Người Bị Báo Cáo
+                      Đối Tượng Bị Báo Cáo
                     </div>
                     <div className="text-xl font-bold text-gray-800">
-                      {selectedReport.reportedUserName || "Chưa có thông tin"}
+                      {selectedReport.reportedUserName ? selectedReport.reportedUserName : selectedReport.reportedProduct || "Chưa có thông tin"}
                     </div>
                   </div>
                 </div>

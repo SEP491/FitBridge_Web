@@ -37,6 +37,7 @@ import {
   EyeOutlined,
   SyncOutlined,
   CarOutlined,
+  ShoppingOutlined,
 } from "@ant-design/icons";
 import orderService from "../../../services/orderServices";
 import OrderDetailModal from "./OrderDetailModal";
@@ -466,15 +467,13 @@ export default function ManageOrderPage() {
 
   return (
     <>
-      <div className="p-6">
+      <div className="">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#ED2A46] mb-2">
+          <h1 className="text-3xl flex gap-2 font-bold text-[#ED2A46] mb-2">
+          <ShoppingOutlined />
             Quản Lý Đơn Hàng
           </h1>
-          <p className="text-gray-600">
-            Quản lý và theo dõi tất cả đơn hàng trong hệ thống
-          </p>
         </div>
 
         {/* Statistics Cards */}

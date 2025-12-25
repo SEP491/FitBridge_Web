@@ -549,16 +549,15 @@ export default function ManagePTPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="">
       <div className="">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#ED2A46] mb-2">
+        
+          <h1 className="text-3xl font-bold flex text-[#ED2A46] gap-2 mb-2">
+          <UserOutlined /> 
             Quản Lý Personal Trainer
           </h1>
-          <p className="text-gray-600">
-            Quản lý và theo dõi thông tin các huấn luyện viên cá nhân
-          </p>
         </div>
 
         {/* PT Type Selection Header */}

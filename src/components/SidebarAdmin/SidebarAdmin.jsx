@@ -235,7 +235,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
       onCollapse={handleCollapse}
       width={280}
       collapsedWidth={80}
-      className="sidebar !bg-[#1D1D1D] shadow-xl !transition-all !duration-300 !h-screen"
+      className="sidebar overflow-y-scroll no-scrollbar pb-20 !bg-[#1D1D1D] shadow-xl !transition-all !duration-300 "
     >
       {/* Logo Section */}
       <div className="flex items-center justify-center py-6 border-b border-gray-700">
@@ -260,6 +260,8 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         selectedKeys={[currentPath]}
         className="!bg-[#1D1D1D] !border-r-0 menu-custom"
         inlineIndent={24}
+        style={{paddingBottom: "60px"}}
+
       >
         {items.map((item) => {
           const menuItem = (

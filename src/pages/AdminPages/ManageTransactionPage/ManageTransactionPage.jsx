@@ -317,7 +317,7 @@ export default function ManageTransactionPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
           <MdAdminPanelSettings />
-          Quản Lý Giao Dịch (Admin)
+          Quản Lý Giao Dịch
         </h1>
 
         {/* Statistics Cards */}
