@@ -698,7 +698,7 @@ export default function ManageCerPage() {
           )}
           <TextArea
             rows={4}
-            placeholder="Thêm ghi chú (tùy chọn)"
+            placeholder="Thêm ghi chú"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
