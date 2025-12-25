@@ -17,6 +17,7 @@ import {
   Tooltip,
   Row,
   Col,
+  Modal,
 } from "antd";
 import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
@@ -184,6 +185,38 @@ export default function ManageSlotGym() {
         );
       },
     },
+    {
+      title: "Thao tác",
+      key: "action",
+      align: "center",
+      width: 120,
+      render: (_, record) => (
+        <Space size="middle">
+          <Tooltip title="Chỉnh sửa">
+            <Button
+              type="link"
+              icon={<MdEdit />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(record);
+              }}
+              style={{ color: "#1890ff" }}
+            />
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <Button
+              type="link"
+              danger
+              icon={<ImBin />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteSlot(record.id);
+              }}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
   ];
 
   const handleAddSlot = async (values) => {
@@ -230,6 +263,27 @@ export default function ManageSlotGym() {
     } finally {
       setLoadingEdit(false);
     }
+  };
+
+  const handleDeleteSlot = async (id) => {
+    Modal.confirm({
+      title: "Xác nhận xóa Slot",
+      content:
+        "Bạn có chắc chắn muốn xóa slot này không? Hành động này không thể hoàn tác.",
+      okText: "Xóa",
+      cancelText: "Hủy",
+      okType: "danger",
+      onOk: async () => {
+        try {
+          await gymService.deleteSlot(id);
+          toast.success("Xóa slot thành công");
+          fetchSlotsGym(pagination.current, pagination.pageSize, searchText);
+        } catch (error) {
+          console.error("Error deleting slot:", error);
+          toast.error(error.response?.data?.message || "Lỗi khi xóa slot");
+        }
+      },
+    });
   };
 
   const handleCloseAddModal = () => {
@@ -280,7 +334,9 @@ export default function ManageSlotGym() {
           </p>
         </div>
 
-        <Card style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+        <Card
+          style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
+        >
           <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
             <Col xs={24} sm={12} md={8}>
               <Input.Search
@@ -297,7 +353,11 @@ export default function ManageSlotGym() {
               xs={24}
               sm={12}
               md={16}
-              style={{ textAlign: "right", display: "flex", justifyContent: "flex-end" }}
+              style={{
+                textAlign: "right",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
             >
               <Button
                 type="primary"
@@ -353,10 +413,6 @@ export default function ManageSlotGym() {
                 ),
               }}
               scroll={{ x: 600 }}
-              onRow={(record) => ({
-                onClick: () => handleEdit(record),
-                style: { cursor: "pointer" },
-              })}
             />
           </ConfigProvider>
         </Card>

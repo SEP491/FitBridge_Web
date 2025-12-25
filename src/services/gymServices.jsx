@@ -8,7 +8,6 @@ const gymService = {
     return request("GET", `/v1/gyms/${gymId}/pts`, null, {}, otherParams);
   },
   deletePT: (body) => request("DELETE", `/v1/accounts/delete`, body),
-  updatePT: (id, data) => request("PUT", `/v1/accounts/${id}`, data),
 
   getCourseOfGym: (params) => {
     const { gymId, ...otherParams } = params;
@@ -37,7 +36,13 @@ const gymService = {
   getGymPTBookings: (params) =>
     request("GET", "/v1/accounts/gym-owner/gym-pt-bookings", null, {}, params),
   getGymPTRegisterSlots: (params) =>
-    request("GET", "/v1/accounts/gym-owner/gym-pt-register-slots", null, {}, params),
+    request(
+      "GET",
+      "/v1/accounts/gym-owner/gym-pt-register-slots",
+      null,
+      {},
+      params
+    ),
 };
 
 export default gymService;

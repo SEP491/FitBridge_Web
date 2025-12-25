@@ -345,6 +345,7 @@ export default function ManageGymPackages() {
       type: values.type,
       description: values.description,
       imageUrl: uploadedImageUrl, // Include imageUrl if uploaded
+      ptPrice: values.ptPrice,
     };
 
     try {
@@ -395,7 +396,9 @@ export default function ManageGymPackages() {
       price: record.price,
       duration: record.duration,
       description: record.description,
-      imageUrl: record.imageUrl,
+      imageUrl: record.image || record.imageUrl,
+      type: record.type,
+      ptPrice: record.ptPrice || 0,
     });
     setIsModalEditCourseOpen(true);
   };
@@ -410,6 +413,8 @@ export default function ManageGymPackages() {
       duration: values.duration,
       description: values.description,
       imageUrl: values.imageUrl || editingCourse.imageUrl,
+      type: values.type,
+      ptPrice: values.ptPrice || 0,
     };
 
     try {
@@ -707,7 +712,7 @@ export default function ManageGymPackages() {
       </div>
 
       {/* Add Course Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalAddCourseOpen}
         onCancel={() => {
           setIsModalAddCourseOpen(false);
@@ -715,25 +720,23 @@ export default function ManageGymPackages() {
           setUploadedImage(null);
           setUploadedImageUrl("");
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <IoBarbell />
-            Thêm Gói Tập Mới
-          </p>
-        }
+        title="Thêm Gói Tập Mới"
+        titleIcon={<IoBarbell />}
         footer={null}
         width={700}
+        logoSize="medium"
+        bodyStyle={{ padding: 0 }}
       >
         <Form
           form={formAdd}
           layout="vertical"
           requiredMark={false}
           onFinish={handleAddCourseGym}
-          className="max-h-[65vh] overflow-y-auto !py-5 !px-5"
+          style={{ padding: 24, paddingTop: 16 }}
         >
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Tên gói tập</p>
+              <span className="text-[#ED2A46] font-bold">Tên gói tập</span>
             }
             name="name"
             rules={[{ required: true, message: "Vui lòng nhập tên gói" }]}
@@ -743,7 +746,7 @@ export default function ManageGymPackages() {
 
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Mô tả gói tập</p>
+              <span className="text-[#ED2A46] font-bold">Mô tả gói tập</span>
             }
             name="description"
             rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
@@ -759,9 +762,9 @@ export default function ManageGymPackages() {
             <Col span={12}>
               <Form.Item
                 label={
-                  <p className="text-xl font-bold text-[#ED2A46]">
+                  <span className="text-[#ED2A46] font-bold">
                     Giá tiền (VNĐ)
-                  </p>
+                  </span>
                 }
                 name="price"
                 rules={[{ required: true, message: "Vui lòng nhập giá tiền" }]}
@@ -780,9 +783,9 @@ export default function ManageGymPackages() {
             <Col span={12}>
               <Form.Item
                 label={
-                  <p className="text-xl font-bold text-[#ED2A46]">
+                  <span className="text-[#ED2A46] font-bold">
                     Thời lượng (Ngày)
-                  </p>
+                  </span>
                 }
                 name="duration"
                 rules={[
@@ -800,7 +803,7 @@ export default function ManageGymPackages() {
 
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Loại gói tập</p>
+              <span className="text-[#ED2A46] font-bold">Loại gói tập</span>
             }
             name="type"
             rules={[{ required: true, message: "Vui lòng chọn loại gói tập" }]}
@@ -822,10 +825,45 @@ export default function ManageGymPackages() {
           </Form.Item>
 
           <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.type !== currentValues.type
+            }
+          >
+            {({ getFieldValue }) => {
+              const type = getFieldValue("type");
+              return type === "WithPt" || type === "WithPT" ? (
+                <Form.Item
+                  label={
+                    <span className="text-[#ED2A46] font-bold">
+                      Giá PT (VNĐ)
+                    </span>
+                  }
+                  name="ptPrice"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập giá PT",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={1000}
+                    placeholder="50,000"
+                    className="!w-full rounded-lg"
+                    formatter={(value) =>
+                      `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    }
+                    parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                  />
+                </Form.Item>
+              ) : null;
+            }}
+          </Form.Item>
+
+          <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">
-                Hình ảnh gói tập
-              </p>
+              <span className="text-[#ED2A46] font-bold">Hình ảnh gói tập</span>
             }
             name="imageUrl"
           >
@@ -877,48 +915,69 @@ export default function ManageGymPackages() {
             </div>
           </Form.Item>
 
-          <div className="text-center pt-4">
-            <Button
-              onClick={() => formAdd.submit()}
-              loading={loadingAdd}
-              className="!w-[60%] !h-12 !rounded-full !font-medium !border-0 shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #FF914D 0%, #ED2A46 100%)",
-                color: "white",
-              }}
-            >
-              Tạo Gói Tập
-            </Button>
+          <div
+            style={{
+              marginTop: 24,
+              paddingTop: 16,
+              borderTop: "1px solid #f0f0f0",
+              textAlign: "right",
+            }}
+          >
+            <Space>
+              <Button
+                onClick={() => {
+                  setIsModalAddCourseOpen(false);
+                  formAdd.resetFields();
+                  setUploadedImage(null);
+                  setUploadedImageUrl("");
+                }}
+                size="large"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loadingAdd}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  background:
+                    "linear-gradient(135deg, #FF914D 0%, #e8822d 100%)",
+                  border: "none",
+                }}
+              >
+                Tạo Gói Tập
+              </Button>
+            </Space>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Add PT to Course Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalAddGymCoursePTOpen}
         onCancel={() => {
           setIsModalAddGymCoursePTOpen(false);
           formAddGymCourse.resetFields();
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <UserAddOutlined />
-            Thêm PT vào Gói Tập: {selectedCourse?.name}
-          </p>
-        }
+        title={`Thêm PT vào Gói Tập: ${selectedCourse?.name || ""}`}
+        titleIcon={<UserAddOutlined />}
         footer={null}
         width={600}
+        logoSize="medium"
+        bodyStyle={{ padding: 0 }}
       >
         <Form
           form={formAddGymCourse}
           layout="vertical"
           requiredMark={false}
           onFinish={handleAddGymCoursePT}
-          className="!py-5"
+          style={{ padding: 24, paddingTop: 16 }}
         >
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Số buổi tập</p>
+              <span className="text-[#ED2A46] font-bold">Số buổi tập</span>
             }
             name="session"
             rules={[{ required: true, message: "Vui lòng nhập số buổi tập" }]}
@@ -933,9 +992,9 @@ export default function ManageGymPackages() {
 
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">
+              <span className="text-[#ED2A46] font-bold">
                 Chọn Personal Trainer
-              </p>
+              </span>
             }
             name="ptid"
             rules={[{ required: true, message: "Vui lòng chọn PT" }]}
@@ -978,21 +1037,42 @@ export default function ManageGymPackages() {
             </Select>
           </Form.Item>
 
-          <div className="text-center pt-4">
-            <Button
-              onClick={() => formAddGymCourse.submit()}
-              loading={loadingAddGymCoursePT}
-              className="!w-[60%] !h-12 !rounded-full !font-medium !border-0 shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
-                color: "white",
-              }}
-            >
-              Thêm PT vào Gói
-            </Button>
+          <div
+            style={{
+              marginTop: 24,
+              paddingTop: 16,
+              borderTop: "1px solid #f0f0f0",
+              textAlign: "right",
+            }}
+          >
+            <Space>
+              <Button
+                onClick={() => {
+                  setIsModalAddGymCoursePTOpen(false);
+                  formAddGymCourse.resetFields();
+                }}
+                size="large"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loadingAddGymCoursePT}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  background:
+                    "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
+                  border: "none",
+                }}
+              >
+                Thêm PT vào Gói
+              </Button>
+            </Space>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       {/* Course Detail Modal - Enhanced UI */}
       <FitBridgeModal
@@ -1006,12 +1086,11 @@ export default function ManageGymPackages() {
       >
         {selectedCourse && (
           <div className="flex flex-col">
-            {/* Header Section with Key Info */}
             <div className="bg-gradient-to-r from-[#FFF9FA] to-[#FFF5F0] p-6 border-b-2 border-gray-100">
               <div className="flex items-center gap-6">
-                {selectedCourse.imageUrl ? (
+                {selectedCourse.image || selectedCourse.imageUrl ? (
                   <img
-                    src={selectedCourse.imageUrl}
+                    src={selectedCourse.image || selectedCourse.imageUrl}
                     alt={selectedCourse.name}
                     className="w-24 h-24 rounded-lg object-cover border-4 border-white shadow-lg"
                   />
@@ -1134,10 +1213,10 @@ export default function ManageGymPackages() {
                       {selectedCourse.description || "Chưa có mô tả"}
                     </div>
                   </Descriptions.Item>
-                  {selectedCourse.imageUrl && (
+                  {(selectedCourse.image || selectedCourse.imageUrl) && (
                     <Descriptions.Item label="Hình Ảnh" span={2}>
                       <Image
-                        src={selectedCourse.imageUrl}
+                        src={selectedCourse.image || selectedCourse.imageUrl}
                         alt={selectedCourse.name}
                         className="rounded-lg"
                         width={200}
@@ -1269,32 +1348,30 @@ export default function ManageGymPackages() {
       </FitBridgeModal>
 
       {/* Edit Course Modal */}
-      <Modal
+      <FitBridgeModal
         open={isModalEditCourseOpen}
         onCancel={() => {
           setIsModalEditCourseOpen(false);
           formEdit.resetFields();
           setEditingCourse(null);
         }}
-        title={
-          <p className="text-2xl font-bold text-[#ED2A46] flex items-center gap-2">
-            <IoBarbell />
-            Cập nhật Gói Tập
-          </p>
-        }
+        title="Cập nhật Gói Tập"
+        titleIcon={<IoBarbell />}
         footer={null}
         width={700}
+        logoSize="medium"
+        bodyStyle={{ padding: 0 }}
       >
         <Form
           form={formEdit}
           layout="vertical"
           requiredMark={false}
           onFinish={handleUpdateCourse}
-          className="max-h-[65vh] overflow-y-auto !py-5 !px-5"
+          style={{ padding: 24, paddingTop: 16 }}
         >
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Tên gói tập</p>
+              <span className="text-[#ED2A46] font-bold">Tên gói tập</span>
             }
             name="name"
             rules={[{ required: true, message: "Vui lòng nhập tên gói" }]}
@@ -1304,7 +1381,7 @@ export default function ManageGymPackages() {
 
           <Form.Item
             label={
-              <p className="text-xl font-bold text-[#ED2A46]">Mô tả gói tập</p>
+              <span className="text-[#ED2A46] font-bold">Mô tả gói tập</span>
             }
             name="description"
             rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
@@ -1320,9 +1397,9 @@ export default function ManageGymPackages() {
             <Col span={12}>
               <Form.Item
                 label={
-                  <p className="text-xl font-bold text-[#ED2A46]">
+                  <span className="text-[#ED2A46] font-bold">
                     Giá tiền (VNĐ)
-                  </p>
+                  </span>
                 }
                 name="price"
                 rules={[{ required: true, message: "Vui lòng nhập giá tiền" }]}
@@ -1341,9 +1418,9 @@ export default function ManageGymPackages() {
             <Col span={12}>
               <Form.Item
                 label={
-                  <p className="text-xl font-bold text-[#ED2A46]">
+                  <span className="text-[#ED2A46] font-bold">
                     Thời lượng (Ngày)
-                  </p>
+                  </span>
                 }
                 name="duration"
                 rules={[
@@ -1358,21 +1435,104 @@ export default function ManageGymPackages() {
               </Form.Item>
             </Col>
           </Row>
-          <div className="text-center pt-4">
-            <Button
-              onClick={() => formEdit.submit()}
-              loading={loadingEdit}
-              className="!w-[60%] !h-12 !rounded-full !font-medium !border-0 shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #FF914D 0%, #ED2A46 100%)",
-                color: "white",
-              }}
-            >
-              Cập nhật Gói Tập
-            </Button>
+
+          <Form.Item
+            label={
+              <span className="text-[#ED2A46] font-bold">Loại gói tập</span>
+            }
+            name="type"
+            rules={[{ required: true, message: "Vui lòng chọn loại gói tập" }]}
+          >
+            <Select placeholder="Chọn loại gói tập" className="rounded-lg">
+              <Select.Option value="WithPt">
+                <div className="flex items-center gap-2">
+                  <UserOutlined />
+                  Có Personal Trainer
+                </div>
+              </Select.Option>
+              <Select.Option value="Normal">
+                <div className="flex items-center gap-2">
+                  <TrophyOutlined />
+                  Gói tập bình thường
+                </div>
+              </Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.type !== currentValues.type
+            }
+          >
+            {({ getFieldValue }) => {
+              const type = getFieldValue("type");
+              return type === "WithPt" || type === "WithPT" ? (
+                <Form.Item
+                  label={
+                    <span className="text-[#ED2A46] font-bold">
+                      Giá PT (VNĐ)
+                    </span>
+                  }
+                  name="ptPrice"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập giá PT",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={1000}
+                    placeholder="50,000"
+                    className="!w-full rounded-lg"
+                    formatter={(value) =>
+                      `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    }
+                    parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                  />
+                </Form.Item>
+              ) : null;
+            }}
+          </Form.Item>
+
+          <div
+            style={{
+              marginTop: 24,
+              paddingTop: 16,
+              borderTop: "1px solid #f0f0f0",
+              textAlign: "right",
+            }}
+          >
+            <Space>
+              <Button
+                onClick={() => {
+                  setIsModalEditCourseOpen(false);
+                  formEdit.resetFields();
+                  setEditingCourse(null);
+                }}
+                size="large"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loadingEdit}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  background:
+                    "linear-gradient(135deg, #FF914D 0%, #e8822d 100%)",
+                  border: "none",
+                }}
+              >
+                Cập nhật Gói Tập
+              </Button>
+            </Space>
           </div>
         </Form>
-      </Modal>
+      </FitBridgeModal>
 
       <style jsx>{`
         .custom-pagination .ant-pagination-item-active {

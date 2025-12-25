@@ -25,6 +25,7 @@ const hotResearchService = {
     ),
 
   paySubscription: (data) => request("POST", `/v1/payments/payment-link`, data),
+  cancelPayment: (data) => request("POST", `/v1/payments/cancel`, data),
 
   checkSubscipriontionAvailability: () =>
     request("GET", `/v1/subscriptions/check-hot-research-subscription`),
