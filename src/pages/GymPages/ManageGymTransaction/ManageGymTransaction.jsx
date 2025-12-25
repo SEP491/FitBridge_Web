@@ -564,56 +564,56 @@ export default function ManageGymTransaction() {
         </span>
       ),
     },
-    {
-      title: "Số Tiền Rút",
-      dataIndex: "withdrawalAmount",
-      key: "withdrawalAmount",
-      align: "center",
-      width: 130,
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-        <div style={{ padding: 8 }}>
-          <Input
-            placeholder="Tìm số tiền rút"
-            value={selectedKeys[0]}
-            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-            onPressEnter={() => confirm()}
-            style={{ marginBottom: 8, display: "block" }}
-          />
-          <Space>
-            <Button
-              type="primary"
-              onClick={() => confirm()}
-              icon={<SearchOutlined />}
-              size="small"
-              style={{ width: 90 }}
-            >
-              Tìm
-            </Button>
-            <Button
-              onClick={() => clearFilters()}
-              size="small"
-              style={{ width: 90 }}
-            >
-              Reset
-            </Button>
-          </Space>
-        </div>
-      ),
-      onFilter: (value, record) =>
-        (record.withdrawalAmount || 0)
-          .toString()
-          .includes(value),
-      render: (value) => (
-        <span className="font-bold text-purple-600">
-          {value !== null && value !== undefined
-            ? value.toLocaleString("vi", {
-                style: "currency",
-                currency: "VND",
-              })
-            : "N/A"}
-        </span>
-      ),
-    },
+    // {
+    //   title: "Số Tiền Rút",
+    //   dataIndex: "withdrawalAmount",
+    //   key: "withdrawalAmount",
+    //   align: "center",
+    //   width: 130,
+    //   filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+    //     <div style={{ padding: 8 }}>
+    //       <Input
+    //         placeholder="Tìm số tiền rút"
+    //         value={selectedKeys[0]}
+    //         onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+    //         onPressEnter={() => confirm()}
+    //         style={{ marginBottom: 8, display: "block" }}
+    //       />
+    //       <Space>
+    //         <Button
+    //           type="primary"
+    //           onClick={() => confirm()}
+    //           icon={<SearchOutlined />}
+    //           size="small"
+    //           style={{ width: 90 }}
+    //         >
+    //           Tìm
+    //         </Button>
+    //         <Button
+    //           onClick={() => clearFilters()}
+    //           size="small"
+    //           style={{ width: 90 }}
+    //         >
+    //           Reset
+    //         </Button>
+    //       </Space>
+    //     </div>
+    //   ),
+    //   onFilter: (value, record) =>
+    //     (record.withdrawalAmount || 0)
+    //       .toString()
+    //       .includes(value),
+    //   render: (value) => (
+    //     <span className="font-bold text-purple-600">
+    //       {value !== null && value !== undefined
+    //         ? value.toLocaleString("vi", {
+    //             style: "currency",
+    //             currency: "VND",
+    //           })
+    //         : "N/A"}
+    //     </span>
+    //   ),
+    // },
     {
       title: "Ngày tạo",
       dataIndex: "createdAt",
@@ -1342,23 +1342,6 @@ export default function ManageGymTransaction() {
         allowClear
         size="middle"
       />
-
-      <Select
-        placeholder="Lọc theo loại giao dịch"
-        value={statusFilter}
-        onChange={setStatusFilter}
-        style={{ width: 200 }}
-        size="middle"
-      >
-        <Select.Option value="all">Tất cả loại</Select.Option>
-        <Select.Option value="ProductOrder">Đơn hàng</Select.Option>
-        <Select.Option value="ExtendCourse">Gia hạn khóa học</Select.Option>
-        <Select.Option value="GymCourse">Gói tập Gym</Select.Option>
-        <Select.Option value="Withdraw">Rút tiền</Select.Option>
-        <Select.Option value="DistributeProfit">
-          Phân phối lợi nhuận
-        </Select.Option>
-      </Select>
 
       <Button
         icon={<ImStatsBars />}

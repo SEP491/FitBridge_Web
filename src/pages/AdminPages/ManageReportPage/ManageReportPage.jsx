@@ -29,9 +29,10 @@ import {
   UserOutlined,
   FileImageOutlined,
   UploadOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { MdReport } from "react-icons/md";
-import { FaFilter, FaInfoCircle, FaUserCircle } from "react-icons/fa";
+import { FaInfoCircle, FaUserCircle } from "react-icons/fa";
 import adminService from "../../../services/adminServices";
 import reportService from "../../../services/reportService";
 import toast from "react-hot-toast";
@@ -58,9 +59,6 @@ export default function ManageReportPage() {
   const [confirmFraudForm] = Form.useForm();
   const [refundProofFileList, setRefundProofFileList] = useState([]);
   const [checkingCompletion, setCheckingCompletion] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [dateRange, setDateRange] = useState([]);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -100,6 +98,23 @@ export default function ManageReportPage() {
   const handleTableChange = (newPagination) => {
     fetchReports(newPagination.current, newPagination.pageSize);
   };
+
+  // Reload all data
+  const handleReloadAll = () => {
+    fetchReports(pagination.current, pagination.pageSize);
+  };
+
+  // Filter reports based on search text
+  const filteredReports = reports.filter((report) => {
+    if (!searchText) return true;
+    const searchLower = searchText.toLowerCase();
+    return (
+      report.reporterName?.toLowerCase().includes(searchLower) ||
+      report.reportedUserName?.toLowerCase().includes(searchLower) ||
+      report.title?.toLowerCase().includes(searchLower) ||
+      report.description?.toLowerCase().includes(searchLower)
+    );
+  });
 
   // Handle process report (Pending -> Processing)
   const handleProcessReport = async () => {
@@ -158,6 +173,7 @@ export default function ManageReportPage() {
       await reportService.confirmReport(selectedReport.id, {
         note: values.note,
       });
+
       toast.success("Đã xác nhận gian lận");
       setIsConfirmFraudModalOpen(false);
       confirmFraudForm.resetFields();
@@ -186,15 +202,17 @@ export default function ManageReportPage() {
       const response = await reportService.checkCompletion(
         selectedReport.orderItemId
       );
-      const { completionPercentage } = response.data;
 
-      if (completionPercentage > 50) {
-        toast.error(
-          `Không thể xác nhận gian lận: Người dùng đã hoàn thành ${completionPercentage.toFixed(
-            2
-          )}% khóa học (vượt quá 50%).`
-        );
-        return;
+      if (response.data !== null) {
+        const { completionPercentage } = response.data;
+        if (completionPercentage > 50) {
+          toast.error(
+            `Không thể xác nhận gian lận: Người dùng đã hoàn thành ${completionPercentage.toFixed(
+              2
+            )}% khóa học (vượt quá 50%).`
+          );
+          return;
+        }
       }
 
       confirmFraudForm.resetFields();
@@ -258,38 +276,6 @@ export default function ManageReportPage() {
     setRefundProofFileList([]);
     setIsUploadRefundProofModalOpen(true);
   };
-
-  // Filter reports based on search and filters
-  const filteredReports = reports.filter((report) => {
-    // Search filter
-    const matchesSearch =
-      !searchText ||
-      report.reporterName?.toLowerCase().includes(searchText.toLowerCase()) ||
-      report.reportedUserName
-        ?.toLowerCase()
-        .includes(searchText.toLowerCase()) ||
-      report.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-      report.description?.toLowerCase().includes(searchText.toLowerCase());
-
-    // Status filter
-    const matchesStatus =
-      statusFilter === "all" || report.status === statusFilter;
-
-    // Type filter
-    const matchesType =
-      typeFilter === "all" || report.reportType === typeFilter;
-
-    // Date range filter
-    const matchesDateRange =
-      !dateRange ||
-      dateRange.length === 0 ||
-      !dateRange[0] ||
-      !dateRange[1] ||
-      (dayjs(report.createdAt).isAfter(dateRange[0]) &&
-        dayjs(report.createdAt).isBefore(dateRange[1]));
-
-    return matchesSearch && matchesStatus && matchesType && matchesDateRange;
-  });
 
   // Get status tag
   const getStatusTag = (status) => {
@@ -368,6 +354,38 @@ export default function ManageReportPage() {
         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
         return dateA - dateB;
       },
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8 }}>
+          <RangePicker
+            style={{ width: 300, display: "block" }}
+            value={
+              selectedKeys[0]
+                ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])]
+                : null
+            }
+            onChange={(dates) => {
+              setSelectedKeys(
+                dates
+                  ? [
+                      [
+                        dates[0].format("YYYY-MM-DD"),
+                        dates[1].format("YYYY-MM-DD"),
+                      ],
+                    ]
+                  : []
+              );
+              confirm();
+            }}
+            format="DD/MM/YYYY"
+          />
+        </div>
+      ),
+      onFilter: (value, record) => {
+        if (!value || value.length === 0) return true;
+        const [startDate, endDate] = value[0];
+        const recordDate = dayjs(record.createdAt).format("YYYY-MM-DD");
+        return recordDate >= startDate && recordDate <= endDate;
+      },
       render: (date) => (
         <div>
           <div className="font-semibold">
@@ -408,7 +426,7 @@ export default function ManageReportPage() {
       render: (record) => (
         <div className="flex items-center gap-2 justify-start">
           <Avatar
-            src={record.reportedUserAvatarUrl}
+            src={record.reportedUserAvatarUrl || record.reportedProductImageUrl}
             icon={<UserOutlined />}
             size={40}
             style={{ backgroundColor: "#ff4d4f" }}
@@ -443,6 +461,36 @@ export default function ManageReportPage() {
       key: "reportType",
       align: "center",
       width: 180,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8 }}>
+          <Select
+            style={{ width: 200, display: "block" }}
+            placeholder="Chọn loại báo cáo"
+            value={selectedKeys[0]}
+            onChange={(value) => {
+              setSelectedKeys(value ? [value] : []);
+              confirm();
+            }}
+            allowClear
+          >
+            <Select.Option value="GymCourseReport">
+              Báo cáo Gói Tập Gym
+            </Select.Option>
+            <Select.Option value="FreelancePtReport">
+              Báo cáo PT Tự Do
+            </Select.Option>
+            <Select.Option value="GymReport">Báo cáo Phòng Gym</Select.Option>
+            <Select.Option value="UserReport">Báo cáo Người Dùng</Select.Option>
+            <Select.Option value="ProductReport">
+              Báo cáo Sản Phẩm
+            </Select.Option>
+          </Select>
+        </div>
+      ),
+      onFilter: (value, record) => {
+        if (!value) return true;
+        return record.reportType === value;
+      },
       render: (type) => getReportTypeTag(type),
     },
     {
@@ -452,6 +500,31 @@ export default function ManageReportPage() {
       align: "center",
       fixed: "right",
       width: 120,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8 }}>
+          <Select
+            style={{ width: 200, display: "block" }}
+            placeholder="Chọn trạng thái"
+            value={selectedKeys[0]}
+            onChange={(value) => {
+              setSelectedKeys(value ? [value] : []);
+              confirm();
+            }}
+            allowClear
+          >
+            <Select.Option value="Pending">Chờ xử lý</Select.Option>
+            <Select.Option value="Processing">Đang xử lý</Select.Option>
+            <Select.Option value="Resolved">Đã xử lý</Select.Option>
+            <Select.Option value="FraudConfirmed">
+              Xác nhận gian lận
+            </Select.Option>
+          </Select>
+        </div>
+      ),
+      onFilter: (value, record) => {
+        if (!value) return true;
+        return record.status === value;
+      },
       render: (status) => getStatusTag(status),
     },
     {
@@ -557,66 +630,27 @@ export default function ManageReportPage() {
       <ConfigProvider
         theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
       >
-        {/* Advanced Filters */}
-        <Card
-          className="mb-4"
-          title={
-            <span className="flex items-center gap-2">
-              <FaFilter /> Bộ lọc nâng cao
-            </span>
-          }
-        >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Search and Refresh Row */}
+        <Card className="mb-4">
+          <div className="flex items-center gap-4">
             <Input
               placeholder="Tìm kiếm theo tên, tiêu đề, mô tả..."
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
+              style={{ flex: 1 }}
+              size="large"
             />
-
-            <Select
-              placeholder="Lọc theo trạng thái"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: "100%" }}
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={handleReloadAll}
+              size="large"
+              style={{ backgroundColor: "#ED2A46", borderColor: "#ED2A46" }}
             >
-              <Select.Option value="all">Tất cả trạng thái</Select.Option>
-              <Select.Option value="Pending">Chờ xử lý</Select.Option>
-              <Select.Option value="Processing">Đang xử lý</Select.Option>
-              <Select.Option value="Resolved">Đã xử lý</Select.Option>
-              {/* <Select.Option value="Rejected">Từ chối</Select.Option> */}
-              <Select.Option value="FraudConfirmed">
-                Xác nhận gian lận
-              </Select.Option>
-            </Select>
-
-            <Select
-              placeholder="Lọc theo loại báo cáo"
-              value={typeFilter}
-              onChange={setTypeFilter}
-              style={{ width: "100%" }}
-            >
-              <Select.Option value="all">Tất cả loại</Select.Option>
-              <Select.Option value="GymCourseReport">
-                Báo cáo Gói Tập Gym
-              </Select.Option>
-              <Select.Option value="FreelancePtReport">
-                Báo cáo PT Tự Do
-              </Select.Option>
-              <Select.Option value="GymReport">Báo cáo Phòng Gym</Select.Option>
-              <Select.Option value="UserReport">
-                Báo cáo Người Dùng
-              </Select.Option>
-            </Select>
-
-            <RangePicker
-              placeholder={["Từ ngày", "Đến ngày"]}
-              value={dateRange}
-              onChange={(dates) => setDateRange(dates || [])}
-              style={{ width: "100%" }}
-              format="DD/MM/YYYY"
-            />
+              Làm mới
+            </Button>
           </div>
         </Card>
 
@@ -698,7 +732,9 @@ export default function ManageReportPage() {
                   loading={checkingCompletion}
                   onClick={openConfirmFraudModal}
                 >
-                  Xác Nhận Gian Lận
+                  {selectedReport?.isProductReport
+                    ? "Xác Nhận Báo Cáo"
+                    : "Xác Nhận Gian Lận"}
                 </Button>
               </>
             )}
@@ -763,7 +799,7 @@ export default function ManageReportPage() {
                 style={{ borderColor: "#FFE5E9" }}
               >
                 <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
-                  <Descriptions.Item label="Mã Báo Cáo" span={2}>
+                  <Descriptions.Item label="Mã Báo Cáo" >
                     <div className="font-mono text-xs bg-gray-50 p-2 rounded inline-block">
                       {selectedReport.id}
                     </div>
@@ -782,7 +818,16 @@ export default function ManageReportPage() {
                       {selectedReport.title || "N/A"}
                     </div>
                   </Descriptions.Item>
-
+                  {selectedReport.status === "FraudConfirmed" && (
+                  <Descriptions.Item label="Số Tiền Hoàn Trả" span={2}>
+                    <div className="font-semibold text-green-600">
+                      {selectedReport.refundAmount?.toLocaleString("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }) || "N/A"}
+                    </div>
+                  </Descriptions.Item>
+                  )}
                   <Descriptions.Item label="Mô Tả" span={2}>
                     <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
                       {selectedReport.description || "Không có mô tả"}
@@ -879,7 +924,7 @@ export default function ManageReportPage() {
               >
                 <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg">
                   <Avatar
-                    src={selectedReport.reportedUserAvatarUrl}
+                    src={selectedReport.reportedUserAvatarUrl || selectedReport.reportedProductImageUrl}
                     icon={<UserOutlined />}
                     size={80}
                     style={{
@@ -893,7 +938,9 @@ export default function ManageReportPage() {
                       Đối Tượng Bị Báo Cáo
                     </div>
                     <div className="text-xl font-bold text-gray-800">
-                      {selectedReport.reportedUserName ? selectedReport.reportedUserName : selectedReport.reportedProduct || "Chưa có thông tin"}
+                      {selectedReport.reportedUserName
+                        ? selectedReport.reportedUserName
+                        : selectedReport.reportedProduct || "Chưa có thông tin"}
                     </div>
                   </div>
                 </div>
@@ -1151,18 +1198,18 @@ export default function ManageReportPage() {
             name="note"
             label={
               <span className="font-semibold text-gray-700">
-                Ghi Chú Xác Nhận Gian Lận{" "}
+                Ghi Chú {selectedReport?.isProductReport ? "Xác Nhận Báo Cáo" : "Xác Nhận Gian Lận"}{" "}
                 <span className="text-red-500">*</span>
               </span>
             }
             rules={[
               {
                 required: true,
-                message: "Vui lòng nhập ghi chú xác nhận gian lận",
+                message: `Vui lòng nhập ghi chú ${selectedReport?.isProductReport ? "xác nhận báo cáo" : "xác nhận gian lận"}`,
               },
               {
                 min: 10,
-                message: "Ghi chú phải có ít nhất 10 ký tự",
+                message: `Ghi chú ${selectedReport?.isProductReport ? "báo cáo" : "gian lận"} phải có ít nhất 10 ký tự`,
               },
             ]}
           >

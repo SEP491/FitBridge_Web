@@ -47,7 +47,7 @@ export default function WalletBalanceTab({
           onClick={() => setWalletFilter("disbursement")}
           size="middle"
         >
-         So tiền đã giải ngân
+         Số Tiền Đã Giải Ngân
         </Button>
       </div>
 
