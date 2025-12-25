@@ -3,12 +3,15 @@ import { Layout, Menu, Tooltip } from "antd";
 const { Sider } = Layout;
 import {
   BarChartOutlined,
-  DropboxOutlined,
-  HomeOutlined,
-  NotificationOutlined,
+  StarOutlined,
+  FileTextOutlined,
   UserOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
+  SettingOutlined,
+  TagOutlined,
+  BookOutlined,
+  TeamOutlined,
+  BuildOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import { route } from "../../routes";
@@ -25,7 +28,7 @@ import { GiGymBag } from "react-icons/gi";
 import { MdOutlineAccountBalanceWallet, MdReport } from "react-icons/md";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 import { BsBox } from "react-icons/bs";
-import { HiDocumentText } from "react-icons/hi";
+import { FaCertificate } from "react-icons/fa";
 
 // eslint-disable-next-line no-unused-vars
 export default function SidebarAdmin({ collapsed, onCollapse }) {
@@ -85,12 +88,12 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         getItem(
           "Quản Lý Premium & Hot Gym",
           `${route.admin}/manage-premium`,
-          <DropboxOutlined className="text-lg" />
+          <StarOutlined className="text-lg" />
         ),
         getItem(
           "Quản Lý Voucher",
           `${route.admin}/${route.manageVoucher}`,
-          <GiGymBag className="text-lg" />
+          <TagOutlined className="text-lg" />
         ),
         getItem(
           "Quản Lý Báo Cáo",
@@ -110,22 +113,22 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         getItem(
           "Quản Lý Hợp Đồng",
           `${route.admin}/${route.manageContract}`,
-          <HiDocumentText className="text-lg" />
+          <FileTextOutlined className="text-lg" />
         ),
         getItem(
           "Quản Lý Chứng Chỉ",
           `${route.admin}/${route.manageCertificate}`,
-          <HiDocumentText className="text-lg" />
+          <FaCertificate className="text-lg" />
         ),
         getItem(
           "Quản Lý Cấu Hình Hệ Thống",
           `${route.admin}/manage-system-config`,
-          <HiDocumentText className="text-lg" />
+          <SettingOutlined className="text-lg" />
         ),
         getItem(
           "Quản Lý Blog",
           `${route.admin}/manage-blog`,
-          <NotificationOutlined className="text-lg" />
+          <BookOutlined className="text-lg" />
         ),
       ]);
     } else if (user?.role === "GymOwner") {
@@ -148,7 +151,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         getItem(
           "Quản Lý Khách Hàng",
           `/gym/manage-customers`,
-          <LiaFileContractSolid className="text-lg" />
+          <TeamOutlined className="text-lg" />
         ),
         getItem(
           "Quản Lý PT",
@@ -163,7 +166,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         getItem(
           "Quản Lý Cơ Sở Vật Chất",
           `${route.gym}/${route.manageAssets}`,
-          <HiDocumentText className="text-lg" />
+          <BuildOutlined className="text-lg" />
         ),
         getItem(
           "Quản Lý Gói Tập",
@@ -173,12 +176,12 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         getItem(
           "Quản Lý Slot",
           `${route.gym}/${route.manageSlotGym}`,
-          <FaRegCalendarCheck className="text-lg" />
+          <ClockCircleOutlined className="text-lg" />
         ),
         getItem(
           "Quản Lý Voucher",
           `${route.gym}/${route.manageVoucherGym}`,
-          <GiGymBag className="text-lg" />
+          <TagOutlined className="text-lg" />
         ),
         getItem(
           "Ký Hợp Đồng",
@@ -188,7 +191,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         getItem(
           "Đăng ký Gói Hot Gym",
           `${route.gym}/subscription-registration`,
-          <MdReport className="text-lg" />
+          <StarOutlined className="text-lg" />
         ),
       ]);
     } else if (user?.role === "FreelancePT") {
@@ -211,7 +214,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         getItem(
           "Quản Lý Voucher",
           `${route.freelancePt}/${route.manageVoucherPT}`,
-          <GiGymBag className="text-lg" />
+          <TagOutlined className="text-lg" />
         ),
       ]);
     }
