@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Modal,
   Form,
   Card,
   Row,
@@ -25,6 +24,7 @@ import {
   AppstoreOutlined,
   UploadOutlined,
   DeleteOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -33,14 +33,15 @@ import adminService from "../../../services/adminServices";
 
 const { Option } = Select;
 
-export default function CreateProductDetailModal({
+export default function UpdateProductDetailModal({
   isOpen,
   onClose,
   onSubmit,
   form,
+  selectedProductDetail,
   weights,
   flavours,
-  creating,
+  updating,
   imageFile,
   onImageUpload,
   onImageRemove,
@@ -52,6 +53,29 @@ export default function CreateProductDetailModal({
   const [newFlavourName, setNewFlavourName] = useState("");
   const [addingWeight, setAddingWeight] = useState(false);
   const [addingFlavour, setAddingFlavour] = useState(false);
+
+  useEffect(() => {
+    if (selectedProductDetail && isOpen) {
+      form.setFieldsValue({
+        weightId: selectedProductDetail.weightId,
+        flavourId: selectedProductDetail.flavourId,
+        quantity: selectedProductDetail.quantity,
+        originalPrice: selectedProductDetail.originalPrice,
+        displayPrice: selectedProductDetail.displayPrice,
+        salePrice: selectedProductDetail.salePrice,
+        expirationDate: selectedProductDetail.expirationDate
+          ? dayjs(selectedProductDetail.expirationDate)
+          : null,
+        servingSizeInformation: selectedProductDetail.servingSizeInformation,
+        servingsPerContainerInformation:
+          selectedProductDetail.servingsPerContainerInformation,
+        proteinPerServingGrams: selectedProductDetail.proteinPerServingGrams,
+        caloriesPerServingKcal: selectedProductDetail.caloriesPerServingKcal,
+        bcaaPerServingGrams: selectedProductDetail.bcaaPerServingGrams,
+        isDisplayed: selectedProductDetail.isDisplayed ?? true,
+      });
+    }
+  }, [selectedProductDetail, isOpen, form]);
 
   const handleCancel = () => {
     form.resetFields();
@@ -66,14 +90,22 @@ export default function CreateProductDetailModal({
       e.preventDefault();
       e.stopPropagation();
     }
-    
-    // Check if value is provided (can be 0, null, undefined, or empty string)
-    if (newWeightValue === null || newWeightValue === undefined || newWeightValue === "" || !newWeightUnit || !newWeightUnit.trim()) {
+
+    if (
+      newWeightValue === null ||
+      newWeightValue === undefined ||
+      newWeightValue === "" ||
+      !newWeightUnit ||
+      !newWeightUnit.trim()
+    ) {
       toast.error("Vui lòng nhập đầy đủ giá trị và đơn vị trọng lượng");
       return;
     }
 
-    const value = typeof newWeightValue === 'number' ? newWeightValue : parseFloat(newWeightValue);
+    const value =
+      typeof newWeightValue === "number"
+        ? newWeightValue
+        : parseFloat(newWeightValue);
     if (isNaN(value) || value <= 0) {
       toast.error("Giá trị trọng lượng phải là số dương");
       return;
@@ -85,23 +117,23 @@ export default function CreateProductDetailModal({
         value: value,
         unit: newWeightUnit.trim(),
       });
-      
+
       toast.success("Thêm trọng lượng thành công");
       setNewWeightValue(null);
       setNewWeightUnit("Gram");
-      
-      // Refresh weights list
+
       if (onRefreshWeights) {
         await onRefreshWeights();
       }
-      
-      // Set the newly created weight as selected
+
       if (response.data?.id) {
         form.setFieldsValue({ weightId: response.data.id });
       }
     } catch (error) {
       console.error("Error creating weight:", error);
-      toast.error(error.response?.data?.message || "Lỗi khi tạo trọng lượng");
+      toast.error(
+        error.response?.data?.message || "Lỗi khi tạo trọng lượng"
+      );
     } finally {
       setAddingWeight(false);
     }
@@ -119,16 +151,14 @@ export default function CreateProductDetailModal({
       const response = await adminService.createNewFlavour({
         name: newFlavourName.trim(),
       });
-      
+
       toast.success("Thêm hương vị thành công");
       setNewFlavourName("");
-      
-      // Refresh flavours list
+
       if (onRefreshFlavours) {
         await onRefreshFlavours();
       }
-      
-      // Set the newly created flavour as selected
+
       if (response.data?.id) {
         form.setFieldsValue({ flavourId: response.data.id });
       }
@@ -140,7 +170,6 @@ export default function CreateProductDetailModal({
     }
   };
 
-  // Disable dates in the past (before today)
   const disabledDate = (current) => {
     return current && current < dayjs().startOf("day");
   };
@@ -151,7 +180,7 @@ export default function CreateProductDetailModal({
       onCancel={handleCancel}
       title={
         <div className="flex items-center gap-2 text-lg">
-          <span>Tạo Loại Hàng Mới</span>
+          <span>Cập Nhật Loại Hàng</span>
         </div>
       }
       width={900}
@@ -163,16 +192,16 @@ export default function CreateProductDetailModal({
           <Button
             type="primary"
             onClick={() => form.submit()}
-            loading={creating}
+            loading={updating}
             size="large"
-            icon={<CheckCircleOutlined />}
+            icon={<EditOutlined />}
             className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 px-8 shadow-lg hover:shadow-xl"
           >
-            Tạo Loại Hàng
+            Cập Nhật Loại Hàng
           </Button>
         </div>
       }
-      className="create-detail-modal"
+      className="update-detail-modal"
     >
       <Form
         form={form}
@@ -203,26 +232,46 @@ export default function CreateProductDetailModal({
               >
                 <div className="flex flex-col items-center gap-2">
                   {!imageFile ? (
-                    <Upload
-                      listType="picture-card"
-                      maxCount={1}
-                      accept="image/*"
-                      showUploadList={false}
-                      beforeUpload={(file) => {
-                        onImageUpload(file);
-                        return false; // Prevent auto upload
-                      }}
-                    >
-                      <div className="flex flex-col items-center">
-                        <UploadOutlined
-                          style={{ fontSize: 24 }}
-                          className="text-purple-500"
-                        />
-                        <div style={{ marginTop: 8 }} className="text-sm">
-                          Chọn ảnh
+                    <div className="flex flex-col items-center gap-2">
+                      {selectedProductDetail?.imageUrl ? (
+                        <>
+                          <div className="border-2 border-purple-200 rounded-lg p-2 bg-white">
+                            <Image
+                              src={selectedProductDetail.imageUrl}
+                              width={140}
+                              height={140}
+                              className="object-cover rounded"
+                              preview={true}
+                            />
+                          </div>
+                          <div className="text-xs text-center text-gray-600">
+                            Ảnh hiện tại
+                          </div>
+                        </>
+                      ) : null}
+                      <Upload
+                        listType="picture-card"
+                        maxCount={1}
+                        accept="image/*"
+                        showUploadList={false}
+                        beforeUpload={(file) => {
+                          onImageUpload(file);
+                          return false;
+                        }}
+                      >
+                        <div className="flex flex-col items-center">
+                          <UploadOutlined
+                            style={{ fontSize: 24 }}
+                            className="text-purple-500"
+                          />
+                          <div style={{ marginTop: 8 }} className="text-sm">
+                            {selectedProductDetail?.imageUrl
+                              ? "Thay đổi ảnh"
+                              : "Chọn ảnh"}
+                          </div>
                         </div>
-                      </div>
-                    </Upload>
+                      </Upload>
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <div className="border-2 border-purple-200 rounded-lg p-2 bg-white">
@@ -266,19 +315,24 @@ export default function CreateProductDetailModal({
                       placeholder="Chọn trọng lượng"
                       showSearch
                       size="large"
-                      suffixIcon={
-                        <AppstoreOutlined className="text-purple-500" />
-                      }
+                      suffixIcon={<AppstoreOutlined className="text-purple-500" />}
                       dropdownRender={(menu) => (
                         <div onClick={(e) => e.stopPropagation()}>
                           {menu}
                           <Divider style={{ margin: "8px 0" }} />
-                          <Space style={{ padding: "0 8px 4px" }} direction="vertical" size="small" className="w-full">
+                          <Space
+                            style={{ padding: "0 8px 4px" }}
+                            direction="vertical"
+                            size="small"
+                            className="w-full"
+                          >
                             <Space size="small" className="w-full">
                               <InputNumber
                                 placeholder="Giá trị"
                                 value={newWeightValue}
-                                onChange={(value) => setNewWeightValue(value ?? null)}
+                                onChange={(value) =>
+                                  setNewWeightValue(value ?? null)
+                                }
                                 min={0}
                                 step={1}
                                 style={{ width: "100%" }}
@@ -302,7 +356,9 @@ export default function CreateProductDetailModal({
                                 style={{ width: "100%" }}
                                 onClick={(e) => e.stopPropagation()}
                                 onMouseDown={(e) => e.stopPropagation()}
-                                getPopupContainer={(triggerNode) => triggerNode.parentElement}
+                                getPopupContainer={(triggerNode) =>
+                                  triggerNode.parentElement
+                                }
                                 options={[
                                   { value: "Gram", label: "g" },
                                   { value: "kg", label: "kg" },
@@ -349,9 +405,7 @@ export default function CreateProductDetailModal({
                       placeholder="Chọn hương vị"
                       showSearch
                       size="large"
-                      suffixIcon={
-                        <AppstoreOutlined className="text-purple-500" />
-                      }
+                      suffixIcon={<AppstoreOutlined className="text-purple-500" />}
                       dropdownRender={(menu) => (
                         <>
                           {menu}
@@ -527,9 +581,7 @@ export default function CreateProductDetailModal({
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label={
-                  <span className="font-medium">Kích Thước Khẩu Phần</span>
-                }
+                label={<span className="font-medium">Kích Thước Khẩu Phần</span>}
                 name="servingSizeInformation"
               >
                 <Input suffix="gram" placeholder="VD: 30g" size="large" />
@@ -601,9 +653,7 @@ export default function CreateProductDetailModal({
           }}
         >
           <Form.Item
-            label={
-              <span className="font-medium text-base">Trạng Thái Hiển Thị</span>
-            }
+            label={<span className="font-medium text-base">Trạng Thái Hiển Thị</span>}
             name="isDisplayed"
             valuePropName="checked"
             initialValue={true}
@@ -627,3 +677,4 @@ export default function CreateProductDetailModal({
     </FitBridgeModal>
   );
 }
+

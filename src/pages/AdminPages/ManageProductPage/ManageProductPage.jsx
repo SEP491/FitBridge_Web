@@ -32,6 +32,8 @@ import ProductDetailModal from "./ProductDetailModal";
 import CreateProductDetailModal from "./CreateProductDetailModal";
 import CreateProductModal from "./CreateProductModal";
 import UpdateProductModal from "./UpdateProductModal";
+import ProductDetailListModal from "./ProductDetailListModal";
+import UpdateProductDetailModal from "./UpdateProductDetailModal";
 
 const { Option } = Select;
 
@@ -45,6 +47,11 @@ export default function ManageProductPage() {
   const [isCreateDetailModalOpen, setIsCreateDetailModalOpen] = useState(false);
   const [isCreateProductModalOpen, setIsCreateProductModalOpen] =
     useState(false);
+  const [isProductDetailListModalOpen, setIsProductDetailListModalOpen] =
+    useState(false);
+  const [isUpdateDetailModalOpen, setIsUpdateDetailModalOpen] = useState(false);
+  const [selectedProductDetail, setSelectedProductDetail] = useState(null);
+  const [updateDetailImageFile, setUpdateDetailImageFile] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [brandFilter, setBrandFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState(undefined);
@@ -59,8 +66,10 @@ export default function ManageProductPage() {
   const [form] = Form.useForm();
   const [detailForm] = Form.useForm();
   const [createProductForm] = Form.useForm();
+  const [updateDetailForm] = Form.useForm();
   const [updating, setUpdating] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [updatingDetail, setUpdatingDetail] = useState(false);
   const [imageFile, setImageFile] = useState(null);
 
   const [pagination, setPagination] = useState({
@@ -386,7 +395,7 @@ export default function ManageProductPage() {
       formData.append("isDisplayed", values.isDisplayed ?? true);
 
       await adminService.createProductsDetails(formData);
-      toast.success("Tạo lô hàng thành công");
+      toast.success("Tạo loại hàng thành công");
       setIsCreateDetailModalOpen(false);
       detailForm.resetFields();
       setImageFile(null);
@@ -398,7 +407,7 @@ export default function ManageProductPage() {
       setSelectedProduct(response.data);
     } catch (error) {
       console.error("Error creating product detail:", error);
-      toast.error(error.response?.data?.message || "Lỗi khi tạo lô hàng");
+      toast.error(error.response?.data?.message || "Lỗi khi tạo loại hàng");
     } finally {
       setCreating(false);
     }
@@ -454,6 +463,106 @@ export default function ManageProductPage() {
       toast.error(error.response?.data?.message || "Lỗi khi tạo sản phẩm");
     } finally {
       setCreating(false);
+    }
+  };
+
+  // Handle open product detail list modal
+  const handleOpenProductDetailListModal = () => {
+    if (selectedProduct && selectedProduct.productDetails?.length > 0) {
+      setIsProductDetailListModalOpen(true);
+    } else {
+      toast.error("Sản phẩm này chưa có loại hàng nào");
+    }
+  };
+
+  // Handle select product detail for update
+  const handleSelectProductDetail = async (productDetail) => {
+    setSelectedProductDetail(productDetail);
+    setIsProductDetailListModalOpen(false);
+    await fetchWeightsAndFlavours();
+    setIsUpdateDetailModalOpen(true);
+    setUpdateDetailImageFile(null);
+  };
+
+  // Handle update product detail image upload
+  const handleUpdateDetailImageUpload = (file) => {
+    setUpdateDetailImageFile(file);
+  };
+
+  // Handle update product detail image remove
+  const handleUpdateDetailImageRemove = () => {
+    setUpdateDetailImageFile(null);
+  };
+
+  // Handle update product detail
+  const handleUpdateProductDetail = async (values) => {
+    if (!selectedProductDetail) return;
+
+    setUpdatingDetail(true);
+    try {
+      const formData = new FormData();
+      formData.append("weightId", values.weightId);
+      formData.append("flavourId", values.flavourId);
+      formData.append("quantity", values.quantity);
+      formData.append("originalPrice", values.originalPrice);
+      formData.append("displayPrice", values.displayPrice);
+      formData.append("salePrice", values.salePrice || values.displayPrice);
+
+      if (values.expirationDate) {
+        formData.append(
+          "expirationDate",
+          values.expirationDate.format("YYYY-MM-DD")
+        );
+      }
+
+      formData.append(
+        "servingSizeInformation",
+        values.servingSizeInformation || ""
+      );
+      formData.append(
+        "servingsPerContainerInformation",
+        values.servingsPerContainerInformation || ""
+      );
+      formData.append(
+        "proteinPerServingGrams",
+        values.proteinPerServingGrams || 0
+      );
+      formData.append(
+        "caloriesPerServingKcal",
+        values.caloriesPerServingKcal || 0
+      );
+      formData.append("bcaaPerServingGrams", values.bcaaPerServingGrams || 0);
+      formData.append("isDisplayed", values.isDisplayed ?? true);
+
+      // Add image only if a new one is selected
+      if (updateDetailImageFile) {
+        formData.append("image", updateDetailImageFile);
+      }
+
+      await adminService.updateProductsDetails(
+        selectedProductDetail.id,
+        formData
+      );
+      toast.success("Cập nhật loại hàng thành công");
+      setIsUpdateDetailModalOpen(false);
+      updateDetailForm.resetFields();
+      setUpdateDetailImageFile(null);
+      setSelectedProductDetail(null);
+
+      // Refresh product details
+      if (selectedProduct) {
+        const response = await adminService.viewProductsDetails(
+          selectedProduct.id
+        );
+        setSelectedProduct(response.data);
+      }
+    } catch (error) {
+      console.error("Error updating product detail:", error);
+      toast.error(
+        error.response?.data?.message || "Lỗi khi cập nhật loại hàng"
+      );
+    } finally {
+      setUpdatingDetail(false);
     }
   };
 
@@ -864,6 +973,7 @@ export default function ManageProductPage() {
         selectedProduct={selectedProduct}
         onUpdate={handleOpenUpdateModal}
         onCreateDetail={handleOpenCreateDetailModal}
+        onUpdateDetail={handleOpenProductDetailListModal}
       />
 
       {/* Update Product Modal */}
@@ -930,6 +1040,38 @@ export default function ManageProductPage() {
         onImageRemove={handleCreateProductImageRemove}
         onRefreshCategories={fetchMainCategories}
         onRefreshSubcategories={refreshSubCategoriesForCategory}
+      />
+
+      {/* Product Detail List Modal */}
+      <ProductDetailListModal
+        isOpen={isProductDetailListModalOpen}
+        onClose={() => {
+          setIsProductDetailListModalOpen(false);
+        }}
+        productDetails={selectedProduct?.productDetails || []}
+        onSelectDetail={handleSelectProductDetail}
+      />
+
+      {/* Update Product Detail Modal */}
+      <UpdateProductDetailModal
+        isOpen={isUpdateDetailModalOpen}
+        onClose={() => {
+          setIsUpdateDetailModalOpen(false);
+          updateDetailForm.resetFields();
+          setUpdateDetailImageFile(null);
+          setSelectedProductDetail(null);
+        }}
+        onSubmit={handleUpdateProductDetail}
+        form={updateDetailForm}
+        selectedProductDetail={selectedProductDetail}
+        weights={weights}
+        flavours={flavours}
+        updating={updatingDetail}
+        imageFile={updateDetailImageFile}
+        onImageUpload={handleUpdateDetailImageUpload}
+        onImageRemove={handleUpdateDetailImageRemove}
+        onRefreshWeights={fetchWeightsAndFlavours}
+        onRefreshFlavours={fetchWeightsAndFlavours}
       />
 
       <style jsx>{`
