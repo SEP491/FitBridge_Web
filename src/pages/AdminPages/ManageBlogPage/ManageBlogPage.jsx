@@ -234,15 +234,6 @@ export default function ManageBlogPage() {
       ),
     },
     {
-      title: "Tác Giả",
-      dataIndex: "authorId",
-      key: "authorId",
-      width: 220,
-      render: (authorId) => (
-        <span className="text-gray-700">{authorId || "N/A"}</span>
-      ),
-    },
-    {
       title: "Tóm Tắt",
       dataIndex: "content",
       key: "content",
@@ -457,9 +448,6 @@ export default function ManageBlogPage() {
             <Descriptions bordered column={1} size="middle">
               <Descriptions.Item label="Tiêu đề">
                 {selectedBlog.title}
-              </Descriptions.Item>
-              <Descriptions.Item label="Tác giả">
-                {selectedBlog.authorId || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Nội dung">
                 <div className="whitespace-pre-wrap">
