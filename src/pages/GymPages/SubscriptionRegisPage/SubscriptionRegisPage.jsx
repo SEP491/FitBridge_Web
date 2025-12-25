@@ -555,54 +555,47 @@ export default function SubscriptionRegisPage() {
                           </div>
                         )}
 
-                      {/* Action Button */}
-                      <Tooltip
-                        title={
-                          !subscriptionAvailability.isAvailable &&
-                          !plan.isActiveForCurrentUser
-                            ? `Đã đạt giới hạn ${subscriptionAvailability.maxCount} gói Hot Research`
-                            : ""
-                        }
-                      >
-                        <Button
-                          type="primary"
-                          size="large"
-                          block
-                          icon={
-                            paymentLoading === plan.id ? (
-                              <LoadingOutlined />
-                            ) : !subscriptionAvailability.isAvailable &&
-                              !plan.isActiveForCurrentUser ? (
-                              <StopOutlined />
-                            ) : (
-                              <MdPayment />
-                            )
+                      {/* Action Button - Only show if user doesn't have active subscription */}
+                      {!plan.isActiveForCurrentUser && (
+                        <Tooltip
+                          title={
+                            !subscriptionAvailability.isAvailable
+                              ? `Đã đạt giới hạn ${subscriptionAvailability.maxCount} gói Hot Research`
+                              : ""
                           }
-                          onClick={() => handlePaySubscription(plan)}
-                          disabled={
-                            paymentLoading === plan.id ||
-                            (!subscriptionAvailability.isAvailable &&
-                              !plan.isActiveForCurrentUser)
-                          }
-                          className={`h-11 text-sm font-semibold rounded-lg ${
-                            !subscriptionAvailability.isAvailable &&
-                            !plan.isActiveForCurrentUser
-                              ? "!bg-gray-400 !border-gray-400 cursor-not-allowed"
-                              : plan.isActiveForCurrentUser
-                              ? "!bg-blue-500 hover:!bg-blue-600 !border-blue-500"
-                              : "!bg-orange-500 hover:!bg-orange-600 !border-orange-500"
-                          }`}
                         >
-                          {paymentLoading === plan.id
-                            ? "Đang xử lý..."
-                            : !subscriptionAvailability.isAvailable &&
-                              !plan.isActiveForCurrentUser
-                            ? "Đã đạt giới hạn"
-                            : plan.isActiveForCurrentUser
-                            ? "Gia Hạn Gói"
-                            : "Đăng Ký Ngay"}
-                        </Button>
-                      </Tooltip>
+                          <Button
+                            type="primary"
+                            size="large"
+                            block
+                            icon={
+                              paymentLoading === plan.id ? (
+                                <LoadingOutlined />
+                              ) : !subscriptionAvailability.isAvailable ? (
+                                <StopOutlined />
+                              ) : (
+                                <MdPayment />
+                              )
+                            }
+                            onClick={() => handlePaySubscription(plan)}
+                            disabled={
+                              paymentLoading === plan.id ||
+                              !subscriptionAvailability.isAvailable
+                            }
+                            className={`h-11 text-sm font-semibold rounded-lg ${
+                              !subscriptionAvailability.isAvailable
+                                ? "!bg-gray-400 !border-gray-400 cursor-not-allowed"
+                                : "!bg-orange-500 hover:!bg-orange-600 !border-orange-500"
+                            }`}
+                          >
+                            {paymentLoading === plan.id
+                              ? "Đang xử lý..."
+                              : !subscriptionAvailability.isAvailable
+                              ? "Đã đạt giới hạn"
+                              : "Đăng Ký Ngay"}
+                          </Button>
+                        </Tooltip>
+                      )}
                     </div>
                   </Card>
                 </Col>
