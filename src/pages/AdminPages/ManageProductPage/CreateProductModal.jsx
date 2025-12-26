@@ -45,18 +45,25 @@ export default function CreateProductModal({
   imageFile,
   onImageUpload,
   onImageRemove,
-  onRefreshCategories, 
+  onRefreshCategories,
   onRefreshSubcategories,
+  onRefreshBrands,
 }) {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newSubCategoryName, setNewSubCategoryName] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
   const [addingSubCategory, setAddingSubCategory] = useState(false);
+  const [newBrandName, setNewBrandName] = useState("");
+  const [editingBrandName, setEditingBrandName] = useState("");
+  const [addingBrand, setAddingBrand] = useState(false);
+  const [updatingBrand, setUpdatingBrand] = useState(false);
 
   const handleCancel = () => {
     form.resetFields();
     setNewCategoryName("");
     setNewSubCategoryName("");
+    setNewBrandName("");
+    setEditingBrandName("");
     onClose();
   };
 
@@ -124,6 +131,69 @@ export default function CreateProductModal({
     setAddingSubCategory(false);
   }
 };
+
+  const handleAddBrand = async (e) => {
+    e.preventDefault();
+    if (!newBrandName.trim()) {
+      toast.error("Vui lòng nhập tên thương hiệu");
+      return;
+    }
+
+    setAddingBrand(true);
+    try {
+      const response = await adminService.createBrand({
+        name: newBrandName.trim(),
+      });
+
+      toast.success("Thêm thương hiệu thành công");
+      setNewBrandName("");
+
+      onRefreshBrands();
+
+      if (response.data?.id) {
+        form.setFieldsValue({ brandId: response.data.id });
+        setEditingBrandName(response.data.name || "");
+      }
+    } catch (error) {
+      console.error("Error creating brand:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi tạo thương hiệu");
+    } finally {
+      setAddingBrand(false);
+    }
+  };
+
+  const handleUpdateBrand = async (e) => {
+    e.preventDefault();
+    const selectedBrandId = form.getFieldValue("brandId");
+
+    if (!selectedBrandId) {
+      toast.error("Vui lòng chọn thương hiệu cần cập nhật");
+      return;
+    }
+
+    if (!editingBrandName.trim()) {
+      toast.error("Vui lòng nhập tên thương hiệu");
+      return;
+    }
+
+    setUpdatingBrand(true);
+    try {
+      await adminService.updateBrand(selectedBrandId, {
+        name: editingBrandName.trim(),
+      });
+
+      toast.success("Cập nhật thương hiệu thành công");
+
+     onRefreshBrands();
+    } catch (error) {
+      console.error("Error updating brand:", error);
+      toast.error(
+        error.response?.data?.message || "Lỗi khi cập nhật thương hiệu"
+      );
+    } finally {
+      setUpdatingBrand(false);
+    }
+  };
   return (
     <FitBridgeModal
       open={isOpen}
@@ -281,6 +351,65 @@ export default function CreateProductModal({
                   optionFilterProp="children"
                   size="large"
                   suffixIcon={<AppstoreOutlined className="text-purple-500" />}
+                  onChange={(value) => {
+                    const selectedBrand = brands.find(
+                      (brand) => brand.id === value
+                    );
+                    setEditingBrandName(selectedBrand?.name || "");
+                    form.setFieldsValue({ brandId: value });
+                  }}
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: "8px 0" }} />
+                      <Space
+                        direction="vertical"
+                        style={{ padding: "0 8px 8px", width: "100%" }}
+                      >
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Tên thương hiệu mới"
+                            value={newBrandName}
+                            onChange={(e) => setNewBrandName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleAddBrand(e);
+                              }
+                            }}
+                          />
+                          <Button
+                            type="text"
+                            icon={<PlusOutlined />}
+                            onClick={handleAddBrand}
+                            loading={addingBrand}
+                            className="text-purple-600 hover:text-purple-700"
+                          >
+                            Thêm
+                          </Button>
+                        </div>
+                        <Divider style={{ margin: "4px 0" }} />
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Cập nhật tên thương hiệu"
+                            value={editingBrandName}
+                            onChange={(e) =>
+                              setEditingBrandName(e.target.value)
+                            }
+                            disabled={!form.getFieldValue("brandId")}
+                          />
+                          <Button
+                            type="text"
+                            onClick={handleUpdateBrand}
+                            loading={updatingBrand}
+                            disabled={!form.getFieldValue("brandId")}
+                            className="text-purple-600 hover:text-purple-700"
+                          >
+                            Lưu
+                          </Button>
+                        </div>
+                      </Space>
+                    </>
+                  )}
                 >
                   {brands.map((brand) => (
                     <Option key={brand.id} value={brand.id}>

@@ -100,7 +100,7 @@ export default function ManageOrderPage() {
     }
   };
 
- const fetchOrdersSummary = async () => {
+  const fetchOrdersSummary = async () => {
     setLoading(true);
     const params = {
       doApplyPaging: false,
@@ -119,7 +119,6 @@ export default function ManageOrderPage() {
     fetchOrders();
     fetchOrdersSummary();
   }, []);
-
 
   const getStatusColor = (status) => {
     const colors = {
@@ -187,13 +186,13 @@ export default function ManageOrderPage() {
         )
       );
       toast.success(`Cập nhật trạng thái đơn hàng thành công!`);
-      fetchOrders( pagination.current, pagination.pageSize, { status: status });
+      fetchOrders(pagination.current, pagination.pageSize, { status: status });
       fetchOrdersSummary();
       setIsStatusUpdateModalOpen(false);
       setNewStatus("");
       setStatusDescription("");
       setSelectedOrder(null);
-      
+
       const filters = {};
       if (statusFilter !== "all") filters.status = statusFilter;
       if (searchText) filters.search = searchText;
@@ -205,12 +204,12 @@ export default function ManageOrderPage() {
       });
       const { items } = response.data.productOrders;
       setOrders(items || []);
-      fetchOrders( pagination.current, pagination.pageSize, { status: status });
+      fetchOrders(pagination.current, pagination.pageSize, { status: status });
       fetchOrdersSummary();
-      
+
       // Update selected order if it's open
       if (selectedOrder?.id === orderId) {
-        const updatedOrder = items.find(order => order.id === orderId);
+        const updatedOrder = items.find((order) => order.id === orderId);
         if (updatedOrder) {
           setSelectedOrder(updatedOrder);
         }
@@ -243,18 +242,20 @@ export default function ManageOrderPage() {
 
   const handleConfirmCancelOrder = async () => {
     if (!selectedOrder) return;
-    
+
     if (!cancelComment || cancelComment.trim() === "") {
       toast.error("Vui lòng nhập lý do hủy đơn hàng!");
       return;
     }
 
     try {
-      await orderService.cancelOrder(selectedOrder.id, { comment: cancelComment });
+      await orderService.cancelOrder(selectedOrder.id, {
+        comment: cancelComment,
+      });
 
       toast.success(`Hủy đơn hàng thành công!`);
-      
-      fetchOrders( pagination.current, pagination.pageSize, { status: status });
+
+      fetchOrders(pagination.current, pagination.pageSize, { status: status });
       fetchOrdersSummary();
       setIsStatusUpdateModalOpen(false);
       setNewStatus("");
@@ -273,15 +274,15 @@ export default function ManageOrderPage() {
       });
       const { items } = response.data.productOrders;
       setOrders(items || []);
-      
+
       fetchOrdersSummary();
 
       // Update selected order if it's open
-      const updatedOrder = items.find(order => order.id === selectedOrder.id);
+      const updatedOrder = items.find((order) => order.id === selectedOrder.id);
       if (updatedOrder) {
         setSelectedOrder(updatedOrder);
       }
-      
+
       setIsCancelModalOpen(false);
       setCancelComment("");
     } catch {
@@ -306,7 +307,7 @@ export default function ManageOrderPage() {
 
       await orderService.createShippingOrder(data);
       toast.success("Tạo đơn giao hàng thành công!");
-      fetchOrders( pagination.current, pagination.pageSize, { status: "Shipping" });
+      fetchOrders(pagination.current, pagination.pageSize);
       fetchOrdersSummary();
       setIsShippingModalOpen(false);
       setIsCancelModalOpen(false);
@@ -315,13 +316,12 @@ export default function ManageOrderPage() {
       setStatusDescription("");
       setCancelComment("");
       setShippingRemarks("");
-      setSelectedOrder(null); 
-     
+      setSelectedOrder(null);
     } catch (error) {
       console.error("Error creating shipping order:", error);
       toast.error("Tạo đơn giao hàng thất bại. Vui lòng thử lại.");
     }
-  };  
+  };
 
   const handleTableChange = (paginationConfig) => {
     const filters = {};
@@ -333,7 +333,7 @@ export default function ManageOrderPage() {
   const handleFilterChange = () => {
     const filters = {};
     if (statusFilter !== "all") filters.status = statusFilter;
-    if (searchText) filters.search = searchText;
+    if (searchText) filters.searchTerm = searchText;
     fetchOrders(1, pagination.pageSize, filters);
   };
 
@@ -471,7 +471,7 @@ export default function ManageOrderPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl flex gap-2 font-bold text-[#ED2A46] mb-2">
-          <ShoppingOutlined />
+            <ShoppingOutlined />
             Quản Lý Đơn Hàng
           </h1>
         </div>
@@ -648,7 +648,7 @@ export default function ManageOrderPage() {
             >
               <Statistic
                 title="Đang Hoàn Trả"
-                value={ summaryProductOrder?.totalInReturn}
+                value={summaryProductOrder?.totalInReturn}
                 prefix={<CarOutlined style={{ color: "#fa541c" }} />}
                 valueStyle={{
                   color: "#fa541c",
@@ -683,7 +683,9 @@ export default function ManageOrderPage() {
               className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => {
                 setStatusFilter("CustomerNotReceived");
-                fetchOrders(1, pagination.pageSize, { status: "CustomerNotReceived" });
+                fetchOrders(1, pagination.pageSize, {
+                  status: "CustomerNotReceived",
+                });
               }}
             >
               <Statistic
@@ -774,72 +776,72 @@ export default function ManageOrderPage() {
         <Card className="border-0 shadow-lg">
           {/* Filters and Search */}
           <div className="flex flex-row mb-6 justify-between">
-          <div className="flex flex-col gap-4 ">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Input
-                placeholder="Tìm kiếm theo mã đơn, tên khách hàng, số điện thoại..."
-                prefix={<SearchOutlined className="text-gray-400" />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onPressEnter={handleFilterChange}
-                style={{ width: 400 }}
-                allowClear
-                onClear={handleFilterChange}
-                className="rounded-lg"
-              />
+            <div className="flex flex-col gap-4 ">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Input
+                  placeholder="Tìm kiếm theo mã đơn, tên khách hàng, số điện thoại..."
+                  prefix={<SearchOutlined className="text-gray-400" />}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onPressEnter={handleFilterChange}
+                  style={{ width: 400 }}
+                  allowClear
+                  onClear={handleFilterChange}
+                  className="rounded-lg"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Select
+                  value={statusFilter}
+                  onChange={(value) => {
+                    setStatusFilter(value);
+                    const filters = {};
+                    if (value !== "all") filters.status = value;
+                    if (searchText) filters.searchTerm = searchText;
+                    fetchOrders(1, pagination.pageSize, filters);
+                  }}
+                  style={{ width: 180 }}
+                  className="rounded-lg"
+                  placeholder="Trạng thái"
+                >
+                  <Option value="all">Tất cả trạng thái</Option>
+                  <Option value="Created">Đã Tạo</Option>
+                  <Option value="Pending">Chờ Xử Lý</Option>
+                  <Option value="Processing">Đang Xử Lý</Option>
+                  <Option value="Assigning">Đang Phân Công</Option>
+                  <Option value="Accepted">Đã Chấp Nhận</Option>
+                  <Option value="Shipping">Đang Giao Hàng</Option>
+                  <Option value="Arrived">Đã Đến Nơi</Option>
+                  <Option value="InReturn">Đang Hoàn Trả</Option>
+                  <Option value="Returned">Đã Hoàn Trả</Option>
+                  <Option value="CustomerNotReceived">Khách Không Nhận</Option>
+                  <Option value="Finished">Hoàn Thành</Option>
+                  <Option value="Cancelled">Đã Hủy</Option>
+                </Select>
+                <Select
+                  value={paymentFilter}
+                  onChange={setPaymentFilter}
+                  style={{ width: 200 }}
+                  className="rounded-lg"
+                  placeholder="Phương thức thanh toán"
+                >
+                  <Option value="all">Tất cả phương thức</Option>
+                  <Option value="CreditCard">Thẻ Tín Dụng</Option>
+                  <Option value="BankTransfer">Chuyển Khoản</Option>
+                  <Option value="COD">Thanh Toán Khi Nhận</Option>
+                  <Option value="Wallet">Ví Điện Tử</Option>
+                </Select>
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Select
-                value={statusFilter}
-                onChange={(value) => {
-                  setStatusFilter(value);
-                  const filters = {};
-                  if (value !== "all") filters.status = value;
-                  if (searchText) filters.search = searchText;
-                  fetchOrders(1, pagination.pageSize, filters);
-                }}
-                style={{ width: 180 }}
-                className="rounded-lg"
-                placeholder="Trạng thái"
+            <div>
+              <Button
+                type="primary"
+                className="bg-orange-500 hover:bg-orange-600 rounded-lg"
+                onClick={() => setIsShopAddressModalOpen(true)}
               >
-                <Option value="all">Tất cả trạng thái</Option>
-                <Option value="Created">Đã Tạo</Option>
-                <Option value="Pending">Chờ Xử Lý</Option>
-                <Option value="Processing">Đang Xử Lý</Option>
-                <Option value="Assigning">Đang Phân Công</Option>
-                <Option value="Accepted">Đã Chấp Nhận</Option>
-                <Option value="Shipping">Đang Giao Hàng</Option>
-                <Option value="Arrived">Đã Đến Nơi</Option>
-                <Option value="InReturn">Đang Hoàn Trả</Option>
-                <Option value="Returned">Đã Hoàn Trả</Option>
-                <Option value="CustomerNotReceived">Khách Không Nhận</Option>
-                <Option value="Finished">Hoàn Thành</Option>
-                <Option value="Cancelled">Đã Hủy</Option>
-              </Select>
-              <Select
-                value={paymentFilter}
-                onChange={setPaymentFilter}
-                style={{ width: 200 }}
-                className="rounded-lg"
-                placeholder="Phương thức thanh toán"
-              >
-                <Option value="all">Tất cả phương thức</Option>
-                <Option value="CreditCard">Thẻ Tín Dụng</Option>
-                <Option value="BankTransfer">Chuyển Khoản</Option>
-                <Option value="COD">Thanh Toán Khi Nhận</Option>
-                <Option value="Wallet">Ví Điện Tử</Option>
-              </Select>
+                Thông Tin Cửa Hàng
+              </Button>
             </div>
-          </div>
-          <div>
-            <Button
-              type="primary"
-              className="bg-orange-500 hover:bg-orange-600 rounded-lg"
-              onClick={() => setIsShopAddressModalOpen(true)}
-            >
-              Thông Tin Cửa Hàng
-            </Button>
-          </div>
           </div>
 
           {/* Results Summary */}
@@ -904,20 +906,6 @@ export default function ManageOrderPage() {
         </Card>
       </div>
 
-
-      {/* Create Shipping Order Modal */}
-      <ShippingOrderModal
-        isOpen={isShippingModalOpen}
-        onClose={() => {
-          setIsShippingModalOpen(false);
-          setShippingRemarks("");
-        }}
-        onConfirm={handleCreateShippingOrder}
-        shippingRemarks={shippingRemarks}
-        setShippingRemarks={setShippingRemarks}
-        selectedOrder={selectedOrder}
-      />
-
       {/* Update Status Modal */}
       <StatusUpdateModal
         isOpen={isStatusUpdateModalOpen}
@@ -954,7 +942,7 @@ export default function ManageOrderPage() {
         setCancelComment={setCancelComment}
         selectedOrder={selectedOrder}
       />
-         {/* Order Detail Modal */}
+      {/* Order Detail Modal */}
       <OrderDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => {
@@ -968,6 +956,18 @@ export default function ManageOrderPage() {
         handleCancelOrder={handleCancelOrder}
         openStatusUpdateModal={openStatusUpdateModal}
         setIsShippingModalOpen={setIsShippingModalOpen}
+      />
+      {/* Create Shipping Order Modal */}
+      <ShippingOrderModal
+        isOpen={isShippingModalOpen}
+        onClose={() => {
+          setIsShippingModalOpen(false);
+          setShippingRemarks("");
+        }}
+        onConfirm={handleCreateShippingOrder}
+        shippingRemarks={shippingRemarks}
+        setShippingRemarks={setShippingRemarks}
+        selectedOrder={selectedOrder}
       />
 
       <style jsx>{`

@@ -30,7 +30,7 @@ export const route = {
   manageVoucherGym: "manage-voucher-gym",
   managePTSchedule: "manage-pt-schedule",
   contractSigning: "contract-signing",
-
+  
   orderProcess: "order-process",
 
   freelancePt: "/freelance-pt",

@@ -59,7 +59,6 @@ export default function ManageGymTransaction() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isModalTransactionDetailOpen, setIsModalTransactionDetailOpen] =
     useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [activeTab, setActiveTab] = useState("transactions");
 
@@ -100,6 +99,14 @@ export default function ManageGymTransaction() {
   const [loadingDisbursementDetails, setLoadingDisbursementDetails] =
     useState(false);
   const [walletFilter, setWalletFilter] = useState("all");
+
+  // Maximum withdrawal amount check states
+  const [maximumWithdrawalCheck, setMaximumWithdrawalCheck] = useState({
+    isMaximumWithdrawalAmountReached: false,
+    maximumWithdrawalAmountPerDay: 0,
+    todayWithdrawalAmount: 0,
+  });
+  const [loadingMaxWithdrawalCheck, setLoadingMaxWithdrawalCheck] = useState(false);
 
   const sortByDateDesc = (items, getDate) =>
     (items || []).slice().sort((a, b) => {
@@ -152,6 +159,30 @@ export default function ManageGymTransaction() {
       setLoadingWalletBalance(false);
     }
   };
+
+  // Check maximum withdrawal amount
+  const checkMaximumWithdrawalAmount = useCallback(async () => {
+    setLoadingMaxWithdrawalCheck(true);
+    try {
+      const response = await paymentService.checkMaximumWithdrawalAmount({});
+      const data = response.data || {};
+      setMaximumWithdrawalCheck({
+        isMaximumWithdrawalAmountReached: data.isMaximumWithdrawalAmountReached || false,
+        maximumWithdrawalAmountPerDay: data.maximumWithdrawalAmountPerDay || 0,
+        todayWithdrawalAmount: data.todayWithdrawalAmount || 0,
+      });
+    } catch (error) {
+      console.error("Error checking maximum withdrawal amount:", error);
+      // Don't show error toast, just set default values
+      setMaximumWithdrawalCheck({
+        isMaximumWithdrawalAmountReached: false,
+        maximumWithdrawalAmountPerDay: 0,
+        todayWithdrawalAmount: 0,
+      });
+    } finally {
+      setLoadingMaxWithdrawalCheck(false);
+    }
+  }, []);
 
   // Fetch withdrawal requests
   const fetchWithdrawalRequests = useCallback(
@@ -260,12 +291,13 @@ export default function ManageGymTransaction() {
   useEffect(() => {
     fetchTransactions();
     fetchWalletBalance();
-    fetchDisbursementDetails()
-  }, []);
+    fetchDisbursementDetails();
+  }, [fetchDisbursementDetails]);
 
   useEffect(() => {
     if (activeTab === "withdrawals") {
       fetchWithdrawalRequests();
+      checkMaximumWithdrawalAmount();
     } else if (activeTab === "wallet") {
       fetchPendingBalanceDetails();
       fetchAvailableBalanceDetails();
@@ -277,6 +309,7 @@ export default function ManageGymTransaction() {
     fetchPendingBalanceDetails,
     fetchAvailableBalanceDetails,
     fetchDisbursementDetails,
+    checkMaximumWithdrawalAmount,
   ]);
 
   // No server-side pagination; sorting is handled client-side by antd
@@ -677,12 +710,7 @@ export default function ManageGymTransaction() {
           getTransactionTypeText(item.transactionType)?.toLowerCase() || ""
         ).includes(searchText.toLowerCase())
       : true;
-
-    const matchesStatus =
-      statusFilter === "all" || 
-      item.transactionType?.toUpperCase() === statusFilter.toUpperCase();
-
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   // Calculate statistics
@@ -767,8 +795,87 @@ export default function ManageGymTransaction() {
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
+  // Constants for withdrawal limits
+  const MIN_WITHDRAW = 50000; // 50,000₫
+  const MAX_WITHDRAW = 20000000; // 20,000,000₫
+
+  // Validate withdrawal amount in the specified order
+  const handleSubmitWithdrawal = (amount, maximumWithdrawalData, availableBalance) => {
+    // 1. Maximum Withdrawal Limit Reached Check
+    if (maximumWithdrawalData?.isMaximumWithdrawalAmountReached === true) {
+      const todayAmount = formatCurrency(maximumWithdrawalData.todayWithdrawalAmount || 0);
+      const dailyLimit = formatCurrency(maximumWithdrawalData.maximumWithdrawalAmountPerDay || 0);
+      const message = `Bạn đã đạt giới hạn rút tiền hôm nay. Đã rút: ${todayAmount} / Giới hạn: ${dailyLimit}`;
+      toast.error(message);
+      return { isValid: false, message };
+    }
+
+    // 2. Invalid Amount Check
+    const amountNumber = Number(amount);
+    if (
+      Number.isNaN(amountNumber) ||
+      amountNumber === null ||
+      amountNumber === undefined ||
+      amountNumber <= 0
+    ) {
+      const message = "Please enter a valid amount";
+      toast.error(message);
+      return { isValid: false, message };
+    }
+
+    // 3. Minimum Withdrawal Check
+    if (amountNumber < MIN_WITHDRAW) {
+      const message = "Số tiền tối thiểu là 50,000₫";
+      toast.error(message);
+      return { isValid: false, message };
+    }
+
+    // 4. Maximum Withdrawal Check
+    if (amountNumber > MAX_WITHDRAW) {
+      const message = "Số tiền tối đa là 20,000,000₫";
+      toast.error(message);
+      return { isValid: false, message };
+    }
+
+    // 5. Daily Withdrawal Limit Check
+    const maximumWithdrawalAmountPerDay = maximumWithdrawalData?.maximumWithdrawalAmountPerDay || 0;
+    if (maximumWithdrawalAmountPerDay > 0) {
+      const todayWithdrawalAmount = maximumWithdrawalData?.todayWithdrawalAmount || 0;
+      const remainingWithdrawalLimit = maximumWithdrawalAmountPerDay - todayWithdrawalAmount;
+      
+      if (amountNumber > remainingWithdrawalLimit) {
+        const remainingLimitFormatted = formatCurrency(remainingWithdrawalLimit);
+        const message = `Số tiền bạn còn có thể rút là: ${remainingLimitFormatted}`;
+        toast.error(message);
+        return { isValid: false, message };
+      }
+    }
+
+    // 6. Available Balance Check
+    if (amountNumber > availableBalance) {
+      const message = "Số tiền rút không được vượt quá số dư khả dụng";
+      toast.error(message);
+      return { isValid: false, message };
+    }
+
+    // All validations passed
+    return { isValid: true };
+  };
+
   // Handle create withdrawal request
   const handleCreateWithdrawal = async (values) => {
+    // Validate withdrawal amount first
+    const validation = handleSubmitWithdrawal(
+      values.amount,
+      maximumWithdrawalCheck,
+      walletBalance.totalAvailableBalance
+    );
+
+    if (!validation.isValid) {
+      // Validation failed, error already shown by handleSubmitWithdrawal
+      return;
+    }
+
     setLoadingCreateWithdrawal(true);
     try {
       await paymentService.createWithdrawalRequest({
@@ -785,6 +892,8 @@ export default function ManageGymTransaction() {
         withdrawalPagination.current,
         withdrawalPagination.pageSize
       );
+      // Refresh maximum withdrawal check after creating request
+      checkMaximumWithdrawalAmount();
     } catch (error) {
       console.error("Error creating withdrawal request:", error);
       toast.error(
@@ -1322,6 +1431,9 @@ export default function ManageGymTransaction() {
     fetchPendingBalanceDetails();
     fetchAvailableBalanceDetails();
     fetchDisbursementDetails();
+    if (activeTab === "withdrawals") {
+      checkMaximumWithdrawalAmount();
+    }
   };
 
   // Filter controls UI
@@ -1388,12 +1500,20 @@ export default function ManageGymTransaction() {
         type="primary"
         icon={<PlusOutlined />}
         size="middle"
-        onClick={() => setIsModalCreateWithdrawalOpen(true)}
+        onClick={() => {
+          checkMaximumWithdrawalAmount();
+          setIsModalCreateWithdrawalOpen(true);
+        }}
         className="border-0 bg-[#ED2A46] text-white hover:bg-[#e43e56]"
-        disabled={hasUnresolvedWithdrawal}
+        disabled={hasUnresolvedWithdrawal || maximumWithdrawalCheck.isMaximumWithdrawalAmountReached}
+        loading={loadingMaxWithdrawalCheck}
       >
-        {hasUnresolvedWithdrawal
+        {loadingMaxWithdrawalCheck
+          ? "Đang kiểm tra..."
+          : hasUnresolvedWithdrawal
           ? "Bạn đã có yêu cầu đang chờ xử lý"
+          : maximumWithdrawalCheck.isMaximumWithdrawalAmountReached
+          ? "Đã đạt giới hạn rút tiền hôm nay"
           : "Tạo Yêu Cầu Rút Tiền"}
       </Button>
     </div>
@@ -2028,6 +2148,11 @@ export default function ManageGymTransaction() {
           setIsModalCreateWithdrawalOpen(false);
           formCreateWithdrawal.resetFields();
         }}
+        afterOpenChange={(open) => {
+          if (open) {
+            checkMaximumWithdrawalAmount();
+          }
+        }}
         title={
           <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
             <div className="p-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg">
@@ -2040,6 +2165,14 @@ export default function ManageGymTransaction() {
               <p className="text-sm text-gray-500 m-0">
                 Số dư khả dụng: {formatCurrency(walletBalance.totalAvailableBalance)}
               </p>
+              {maximumWithdrawalCheck.maximumWithdrawalAmountPerDay > 0 && (
+                <p className="text-xs text-gray-400 m-0 mt-1">
+                  Giới hạn hôm nay: {formatCurrency(maximumWithdrawalCheck.maximumWithdrawalAmountPerDay)} 
+                  {maximumWithdrawalCheck.todayWithdrawalAmount > 0 && (
+                    <span> • Đã rút: {formatCurrency(maximumWithdrawalCheck.todayWithdrawalAmount)}</span>
+                  )}
+                </p>
+              )}
             </div>
           </div>
         }
@@ -2089,7 +2222,15 @@ export default function ManageGymTransaction() {
                     );
                   }
 
-                  
+                  // Check if adding this amount would exceed daily limit
+                  if (maximumWithdrawalCheck.maximumWithdrawalAmountPerDay > 0) {
+                    const remainingLimit = maximumWithdrawalCheck.maximumWithdrawalAmountPerDay - maximumWithdrawalCheck.todayWithdrawalAmount;
+                    if (num > remainingLimit) {
+                      return Promise.reject(
+                        new Error(`Số tiền vượt quá giới hạn còn lại hôm nay: ${formatCurrency(remainingLimit)}`)
+                      );
+                    }
+                  }
 
                   return Promise.resolve();
                 },
@@ -2125,7 +2266,7 @@ export default function ManageGymTransaction() {
               style={{ width: "100%", height: 60 }}
               optionFilterProp="children"
               filterOption={(input, option) =>
-                (option?.label || "")
+                String(option?.searchText || option?.value || "")
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
@@ -2148,6 +2289,7 @@ export default function ManageGymTransaction() {
                   </div>
                 ),
                 value: b.name,
+                searchText: `${b.name} ${b.code} ${b.bankFullName || ""}`,
               }))}
             />
           </Form.Item>

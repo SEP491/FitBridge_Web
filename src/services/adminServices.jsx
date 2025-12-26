@@ -62,6 +62,8 @@ const adminService = {
     }),
 
   getAllBrands: (params) => request("GET", "/v1/brands", null, {}, params),
+  createBrand: (data) => request("POST", "/v1/brands", data),
+  updateBrand: (brandId, data) => request("PUT", `/v1/brands/${brandId}`, data),
 
   // Main Categories
   getAllCategories: (params) =>

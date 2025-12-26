@@ -29,6 +29,7 @@ const breadcrumbTextMap = {
   
   // Gym routes
   gym: "Phòng gym",
+  "manage-customers": "Quản lý khách hàng",
   "dashboard-gym": "Bảng điều khiển",
   "manage-information-gym": "Quản lý thông tin",
   "manage-user-gym": "Quản lý khách hàng",

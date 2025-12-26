@@ -150,7 +150,7 @@ export default function SidebarAdmin({ collapsed, onCollapse }) {
         ),
         getItem(
           "Quản Lý Khách Hàng",
-          `/gym/manage-customers`,
+            `/gym/manage-customers`,
           <TeamOutlined className="text-lg" />
         ),
         getItem(

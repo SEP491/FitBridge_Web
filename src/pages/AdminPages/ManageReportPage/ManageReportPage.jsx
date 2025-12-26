@@ -59,7 +59,7 @@ export default function ManageReportPage() {
   const [confirmFraudForm] = Form.useForm();
   const [refundProofFileList, setRefundProofFileList] = useState([]);
   const [checkingCompletion, setCheckingCompletion] = useState(false);
-
+  const [summary, setSummary] = useState({});
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -75,8 +75,9 @@ export default function ManageReportPage() {
         size: pageSize,
       });
 
-      const { items, total, page: currentPage, totalPages } = response.data;
+      const { items, total, page: currentPage, totalPages, summary } = response.data;
       setReports(items || []);
+      setSummary(summary || {});
       setPagination({
         current: currentPage,
         pageSize,
@@ -553,16 +554,6 @@ export default function ManageReportPage() {
     },
   ];
 
-  // Calculate statistics
-  const stats = {
-    total: filteredReports.length,
-    pending: filteredReports.filter((r) => r.status === "Pending").length,
-    processing: filteredReports.filter((r) => r.status === "Processing").length,
-    resolved: filteredReports.filter((r) => r.status === "Resolved").length,
-    rejected: filteredReports.filter((r) => r.status === "Rejected").length,
-    fraudConfirmed: filteredReports.filter((r) => r.status === "FraudConfirmed")
-      .length,
-  };
 
   if (loading && reports.length === 0) {
     return (
@@ -590,39 +581,51 @@ export default function ManageReportPage() {
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <Card className="text-center shadow-md hover:shadow-lg transition-shadow">
             <div className="text-2xl font-bold text-blue-600">
-              {stats.total}
+              {summary?.totalReports}
             </div>
             <div className="text-gray-600 text-sm">Tổng báo cáo</div>
           </Card>
           <Card className="text-center shadow-md hover:shadow-lg transition-shadow">
             <div className="text-2xl font-bold text-orange-600">
-              {stats.pending}
+              {summary?.productReportCount}
             </div>
-            <div className="text-gray-600 text-sm">Chờ xử lý</div>
+            <div className="text-gray-600 text-sm">Báo cáo Sản Phẩm</div>
           </Card>
           <Card className="text-center shadow-md hover:shadow-lg transition-shadow">
             <div className="text-2xl font-bold text-blue-500">
-              {stats.processing}
+              {summary?.freelancePtReportCount}
             </div>
-            <div className="text-gray-600 text-sm">Đang xử lý</div>
+            <div className="text-gray-600 text-sm">Báo cáo PT Tự Do</div>
           </Card>
           <Card className="text-center shadow-md hover:shadow-lg transition-shadow">
             <div className="text-2xl font-bold text-green-600">
-              {stats.resolved}
+              {summary?.gymCourseReportCount}
             </div>
-            <div className="text-gray-600 text-sm">Đã xử lý</div>
+            <div className="text-gray-600 text-sm">Báo cáo Gói Tập Gym</div>
           </Card>
           <Card className="text-center shadow-md hover:shadow-lg transition-shadow">
             <div className="text-2xl font-bold text-red-600">
-              {stats.rejected}
+              {summary?.pendingCount}
             </div>
-            <div className="text-gray-600 text-sm">Từ chối</div>
+            <div className="text-gray-600 text-sm">Dang Cho Xử Lý</div>
           </Card>
           <Card className="text-center shadow-md hover:shadow-lg transition-shadow">
             <div className="text-2xl font-bold text-red-700">
-              {stats.fraudConfirmed}
+              {summary?.processingCount}
             </div>
-            <div className="text-gray-600 text-sm">Gian lận</div>
+            <div className="text-gray-600 text-sm">Đang Xử Lý</div>
+          </Card>
+          <Card className="text-center shadow-md hover:shadow-lg transition-shadow">
+            <div className="text-2xl font-bold text-red-700">
+              {summary?.resolvedCount}
+            </div>
+            <div className="text-gray-600 text-sm">Đã Xử Lý</div>
+          </Card>
+          <Card className="text-center shadow-md hover:shadow-lg transition-shadow">
+            <div className="text-2xl font-bold text-red-700">
+              {summary?.fraudConfirmedCount}
+            </div>
+            <div className="text-gray-600 text-sm">Xác Nhận Gian Lận</div>
           </Card>
         </div>
       </div>

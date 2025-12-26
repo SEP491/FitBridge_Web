@@ -413,7 +413,7 @@ export default function ManageTransactionPage() {
               {gyms.map((gym) => (
                 <Select.Option key={gym.id} value={gym.id}>
                   {gym.gymName}
-                </Select.Option>
+                </Select.Option> 
               ))}
             </Select>
 

@@ -1040,6 +1040,7 @@ export default function ManageProductPage() {
         onImageRemove={handleCreateProductImageRemove}
         onRefreshCategories={fetchMainCategories}
         onRefreshSubcategories={refreshSubCategoriesForCategory}
+        onRefreshBrands={fetchBrandsAndCategories}
       />
 
       {/* Product Detail List Modal */}
