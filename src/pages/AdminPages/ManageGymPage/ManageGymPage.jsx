@@ -20,6 +20,9 @@ import {
   Upload,
   Select,
   Descriptions,
+  Modal,
+  DatePicker,
+  TimePicker,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import adminService from "../../../services/adminServices";
@@ -177,6 +180,48 @@ export default function ManageGymPage() {
 
   const [mapCenter, setMapCenter] = useState(center);
 
+  // Function to remap API response data to match component expectations
+  const remapGymData = (gymData) => {
+    // Extract year from gymFoundationDate or createdAt
+    const getYear = (dateString) => {
+      if (!dateString) return null;
+      try {
+        return new Date(dateString).getFullYear();
+      } catch {
+        return null;
+      }
+    };
+
+    const foundationYear = getYear(gymData.gymFoundationDate);
+    const createdYear = getYear(gymData.createdAt);
+    const since = foundationYear || createdYear || null;
+
+    // Get main image from gymImages array or avatarUrl
+    const mainImage =
+      gymData.gymImages && gymData.gymImages.length > 0
+        ? gymData.gymImages[0]
+        : gymData.avatarUrl || null;
+
+    // Get additional images (skip first one if it's used as mainImage)
+    const images =
+      gymData.gymImages && gymData.gymImages.length > 1
+        ? gymData.gymImages.slice(1)
+        : [];
+
+    return {
+      ...gymData,
+      // Map fields to match component expectations
+      mainImage: mainImage,
+      images: images,
+      address: gymData.businessAddress,
+      representName: gymData.fullName,
+      since: since,
+      // Keep original fields for backward compatibility
+      businessAddress: gymData.businessAddress,
+      fullName: gymData.fullName,
+    };
+  };
+
   const fetchGym = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
@@ -186,14 +231,19 @@ export default function ManageGymPage() {
       });
       const { items, total, page: currentPage } = response.data;
 
-      setGym(items);
+      // Remap the data to match component expectations
+      const remappedItems = items.map(remapGymData);
 
-      const hotResearchCount = items.filter((gym) => gym.hotResearch).length;
+      setGym(remappedItems);
+
+      const hotResearchCount = remappedItems.filter(
+        (gym) => gym.hotResearch
+      ).length;
       const avgYear =
-        items.length > 0
+        remappedItems.length > 0
           ? Math.round(
-              items.reduce((sum, gym) => sum + (gym.since || 2020), 0) /
-                items.length
+              remappedItems.reduce((sum, gym) => sum + (gym.since || 2020), 0) /
+                remappedItems.length
             )
           : 0;
 
@@ -322,8 +372,8 @@ export default function ManageGymPage() {
     },
     {
       title: "Địa Chỉ",
-      dataIndex: "address",
-      key: "address",
+      dataIndex: "businessAddress",
+      key: "businessAddress",
       width: 120,
       render: (address) => (
         <div className="flex items-center text-gray-700">
@@ -469,17 +519,56 @@ export default function ManageGymPage() {
     formData.append("longitude", values.longitude || 0);
     formData.append("latitude", values.latitude || 0);
 
-    // Citizen ID files (optional for gym owner)
-    if (values.frontCitizenIdFile && values.frontCitizenIdFile.originFileObj) {
-      formData.append(
-        "frontCitizenIdFile",
-        values.frontCitizenIdFile.originFileObj
+    // Citizen ID files - handle file list from Ant Design Upload
+    if (
+      values.frontCitizenIdFile &&
+      Array.isArray(values.frontCitizenIdFile) &&
+      values.frontCitizenIdFile.length > 0
+    ) {
+      const frontFile = values.frontCitizenIdFile[0];
+      console.log("Front file object:", frontFile);
+      if (frontFile.originFileObj) {
+        console.log("Appending frontCitizenIdFile from originFileObj");
+        formData.append("frontCitizenIdFile", frontFile.originFileObj);
+      } else if (frontFile instanceof File) {
+        console.log("Appending frontCitizenIdFile as File");
+        formData.append("frontCitizenIdFile", frontFile);
+      } else {
+        console.warn(
+          "Front file does not have originFileObj or is not a File:",
+          frontFile
+        );
+      }
+    } else {
+      console.warn(
+        "No frontCitizenIdFile found or empty array:",
+        values.frontCitizenIdFile
       );
     }
-    if (values.backCitizenIdFile && values.backCitizenIdFile.originFileObj) {
-      formData.append(
-        "backCitizenIdFile",
-        values.backCitizenIdFile.originFileObj
+
+    if (
+      values.backCitizenIdFile &&
+      Array.isArray(values.backCitizenIdFile) &&
+      values.backCitizenIdFile.length > 0
+    ) {
+      const backFile = values.backCitizenIdFile[0];
+      console.log("Back file object:", backFile);
+      if (backFile.originFileObj) {
+        console.log("Appending backCitizenIdFile from originFileObj");
+        formData.append("backCitizenIdFile", backFile.originFileObj);
+      } else if (backFile instanceof File) {
+        console.log("Appending backCitizenIdFile as File");
+        formData.append("backCitizenIdFile", backFile);
+      } else {
+        console.warn(
+          "Back file does not have originFileObj or is not a File:",
+          backFile
+        );
+      }
+    } else {
+      console.warn(
+        "No backCitizenIdFile found or empty array:",
+        values.backCitizenIdFile
       );
     }
 
@@ -489,18 +578,59 @@ export default function ManageGymPage() {
       "citizenCardPermanentAddress",
       values.citizenCardPermanentAddress || ""
     );
-    formData.append("identityCardDate", values.identityCardDate || "");
+    // Format date for API (YYYY-MM-DD format)
+    if (values.identityCardDate) {
+      const dateValue = values.identityCardDate.format
+        ? values.identityCardDate.format("YYYY-MM-DD")
+        : values.identityCardDate;
+      formData.append("identityCardDate", dateValue);
+    } else {
+      formData.append("identityCardDate", "");
+    }
     formData.append("businessAddress", values.address || "");
-    formData.append("openTime", values.openTime || "");
-    formData.append("closeTime", values.closeTime || "");
+    // Format time for API (HH:mm format)
+    if (values.openTime) {
+      const openTimeValue = values.openTime.format
+        ? values.openTime.format("HH:mm")
+        : values.openTime;
+      formData.append("openTime", openTimeValue);
+    } else {
+      formData.append("openTime", "");
+    }
+    if (values.closeTime) {
+      const closeTimeValue = values.closeTime.format
+        ? values.closeTime.format("HH:mm")
+        : values.closeTime;
+      formData.append("closeTime", closeTimeValue);
+    } else {
+      formData.append("closeTime", "");
+    }
 
     try {
+      // Debug: Log form values to verify files are captured
+      console.log("Form values:", {
+        frontCitizenIdFile: values.frontCitizenIdFile,
+        backCitizenIdFile: values.backCitizenIdFile,
+        identityCardDate: values.identityCardDate,
+      });
+
+      // Debug: Log FormData entries
+      console.log("FormData entries:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ": ", pair[1]);
+      }
+
       const response = await authService.register(formData);
       console.log("Add Gym Response Data:", response);
       toast.success("Thêm phòng gym thành công!");
       fetchGym();
       setIsModalAddGymOpen(false);
       formAdd.resetFields();
+      // Clear file lists explicitly
+      formAdd.setFieldsValue({
+        frontCitizenIdFile: [],
+        backCitizenIdFile: [],
+      });
       setPosition(null);
       setMapCenter(center);
       setMainImageList({});
@@ -702,145 +832,6 @@ export default function ManageGymPage() {
             </ConfigProvider>
           </Card>
         </div>
-
-        {/* Statistics Cards */}
-        <Row gutter={[20, 20]} className="mb-8">
-          <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100">
-              <Statistic
-                title={
-                  <span className="text-gray-600 font-medium">
-                    Tổng Số Phòng Gym
-                  </span>
-                }
-                value={statistics.totalGyms}
-                prefix={<HomeOutlined className="text-blue-500" />}
-                valueStyle={{
-                  color: "#1890ff",
-                  fontSize: "28px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100">
-              <Statistic
-                title={
-                  <span className="text-gray-600 font-medium">
-                    Hot Research
-                  </span>
-                }
-                value={statistics.hotResearchGyms}
-                prefix={<FireOutlined className="text-red-500" />}
-                valueStyle={{
-                  color: "#ff4d4f",
-                  fontSize: "28px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100">
-              <Statistic
-                title={
-                  <span className="text-gray-600 font-medium">
-                    Phòng Gym Thường
-                  </span>
-                }
-                value={statistics.normalGyms}
-                prefix={<BankOutlined className="text-green-500" />}
-                valueStyle={{
-                  color: "#52c41a",
-                  fontSize: "28px",
-                  fontWeight: "bold",
-                }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Main Content */}
-        <Card className="border-0 shadow-xl">
-          <ConfigProvider
-            theme={{ components: { Table: { headerBg: "#FFE5E9" } } }}
-          >
-            {/* Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <div className="flex-1 max-w-md">
-                <Input
-                  placeholder="Tìm kiếm theo tên gym, địa chỉ, người đại diện..."
-                  prefix={<SearchOutlined className="text-gray-400" />}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  allowClear
-                  size="large"
-                  className="rounded-lg shadow-sm"
-                />
-              </div>
-
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                size="large"
-                className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 rounded-lg px-6 shadow-lg hover:shadow-xl transition-all duration-300"
-                onClick={() => setIsModalAddGymOpen(true)}
-              >
-                Thêm Phòng Gym
-              </Button>
-            </div>
-
-            {/* Results Summary */}
-            <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-              <Text className="text-gray-600">
-                Hiển thị{" "}
-                <span className="font-semibold text-orange-600">
-                  {filteredData.length}
-                </span>{" "}
-                trong tổng số{" "}
-                <span className="font-semibold">{statistics.totalGyms}</span>{" "}
-                phòng gym
-                {searchText && (
-                  <span className="ml-2">
-                    | Tìm kiếm: "
-                    <span className="font-semibold text-blue-600">
-                      {searchText}
-                    </span>
-                    "
-                  </span>
-                )}
-              </Text>
-            </div>
-
-            {/* Table */}
-            <Table
-              rowKey="id"
-              dataSource={filteredData}
-              columns={columns}
-              pagination={{
-                current: pagination.current,
-                pageSize: pagination.pageSize,
-                total: pagination.total,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} của ${total} mục`,
-                position: ["bottomCenter"],
-              }}
-              onChange={handleTableChange}
-              className="rounded-lg overflow-hidden"
-              scroll={{ x: 1000 }}
-              size="middle"
-              onRow={(record) => ({
-                onClick: () => {
-                  setSelectedGym(record);
-                  setIsModalGymDetailOpen(true);
-                },
-                style: { cursor: "pointer" },
-              })}
-            />
-          </ConfigProvider>
-        </Card>
       </div>
 
       {/* Gym Detail Modal */}
@@ -913,14 +904,6 @@ export default function ManageGymPage() {
                       {selectedGym.gymName || "N/A"}
                     </div>
                   </Descriptions.Item>
-
-                  <Descriptions.Item label="Địa Chỉ" span={2}>
-                    <div className="flex items-center gap-2">
-                      <EnvironmentOutlined className="text-red-500" />
-                      <span>{selectedGym.address || "N/A"}</span>
-                    </div>
-                  </Descriptions.Item>
-
                   <Descriptions.Item label="Hoạt Động Từ">
                     <div className="flex items-center gap-2">
                       <CalendarOutlined className="text-orange-500" />
@@ -940,25 +923,11 @@ export default function ManageGymPage() {
                     </Tag>
                   </Descriptions.Item>
 
-                  <Descriptions.Item label="Tọa Độ" span={2}>
-                    {selectedGym.latitude && selectedGym.longitude ? (
-                      <div className="flex gap-4">
-                        <div className="flex items-center gap-1">
-                          <IoLocationSharp className="text-red-500" />
-                          <span className="font-mono text-xs bg-gray-50 p-1 rounded">
-                            Lat: {selectedGym.latitude}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <IoLocationSharp className="text-red-500" />
-                          <span className="font-mono text-xs bg-gray-50 p-1 rounded">
-                            Lng: {selectedGym.longitude}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">Chưa có tọa độ</span>
-                    )}
+                  <Descriptions.Item label="Địa Chỉ" span={2}>
+                    <div className="flex items-center gap-2">
+                      <EnvironmentOutlined className="text-red-500" />
+                      <span>{selectedGym.address || "N/A"}</span>
+                    </div>
                   </Descriptions.Item>
                 </Descriptions>
               </Card>
@@ -1079,6 +1048,11 @@ export default function ManageGymPage() {
         onCancel={() => {
           setIsModalAddGymOpen(false);
           formAdd.resetFields();
+          // Clear file lists explicitly
+          formAdd.setFieldsValue({
+            frontCitizenIdFile: [],
+            backCitizenIdFile: [],
+          });
           setPosition(null);
           setMapCenter(center);
           setMainImageList({});
@@ -1423,10 +1397,12 @@ export default function ManageGymPage() {
                     },
                   ]}
                 >
-                  <Input
-                    type="date"
+                  <DatePicker
                     size="large"
-                    prefix={<CalendarOutlined className="text-gray-400" />}
+                    style={{ width: "100%" }}
+                    format="YYYY-MM-DD"
+                    placeholder="Chọn ngày cấp CCCD"
+                    suffixIcon={<CalendarOutlined className="text-gray-400" />}
                   />
                 </Form.Item>
               </Col>
@@ -1463,6 +1439,13 @@ export default function ManageGymPage() {
                     </span>
                   }
                   name="frontCitizenIdFile"
+                  valuePropName="fileList"
+                  getValueFromEvent={(e) => {
+                    if (Array.isArray(e)) {
+                      return e;
+                    }
+                    return e?.fileList;
+                  }}
                   rules={[
                     {
                       required: true,
@@ -1476,10 +1459,13 @@ export default function ManageGymPage() {
                     beforeUpload={() => false}
                     accept="image/*"
                   >
-                    <div>
-                      <PlusOutlined />
-                      <div style={{ marginTop: 8 }}>Mặt Trước</div>
-                    </div>
+                    {(formAdd.getFieldValue("frontCitizenIdFile")?.length ||
+                      0) >= 1 ? null : (
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>Mặt Trước</div>
+                      </div>
+                    )}
                   </Upload>
                 </Form.Item>
               </Col>
@@ -1491,6 +1477,13 @@ export default function ManageGymPage() {
                     </span>
                   }
                   name="backCitizenIdFile"
+                  valuePropName="fileList"
+                  getValueFromEvent={(e) => {
+                    if (Array.isArray(e)) {
+                      return e;
+                    }
+                    return e?.fileList;
+                  }}
                   rules={[
                     {
                       required: true,
@@ -1504,10 +1497,13 @@ export default function ManageGymPage() {
                     beforeUpload={() => false}
                     accept="image/*"
                   >
-                    <div>
-                      <PlusOutlined />
-                      <div style={{ marginTop: 8 }}>Mặt Sau</div>
-                    </div>
+                    {(formAdd.getFieldValue("backCitizenIdFile")?.length ||
+                      0) >= 1 ? null : (
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>Mặt Sau</div>
+                      </div>
+                    )}
                   </Upload>
                 </Form.Item>
               </Col>
@@ -1540,10 +1536,12 @@ export default function ManageGymPage() {
                     { required: true, message: "Vui lòng nhập giờ mở cửa" },
                   ]}
                 >
-                  <Input
-                    type="time"
+                  <TimePicker
                     size="large"
-                    prefix={<CalendarOutlined className="text-gray-400" />}
+                    style={{ width: "100%" }}
+                    format="HH:mm"
+                    placeholder="Chọn giờ mở cửa"
+                    suffixIcon={<CalendarOutlined className="text-gray-400" />}
                   />
                 </Form.Item>
               </Col>
@@ -1559,93 +1557,16 @@ export default function ManageGymPage() {
                     { required: true, message: "Vui lòng nhập giờ đóng cửa" },
                   ]}
                 >
-                  <Input
-                    type="time"
+                  <TimePicker
                     size="large"
-                    prefix={<CalendarOutlined className="text-gray-400" />}
+                    style={{ width: "100%" }}
+                    format="HH:mm"
+                    placeholder="Chọn giờ đóng cửa"
+                    suffixIcon={<CalendarOutlined className="text-gray-400" />}
                   />
                 </Form.Item>
               </Col>
             </Row>
-          </Card>
-
-          <Card
-            size="small"
-            className="mb-4 shadow-sm"
-            title={
-              <span className="flex items-center gap-2 text-base font-semibold text-[#ED2A46]">
-                <FaBuilding />
-                Hình Ảnh Phòng Gym
-              </span>
-            }
-            bordered={true}
-            style={{ borderColor: "#FFE5E9" }}
-          >
-            {/* Main Image Upload */}
-            <Form.Item
-              label={
-                <span className="font-semibold text-gray-700">
-                  Ảnh đại diện phòng gym
-                </span>
-              }
-              name="mainImage"
-              rules={[
-                { required: true, message: "Vui lòng tải lên ảnh đại diện" },
-              ]}
-            >
-              <Upload
-                listType="picture-card"
-                fileList={mainImageList ? [mainImageList] : []}
-                onChange={({ fileList }) => {
-                  const latestFile = fileList[fileList.length - 1] || null;
-                  setMainImageList(latestFile);
-                  formAdd.setFieldsValue({ mainImage: latestFile });
-                }}
-                beforeUpload={() => false}
-                accept="image/*"
-                maxCount={1}
-              >
-                {!mainImageList && (
-                  <div>
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Tải lên</div>
-                  </div>
-                )}
-              </Upload>
-            </Form.Item>
-
-            {/* Multiple Images Upload */}
-            <Form.Item
-              label={
-                <span className="font-semibold text-gray-700">
-                  Ảnh bổ sung phòng gym
-                </span>
-              }
-              name="images"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng tải lên ít nhất 1 ảnh bổ sung",
-                },
-              ]}
-            >
-              <Upload
-                listType="picture-card"
-                fileList={imagesList}
-                onChange={({ fileList }) => {
-                  setImagesList(fileList);
-                  formAdd.setFieldsValue({ images: fileList });
-                }}
-                beforeUpload={() => false}
-                accept="image/*"
-                multiple
-              >
-                <div>
-                  <PlusOutlined />
-                  <div style={{ marginTop: 8 }}>Tải lên</div>
-                </div>
-              </Upload>
-            </Form.Item>
           </Card>
 
           <div className="text-center pt-6 border-t mt-6">
@@ -1655,6 +1576,11 @@ export default function ManageGymPage() {
                 onClick={() => {
                   setIsModalAddGymOpen(false);
                   formAdd.resetFields();
+                  // Clear file lists explicitly
+                  formAdd.setFieldsValue({
+                    frontCitizenIdFile: [],
+                    backCitizenIdFile: [],
+                  });
                   setPosition(null);
                   setMapCenter(center);
                   setMainImageList({});
