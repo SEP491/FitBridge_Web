@@ -808,7 +808,7 @@ export default function ManageAssetsPage() {
                   <Select.OptGroup label="🏋️ Thiết bị (Equipment)">
                     {equipmentMetadata.map((item) => (
                       <Option key={item.id} value={item.id}>
-                        {item.vietnameseName} -{" "}
+                        {item.vietNameseName} -{" "}
                         {item.equipmentCategory || item.assetType}
                       </Option>
                     ))}
@@ -818,7 +818,8 @@ export default function ManageAssetsPage() {
                   <Select.OptGroup label="🏢 Cơ sở vật chất (Facility)">
                     {facilityMetadata.map((item) => (
                       <Option key={item.id} value={item.id}>
-                        {item.name} - {item.facilityCategory || item.assetType}
+                        {item.vietNameseName} -{" "}
+                        {item.facilityCategory || item.assetType}
                       </Option>
                     ))}
                   </Select.OptGroup>
