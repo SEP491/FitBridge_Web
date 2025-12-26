@@ -83,7 +83,6 @@ export default function ManageAssetsPage() {
         gymOwnerId: user?.id,
         page,
         size: pageSize,
-        ...(filters.search && { search: filters.search }),
         ...(filters.assetType && { assetType: filters.assetType }),
         ...(filters.equipmentCategory && {
           equipmentCategory: filters.equipmentCategory,
@@ -92,15 +91,26 @@ export default function ManageAssetsPage() {
 
       const response = await assetsService.getGymAssets(params);
       if (response.status === "200") {
-        const items = response.data.items || [];
+        let items = response.data.items || [];
+
+        // Frontend search filter by vietnameseName
+        if (filters.search) {
+          items = items.filter((item) =>
+            item.vietnameseName
+              ?.toLowerCase()
+              .includes(filters.search.toLowerCase())
+          );
+        }
+
         setAssets(items);
         setPagination({
           current: response.data.page,
           pageSize: response.data.size,
-          total: response.data.total,
+          // Use filtered items length for total when searching
+          total: filters.search ? items.length : response.data.total,
         });
 
-        // Calculate statistics
+        // Calculate statistics based on filtered items
         const equipmentCount = items.filter(
           (a) => a.assetType === "Equipment"
         ).length;
@@ -113,7 +123,9 @@ export default function ManageAssetsPage() {
         );
 
         setStatistics({
-          totalAssets: response.data.total || items.length,
+          totalAssets: filters.search
+            ? items.length
+            : response.data.total || items.length,
           equipmentCount,
           facilityCount,
           totalQuantity,
@@ -338,11 +350,18 @@ export default function ManageAssetsPage() {
   const columns = [
     {
       title: "Tên cơ sở vật chất",
-      dataIndex: "assetName",
-      key: "assetName",
+      dataIndex: "vietnameseName",
+      key: "vietnameseName",
       width: 200,
       render: (text, record) => (
-        <div style={{ display: "flex", alignItems: "center", justifyContent:'start', gap:10 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "start",
+            gap: 10,
+          }}
+        >
           {record.imageUrls && record.imageUrls.length > 0 ? (
             <Image
               src={record.imageUrls[0]}
@@ -350,7 +369,7 @@ export default function ManageAssetsPage() {
               width={50}
               height={50}
               style={{
-                maxHeight:40,
+                maxHeight: 40,
                 borderRadius: 8,
                 objectFit: "cover",
                 display: "flex",
@@ -435,8 +454,8 @@ export default function ManageAssetsPage() {
     },
     {
       title: "Mô tả",
-      dataIndex: "description",
-      key: "description",
+      dataIndex: "vietnameseDescription",
+      key: "vietnameseDescription",
       ellipsis: {
         showTitle: false,
       },
@@ -525,7 +544,7 @@ export default function ManageAssetsPage() {
       <div className=" min-h-screen">
         {/* Header */}
         <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
+          <h1 className="text-3xl font-bold text-[#ED2A46] flex items-center gap-2 mb-4">
             <AppstoreOutlined style={{ marginRight: 12, color: "#ed2a46" }} />
             Quản lý cơ sở vật chất
           </h1>
@@ -789,7 +808,8 @@ export default function ManageAssetsPage() {
                   <Select.OptGroup label="🏋️ Thiết bị (Equipment)">
                     {equipmentMetadata.map((item) => (
                       <Option key={item.id} value={item.id}>
-                        {item.name} - {item.equipmentCategory || item.assetType}
+                        {item.vietnameseName} -{" "}
+                        {item.equipmentCategory || item.assetType}
                       </Option>
                     ))}
                   </Select.OptGroup>
@@ -879,7 +899,7 @@ export default function ManageAssetsPage() {
                   <br />
                   <strong style={{ color: "#1f2937" }}>Mô tả:</strong>{" "}
                   <span style={{ color: "#6b7280" }}>
-                    {selectedAsset.description}
+                    {selectedAsset.vietnameseDescription}
                   </span>
                 </div>
               </Card>
