@@ -672,14 +672,14 @@ const ManageContractPage = () => {
         footer={
           <div className="flex justify-end gap-3 px-6 py-4  border-t">
             <Button onClick={() => setIsPreviewVisible(false)}>Đóng</Button>
-            <Button
+            {/* <Button
               type="primary"
               icon={<DownloadOutlined />}
               onClick={handleDownloadPreviewPDF}
               className="bg-gradient-to-r from-orange-400 to-orange-600 border-0 px-6 shadow-lg"
             >
               Tải xuống PDF
-            </Button>
+            </Button> */}
           </div>
         }
         bodyStyle={{ padding: 0, maxHeight: "75vh", overflowY: "auto" }}

@@ -430,14 +430,14 @@ const ContractSigningPage = () => {
           <Button key="cancel" onClick={() => setIsPreviewVisible(false)}>
             Đóng
           </Button>,
-          <Button
-            key="download"
-            type="primary"
-            icon={<DownloadOutlined />}
-            onClick={handleDownloadPreviewPDF}
-          >
-            Tải xuống PDF
-          </Button>,
+          // <Button
+          //   key="download"
+          //   type="primary"
+          //   icon={<DownloadOutlined />}
+          //   onClick={handleDownloadPreviewPDF}
+          // >
+          //   Tải xuống PDF
+          // </Button>,
         ]}
       >
         {previewContract && (
