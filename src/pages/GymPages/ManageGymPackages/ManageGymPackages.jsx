@@ -1135,14 +1135,13 @@ export default function ManageGymPackages() {
                 bordered={true}
                 style={{ borderColor: "#FFE5E9" }}
               >
-                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+                <Descriptions column={1} bordered size="small">
                   <Descriptions.Item
                     label={
                       <span>
                         <IdcardOutlined /> ID
                       </span>
                     }
-                    span={2}
                   >
                     <div className="font-mono text-xs bg-gray-50 p-2 rounded inline-block">
                       {selectedCourse.id}
@@ -1184,6 +1183,13 @@ export default function ManageGymPackages() {
                       {selectedCourse.price?.toLocaleString("vi-VN")}₫
                     </span>
                   </Descriptions.Item>
+                  {selectedCourse.type === "WithPt" && (
+                    <Descriptions.Item label="Giá PT" span={2}>
+                      <span className="text-xl font-bold text-green-600">
+                        {selectedCourse.ptPrice?.toLocaleString("vi-VN")}₫
+                      </span>
+                    </Descriptions.Item>
+                  )}
                   <Descriptions.Item
                     label={
                       <span>
