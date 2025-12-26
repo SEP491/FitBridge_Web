@@ -462,11 +462,6 @@ export default function ProductDetailModal({
               </div>
 
               <Descriptions column={{ xs: 1, sm: 2 }} bordered size="middle">
-                <Descriptions.Item label="Mô Tả" span={2}>
-                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                    {selectedProduct.description || "Không có mô tả"}
-                  </div>
-                </Descriptions.Item>
                 <Descriptions.Item label="Tổng Đã Bán">
                   <span className="font-bold text-orange-600">
                     {selectedProduct.totalSold || 0}
@@ -501,6 +496,11 @@ export default function ProductDetailModal({
                         }
                       )
                     : "N/A"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Mô Tả" span={2}>
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                    {selectedProduct.description || "Không có mô tả"}
+                  </div>
                 </Descriptions.Item>
               </Descriptions>
             </Card>

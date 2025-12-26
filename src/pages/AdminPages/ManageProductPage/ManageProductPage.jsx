@@ -25,6 +25,7 @@ import {
   ShoppingOutlined,
   DollarOutlined,
   AppstoreOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import adminService from "../../../services/adminServices";
 import defaultImage from "../../../assets/LogoColor.png";
@@ -830,16 +831,26 @@ export default function ManageProductPage() {
                   className="rounded-lg"
                 />
               </div>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleOpenCreateProductModal}
-                className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg hover:shadow-xl transition-all duration-300"
-                size="large"
-                loading={creating}
-              >
-                Thêm Sản Phẩm
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => fetchProducts(pagination.current, pagination.pageSize)}
+                  size="large"
+                  loading={loading}
+                >
+                  Làm Mới
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleOpenCreateProductModal}
+                  className="bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                  size="large"
+                  loading={creating}
+                >
+                  Thêm Sản Phẩm
+                </Button>
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <Select
