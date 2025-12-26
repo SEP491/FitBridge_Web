@@ -95,10 +95,12 @@ export default function ManageAssetsPage() {
 
         // Frontend search filter by vietnameseName
         if (filters.search) {
-          items = items.filter((item) =>
-            item.vietnameseName
-              ?.toLowerCase()
-              .includes(filters.search.toLowerCase())
+          items = items.filter(
+            (item) =>
+              item.vietnameseName ||
+              item.assetName
+                ?.toLowerCase()
+                .includes(filters.search.toLowerCase())
           );
         }
 
@@ -395,7 +397,9 @@ export default function ManageAssetsPage() {
               <InboxOutlined style={{ color: "#999" }} />
             </div>
           )}
-          <span style={{ fontWeight: 500, color: "#1f2937" }}>{text}</span>
+          <span style={{ fontWeight: 500, color: "#1f2937" }}>
+            {text || record.assetName}
+          </span>
         </div>
       ),
     },
@@ -459,9 +463,9 @@ export default function ManageAssetsPage() {
       ellipsis: {
         showTitle: false,
       },
-      render: (text) => (
+      render: (text, record) => (
         <Tooltip placement="topLeft" title={text}>
-          <span style={{ color: "#6b7280" }}>{text}</span>
+          <span style={{ color: "#6b7280" }}>{text || record.description}</span>
         </Tooltip>
       ),
     },
