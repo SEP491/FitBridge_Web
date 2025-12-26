@@ -605,7 +605,9 @@ const ManageContractPage = () => {
               }}
               options={users.map((user) => ({
                 value: user.id,
-                label: `${user.fullName} - ${user.role}`,
+                label: `${user.fullName} - ${user.role} ${
+                  user?.gymName ? `- ${user?.gymName}` : ""
+                }`,
               }))}
             />
           </Form.Item>
