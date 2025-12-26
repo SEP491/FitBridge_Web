@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import hotResearchService from "../../services/hotResearchService";
 
 const THEME_COLORS = {
   primary: "#ED2A46",
@@ -55,6 +56,16 @@ export default function OrderProcessPage() {
           status: status || "FAILED",
           isCancelled: isCancelled,
         });
+
+        // Call cancelPayment API when order process fails
+        if (orderCode) {
+          hotResearchService
+            .cancelPayment({ orderCode: parseInt(orderCode) })
+            .catch((error) => {
+              console.error("Error canceling payment:", error);
+              // Silently fail - don't break the UI if cancel API fails
+            });
+        }
       }
     }, 1500);
 
@@ -70,10 +81,6 @@ export default function OrderProcessPage() {
 
   const handleGoHome = () => {
     navigate("/");
-  };
-
-  const handleGoToOrders = () => {
-    navigate("/orders");
   };
 
   // Processing State
@@ -165,16 +172,6 @@ export default function OrderProcessPage() {
               style={{ backgroundColor: THEME_COLORS.primary }}
             >
               Về trang chủ
-            </button>
-            <button
-              onClick={handleGoToOrders}
-              className="w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all border-2 hover:bg-gray-50"
-              style={{
-                borderColor: THEME_COLORS.primary,
-                color: THEME_COLORS.primary,
-              }}
-            >
-              Xem đơn hàng
             </button>
           </div>
         </div>
@@ -268,16 +265,6 @@ export default function OrderProcessPage() {
             style={{ backgroundColor: THEME_COLORS.primary }}
           >
             Về trang chủ
-          </button>
-          <button
-            onClick={handleGoToOrders}
-            className="w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all border-2 hover:bg-gray-50"
-            style={{
-              borderColor: THEME_COLORS.primary,
-              color: THEME_COLORS.primary,
-            }}
-          >
-            Xem đơn hàng
           </button>
         </div>
       </div>

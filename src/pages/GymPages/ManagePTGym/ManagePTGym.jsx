@@ -38,6 +38,7 @@ import {
   WomanOutlined,
   IdcardOutlined,
   HomeOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import gymService from "../../../services/gymServices";
 import dayjs from "dayjs";
@@ -79,6 +80,14 @@ export default function ManagePTGym() {
     femalePTs: 0,
     averageExperience: 0,
   });
+
+  // Minimum slot state
+  const [minimumSlot, setMinimumSlot] = useState(0);
+  const [loadingMinimumSlot, setLoadingMinimumSlot] = useState(false);
+  const [isModalMinimumSlotOpen, setIsModalMinimumSlotOpen] = useState(false);
+  const [formMinimumSlot] = Form.useForm();
+  const [loadingUpdateMinimumSlot, setLoadingUpdateMinimumSlot] =
+    useState(false);
 
   const fetchPTGym = useCallback(
     async (page = 1, pageSize = 10) => {
@@ -126,9 +135,45 @@ export default function ManagePTGym() {
     [user?.id]
   );
 
+  // Fetch minimum slot
+  const fetchMinimumSlot = async () => {
+    setLoadingMinimumSlot(true);
+    try {
+      const response = await gymService.getMinimunSlot();
+      setMinimumSlot(response.data || 0);
+    } catch (error) {
+      console.error("Error fetching minimum slot:", error);
+      toast.error("Lỗi khi tải số buổi tối thiểu");
+    } finally {
+      setLoadingMinimumSlot(false);
+    }
+  };
+
+  // Update minimum slot
+  const handleUpdateMinimumSlot = async (values) => {
+    setLoadingUpdateMinimumSlot(true);
+    try {
+      await gymService.updateMinimunSlot({
+        minimumSlot: values.minimumSlot,
+      });
+      toast.success("Cập nhật số buổi tối thiểu thành công");
+      setMinimumSlot(values.minimumSlot);
+      setIsModalMinimumSlotOpen(false);
+      formMinimumSlot.resetFields();
+    } catch (error) {
+      console.error("Error updating minimum slot:", error);
+      toast.error(
+        error.response?.data?.message || "Lỗi khi cập nhật số buổi tối thiểu"
+      );
+    } finally {
+      setLoadingUpdateMinimumSlot(false);
+    }
+  };
+
   useEffect(() => {
     fetchPTGym();
-  }, [fetchPTGym]);
+    fetchMinimumSlot();
+  }, []);
 
   const handleTableChange = (newPagination) => {
     fetchPTGym(newPagination.current, newPagination.pageSize);
@@ -192,59 +237,6 @@ export default function ManagePTGym() {
         }
       },
     });
-  };
-
-  const handleEdit = (record) => {
-    setEditingPT(record);
-    // Convert goalTraining string to array and map Vietnamese to English
-    const goalTrainings = record.goalTraining
-      ? record.goalTraining
-          .split(",")
-          .map((goal) => mapVietnameseToEnglish(goal.trim()))
-          .filter((goal) => goal) // Remove any undefined mappings
-      : [];
-
-    // Convert gender to isMale boolean
-    const isMale = record.gender === "Male";
-
-    formEdit.setFieldsValue({
-      fullName: record.fullName,
-      dob: record.dob ? dayjs(record.dob) : null,
-      isMale: isMale,
-      weight: record.weight,
-      height: record.height,
-      experience: record.experience,
-      goalTrainings: goalTrainings,
-    });
-    setIsModalEditGymOpen(true);
-  };
-
-  const handleUpdatePTGym = async (values) => {
-    if (!editingPT?.id) return;
-
-    setLoadingEdit(true);
-    const requestData = {
-      fullName: values.fullName,
-      dob: dayjs(values.dob).format("YYYY-MM-DD"),
-      weight: values.weight,
-      height: values.height,
-      goalTrainings: values.goalTrainings,
-      experience: values.experience,
-      isMale: values.isMale,
-    };
-
-    try {
-      await gymService.updatePT(editingPT.id, requestData);
-      toast.success("Cập nhật PT thành công");
-      fetchPTGym(pagination.current, pagination.pageSize);
-      setIsModalEditGymOpen(false);
-      formEdit.resetFields();
-      setEditingPT(null);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi cập nhật PT thất bại");
-    } finally {
-      setLoadingEdit(false);
-    }
   };
 
   const columns = [
@@ -477,6 +469,32 @@ export default function ManagePTGym() {
                   fontWeight: "bold",
                 }}
               />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <div className="flex items-center justify-between">
+                <Statistic
+                  title="Số buổi tối thiểu/tuần"
+                  value={loadingMinimumSlot ? "-" : minimumSlot}
+                  suffix="buổi"
+                  prefix={<ClockCircleOutlined style={{ color: "#52c41a" }} />}
+                  valueStyle={{
+                    color: "#52c41a",
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                  }}
+                />
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => {
+                    formMinimumSlot.setFieldsValue({ minimumSlot });
+                    setIsModalMinimumSlotOpen(true);
+                  }}
+                  className="text-gray-500 hover:text-[#52c41a]"
+                />
+              </div>
             </Card>
           </Col>
         </Row>
@@ -880,16 +898,6 @@ export default function ManagePTGym() {
               {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                 <Button
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    setIsModalPTDetailOpen(false);
-                    handleEdit(selectedPT);
-                  }}
-                  className="bg-orange-500 hover:bg-orange-600 text-white border-0"
-                >
-                  Chỉnh Sửa
-                </Button>
-                <Button
                   danger
                   icon={<DeleteOutlined />}
                   onClick={() => {
@@ -1220,225 +1228,87 @@ export default function ManagePTGym() {
         </Form>
       </Modal>
 
-      {/* Edit PT Modal */}
+      {/* Update Minimum Slot Modal */}
       <Modal
-        open={isModalEditGymOpen}
+        open={isModalMinimumSlotOpen}
         onCancel={() => {
-          setIsModalEditGymOpen(false);
-          formEdit.resetFields();
-          setEditingPT(null);
+          setIsModalMinimumSlotOpen(false);
+          formMinimumSlot.resetFields();
         }}
         title={
           <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
-            <div className="p-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg">
-              <IoBarbell className="text-white text-xl" />
+            <div className="p-2 bg-gradient-to-r from-green-400 to-green-500 rounded-lg">
+              <ClockCircleOutlined className="text-white text-xl" />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900 m-0">
-                Cập nhật PT
+                Cập Nhật Số Buổi Tối Thiểu
               </h2>
               <p className="text-sm text-gray-500 m-0">
-                Cập nhật thông tin huấn luyện viên
+                Thiết lập số buổi tối thiểu mà PT phải kích hoạt trong 1 tuần
               </p>
             </div>
           </div>
         }
         footer={null}
-        width={800}
+        width={600}
         className="top-8"
       >
         <Form
-          form={formEdit}
+          form={formMinimumSlot}
           layout="vertical"
           requiredMark={false}
-          onFinish={handleUpdatePTGym}
+          onFinish={handleUpdateMinimumSlot}
         >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label={
-                  <span className="text-base font-semibold text-gray-700">
-                    Họ và tên
-                  </span>
-                }
-                name="fullName"
-                rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
-              >
-                <Input
-                  placeholder="Nguyễn Văn A"
-                  size="large"
-                  prefix={<UserOutlined className="text-gray-400" />}
-                />
-              </Form.Item>
-            </Col>
+          <Form.Item
+            label={
+              <span className="text-base font-semibold text-gray-700">
+                Số buổi tối thiểu trong tuần
+              </span>
+            }
+            name="minimumSlot"
+            rules={[
+              {
+                required: true,
+                message: "Vui lòng nhập số buổi tối thiểu",
+              },
+              {
+                type: "number",
+                min: 0,
+                message: "Số buổi phải lớn hơn hoặc bằng 0",
+              },
+            ]}
+          >
+            <InputNumber
+              min={0}
+              placeholder="Nhập số buổi tối thiểu"
+              className="!w-full"
+              size="large"
+              prefix={<ClockCircleOutlined className="text-gray-400" />}
+            />
+          </Form.Item>
 
-            <Col span={12}>
-              <Form.Item
-                label={
-                  <span className="text-base font-semibold text-gray-700">
-                    Ngày sinh
-                  </span>
-                }
-                name="dob"
-                rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
-              >
-                <DatePicker
-                  format="DD-MM-YYYY"
-                  className="w-full"
-                  placeholder="Chọn ngày sinh"
-                  size="large"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                label={
-                  <span className="text-base font-semibold text-gray-700">
-                    Cân nặng (kg)
-                  </span>
-                }
-                name="weight"
-                rules={[{ required: true, message: "Vui lòng nhập cân nặng" }]}
-              >
-                <InputNumber
-                  min={0}
-                  placeholder="70"
-                  className="!w-full"
-                  size="large"
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={8}>
-              <Form.Item
-                label={
-                  <span className="text-base font-semibold text-gray-700">
-                    Chiều cao (cm)
-                  </span>
-                }
-                name="height"
-                rules={[{ required: true, message: "Vui lòng nhập chiều cao" }]}
-              >
-                <InputNumber
-                  min={0}
-                  placeholder="170"
-                  className="!w-full"
-                  size="large"
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={8}>
-              <Form.Item
-                label={
-                  <span className="text-base font-semibold text-gray-700">
-                    Kinh nghiệm (năm)
-                  </span>
-                }
-                name="experience"
-                rules={[
-                  { required: true, message: "Vui lòng nhập kinh nghiệm" },
-                ]}
-              >
-                <InputNumber
-                  min={0}
-                  placeholder="2"
-                  className="!w-full"
-                  size="large"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label={
-                  <span className="text-base font-semibold text-gray-700">
-                    Giới tính
-                  </span>
-                }
-                name="isMale"
-                rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
-              >
-                <Select placeholder="Chọn giới tính" size="large">
-                  <Select.Option value={true}>Nam</Select.Option>
-                  <Select.Option value={false}>Nữ</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-
-            <Col span={12}>
-              <Form.Item
-                label={
-                  <span className="text-base font-semibold text-gray-700">
-                    Chuyên môn tập luyện
-                  </span>
-                }
-                name="goalTrainings"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng chọn ít nhất một chuyên môn",
-                  },
-                ]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="Chọn các bộ phận cơ thể chuyên môn"
-                  size="large"
-                  allowClear
-                  maxTagCount="responsive"
-                >
-                  <Select.Option value="Chest">Ngực (Chest)</Select.Option>
-                  <Select.Option value="Back">Lưng (Back)</Select.Option>
-                  <Select.Option value="Shoulders">
-                    Vai (Shoulders)
-                  </Select.Option>
-                  <Select.Option value="Arms">Tay (Arms)</Select.Option>
-                  <Select.Option value="Legs">Chân (Legs)</Select.Option>
-                  <Select.Option value="Core">Bụng (Core)</Select.Option>
-                  <Select.Option value="Glutes">Mông (Glutes)</Select.Option>
-                  <Select.Option value="Cardio">
-                    Tim mạch (Cardio)
-                  </Select.Option>
-                  <Select.Option value="Flexibility">
-                    Dẻo dai (Flexibility)
-                  </Select.Option>
-                  <Select.Option value="Strength">
-                    Sức mạnh (Strength)
-                  </Select.Option>
-                  <Select.Option value="Endurance">
-                    Sức bền (Endurance)
-                  </Select.Option>
-                  <Select.Option value="Weight Loss">
-                    Giảm cân (Weight Loss)
-                  </Select.Option>
-                  <Select.Option value="Muscle Gain">
-                    Tăng cơ (Muscle Gain)
-                  </Select.Option>
-                  <Select.Option value="Athletic Performance">
-                    Thể thao (Athletic Performance)
-                  </Select.Option>
-                  <Select.Option value="Rehabilitation">
-                    Phục hồi chấn thương (Rehabilitation)
-                  </Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-2">
+              <FaInfoCircle className="text-blue-500 mt-1 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-semibold mb-1">Lưu ý:</p>
+                <p className="m-0">
+                  Số buổi tối thiểu này sẽ là ràng buộc cho tất cả các PT trong
+                  gym của bạn. Mỗi PT phải kích hoạt ít nhất số buổi này trong
+                  một tuần.
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="text-center pt-6 border-t border-gray-200">
             <Space size="middle">
               <Button
                 size="large"
                 onClick={() => {
-                  setIsModalEditGymOpen(false);
-                  formEdit.resetFields();
-                  setEditingPT(null);
+                  setIsModalMinimumSlotOpen(false);
+                  formMinimumSlot.resetFields();
                 }}
                 className="px-8"
               >
@@ -1447,11 +1317,11 @@ export default function ManagePTGym() {
               <Button
                 type="primary"
                 size="large"
-                loading={loadingEdit}
-                onClick={() => formEdit.submit()}
-                className="px-8 bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg"
+                loading={loadingUpdateMinimumSlot}
+                onClick={() => formMinimumSlot.submit()}
+                className="px-8 bg-gradient-to-r from-green-400 to-green-500 border-0 shadow-lg"
               >
-                {loadingEdit ? "Đang xử lý..." : "Cập nhật PT"}
+                {loadingUpdateMinimumSlot ? "Đang cập nhật..." : "Cập nhật"}
               </Button>
             </Space>
           </div>
