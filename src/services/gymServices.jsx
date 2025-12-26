@@ -43,6 +43,9 @@ const gymService = {
       {},
       params
     ),
+  getMinimunSlot: () => request("GET", "/v1/accounts/gym-owner/minimum-slot"),
+  updateMinimunSlot: (data) =>
+    request("PUT", "/v1/accounts/gym-owner/update-minimum-slot", data),
 };
 
 export default gymService;

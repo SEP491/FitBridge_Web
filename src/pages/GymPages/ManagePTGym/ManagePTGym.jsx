@@ -38,6 +38,7 @@ import {
   WomanOutlined,
   IdcardOutlined,
   HomeOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import gymService from "../../../services/gymServices";
 import dayjs from "dayjs";
@@ -79,6 +80,14 @@ export default function ManagePTGym() {
     femalePTs: 0,
     averageExperience: 0,
   });
+
+  // Minimum slot state
+  const [minimumSlot, setMinimumSlot] = useState(0);
+  const [loadingMinimumSlot, setLoadingMinimumSlot] = useState(false);
+  const [isModalMinimumSlotOpen, setIsModalMinimumSlotOpen] = useState(false);
+  const [formMinimumSlot] = Form.useForm();
+  const [loadingUpdateMinimumSlot, setLoadingUpdateMinimumSlot] =
+    useState(false);
 
   const fetchPTGym = useCallback(
     async (page = 1, pageSize = 10) => {
@@ -126,9 +135,45 @@ export default function ManagePTGym() {
     [user?.id]
   );
 
+  // Fetch minimum slot
+  const fetchMinimumSlot = useCallback(async () => {
+    setLoadingMinimumSlot(true);
+    try {
+      const response = await gymService.getMinimunSlot();
+      setMinimumSlot(response.data || 0);
+    } catch (error) {
+      console.error("Error fetching minimum slot:", error);
+      toast.error("Lỗi khi tải số buổi tối thiểu");
+    } finally {
+      setLoadingMinimumSlot(false);
+    }
+  }, []);
+
+  // Update minimum slot
+  const handleUpdateMinimumSlot = async (values) => {
+    setLoadingUpdateMinimumSlot(true);
+    try {
+      await gymService.updateMinimunSlot({
+        minimumSlot: values.minimumSlot,
+      });
+      toast.success("Cập nhật số buổi tối thiểu thành công");
+      setMinimumSlot(values.minimumSlot);
+      setIsModalMinimumSlotOpen(false);
+      formMinimumSlot.resetFields();
+    } catch (error) {
+      console.error("Error updating minimum slot:", error);
+      toast.error(
+        error.response?.data?.message || "Lỗi khi cập nhật số buổi tối thiểu"
+      );
+    } finally {
+      setLoadingUpdateMinimumSlot(false);
+    }
+  };
+
   useEffect(() => {
     fetchPTGym();
-  }, [fetchPTGym]);
+    fetchMinimumSlot();
+  }, [fetchPTGym, fetchMinimumSlot]);
 
   const handleTableChange = (newPagination) => {
     fetchPTGym(newPagination.current, newPagination.pageSize);
@@ -424,6 +469,32 @@ export default function ManagePTGym() {
                   fontWeight: "bold",
                 }}
               />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <div className="flex items-center justify-between">
+                <Statistic
+                  title="Số buổi tối thiểu/tuần"
+                  value={loadingMinimumSlot ? "-" : minimumSlot}
+                  suffix="buổi"
+                  prefix={<ClockCircleOutlined style={{ color: "#52c41a" }} />}
+                  valueStyle={{
+                    color: "#52c41a",
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                  }}
+                />
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => {
+                    formMinimumSlot.setFieldsValue({ minimumSlot });
+                    setIsModalMinimumSlotOpen(true);
+                  }}
+                  className="text-gray-500 hover:text-[#52c41a]"
+                />
+              </div>
             </Card>
           </Col>
         </Row>
@@ -1151,6 +1222,106 @@ export default function ManagePTGym() {
                 className="px-8 bg-gradient-to-r from-orange-400 to-orange-500 border-0 shadow-lg"
               >
                 {loadingAdd ? "Đang xử lý..." : "Thêm PT"}
+              </Button>
+            </Space>
+          </div>
+        </Form>
+      </Modal>
+
+      {/* Update Minimum Slot Modal */}
+      <Modal
+        open={isModalMinimumSlotOpen}
+        onCancel={() => {
+          setIsModalMinimumSlotOpen(false);
+          formMinimumSlot.resetFields();
+        }}
+        title={
+          <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+            <div className="p-2 bg-gradient-to-r from-green-400 to-green-500 rounded-lg">
+              <ClockCircleOutlined className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 m-0">
+                Cập Nhật Số Buổi Tối Thiểu
+              </h2>
+              <p className="text-sm text-gray-500 m-0">
+                Thiết lập số buổi tối thiểu mà PT phải kích hoạt trong 1 tuần
+              </p>
+            </div>
+          </div>
+        }
+        footer={null}
+        width={600}
+        className="top-8"
+      >
+        <Form
+          form={formMinimumSlot}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={handleUpdateMinimumSlot}
+        >
+          <Form.Item
+            label={
+              <span className="text-base font-semibold text-gray-700">
+                Số buổi tối thiểu trong tuần
+              </span>
+            }
+            name="minimumSlot"
+            rules={[
+              {
+                required: true,
+                message: "Vui lòng nhập số buổi tối thiểu",
+              },
+              {
+                type: "number",
+                min: 0,
+                message: "Số buổi phải lớn hơn hoặc bằng 0",
+              },
+            ]}
+          >
+            <InputNumber
+              min={0}
+              placeholder="Nhập số buổi tối thiểu"
+              className="!w-full"
+              size="large"
+              prefix={<ClockCircleOutlined className="text-gray-400" />}
+            />
+          </Form.Item>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-2">
+              <FaInfoCircle className="text-blue-500 mt-1 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-semibold mb-1">Lưu ý:</p>
+                <p className="m-0">
+                  Số buổi tối thiểu này sẽ là ràng buộc cho tất cả các PT trong
+                  gym của bạn. Mỗi PT phải kích hoạt ít nhất số buổi này trong
+                  một tuần.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center pt-6 border-t border-gray-200">
+            <Space size="middle">
+              <Button
+                size="large"
+                onClick={() => {
+                  setIsModalMinimumSlotOpen(false);
+                  formMinimumSlot.resetFields();
+                }}
+                className="px-8"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                loading={loadingUpdateMinimumSlot}
+                onClick={() => formMinimumSlot.submit()}
+                className="px-8 bg-gradient-to-r from-green-400 to-green-500 border-0 shadow-lg"
+              >
+                {loadingUpdateMinimumSlot ? "Đang cập nhật..." : "Cập nhật"}
               </Button>
             </Space>
           </div>
