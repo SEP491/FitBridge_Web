@@ -437,17 +437,6 @@ export default function ManageGymPage() {
       align: "center",
       render: (text, record) => (
         <Space>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              className="text-orange-500 hover:bg-orange-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log("Edit gym:", record);
-              }}
-            />
-          </Tooltip>
           <Tooltip title="Xóa">
             <Button
               type="text"
