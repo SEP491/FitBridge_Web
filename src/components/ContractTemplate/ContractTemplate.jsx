@@ -76,7 +76,7 @@ const ContractTemplate = React.forwardRef(
                 Thủ Đức, Thành phố Hồ Chí Minh 700000
               </p>
               <p>
-                <strong>Mã số thuế:</strong> [Mã số thuế của FitBridge]
+                <strong>Mã số thuế:</strong> 83868386836
               </p>
               <p>
                 <strong>Đại diện bởi:</strong> Lâm Quốc Phong
@@ -454,7 +454,7 @@ const ContractTemplate = React.forwardRef(
               Đức, Thành phố Hồ Chí Minh 700000
             </p>
             <p>
-              <strong>Mã số thuế:</strong> [Mã số thuế của FitBridge]
+              <strong>Mã số thuế:</strong> 83868386836
             </p>
             <p>
               <strong>Đại diện bởi:</strong> Lâm Quốc Phong
