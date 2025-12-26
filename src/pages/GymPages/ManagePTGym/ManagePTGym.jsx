@@ -136,7 +136,7 @@ export default function ManagePTGym() {
   );
 
   // Fetch minimum slot
-  const fetchMinimumSlot = useCallback(async () => {
+  const fetchMinimumSlot = async () => {
     setLoadingMinimumSlot(true);
     try {
       const response = await gymService.getMinimunSlot();
@@ -147,7 +147,7 @@ export default function ManagePTGym() {
     } finally {
       setLoadingMinimumSlot(false);
     }
-  }, []);
+  };
 
   // Update minimum slot
   const handleUpdateMinimumSlot = async (values) => {
@@ -173,7 +173,7 @@ export default function ManagePTGym() {
   useEffect(() => {
     fetchPTGym();
     fetchMinimumSlot();
-  }, [fetchPTGym, fetchMinimumSlot]);
+  }, []);
 
   const handleTableChange = (newPagination) => {
     fetchPTGym(newPagination.current, newPagination.pageSize);
