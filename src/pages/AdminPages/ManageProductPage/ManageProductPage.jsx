@@ -537,7 +537,7 @@ export default function ManageProductPage() {
 
       // Add image only if a new one is selected
       if (updateDetailImageFile) {
-        formData.append("image", updateDetailImageFile);
+        formData.append("imageUrl", updateDetailImageFile);
       }
 
       await adminService.updateProductsDetails(

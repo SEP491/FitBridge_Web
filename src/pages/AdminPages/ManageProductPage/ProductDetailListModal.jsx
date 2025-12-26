@@ -57,11 +57,11 @@ export default function ProductDetailListModal({
       render: (_, record) => (
         <div>
           <div className="text-sm font-semibold text-orange-600">
-            {record.displayPrice?.toLocaleString("vi-VN")}₫
+            {record.salePrice?.toLocaleString("vi-VN")}₫
           </div>
-          {record.salePrice && record.salePrice !== record.displayPrice && (
+          {record.displayPrice && record.salePrice !== record.displayPrice && (
             <div className="text-xs text-green-600 line-through">
-              {record.salePrice?.toLocaleString("vi-VN")}₫
+              {record.displayPrice?.toLocaleString("vi-VN")}₫
             </div>
           )}
         </div>
