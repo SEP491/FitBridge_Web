@@ -73,32 +73,35 @@ export default function ManageWithdrawalPage() {
   });
 
   // Fetch withdrawal requests
-  const fetchWithdrawalRequests = useCallback(async (page = 1, pageSize = 10) => {
-    setLoading(true);
-    try {
-      const response = await paymentService.getAllWithdrawalRequests({
-        page,
-        size: pageSize,
-      });
+  const fetchWithdrawalRequests = useCallback(
+    async (page = 1, pageSize = 10) => {
+      setLoading(true);
+      try {
+        const response = await paymentService.getAllWithdrawalRequests({
+          page,
+          size: pageSize,
+        });
 
-      const { items, total, page: currentPage, totalPages } = response.data;
+        const { items, total, page: currentPage, totalPages } = response.data;
 
-      setWithdrawalRequests(items || []);
-      setPagination({
-        current: currentPage,
-        pageSize,
-        total,
-        totalPages,
-      });
+        setWithdrawalRequests(items || []);
+        setPagination({
+          current: currentPage,
+          pageSize,
+          total,
+          totalPages,
+        });
 
-      calculateStatistics(items || []);
-    } catch (error) {
-      console.error("Error fetching withdrawal requests:", error);
-      message.error("Không thể tải danh sách yêu cầu rút tiền");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        calculateStatistics(items || []);
+      } catch (error) {
+        console.error("Error fetching withdrawal requests:", error);
+        message.error("Không thể tải danh sách yêu cầu rút tiền");
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   const calculateStatistics = (data) => {
     const stats = {
@@ -137,6 +140,82 @@ export default function ManageWithdrawalPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // Generate SePay QR code URL
+  const generateSePayQRUrl = (record) => {
+    if (
+      !record ||
+      !record.accountNumber ||
+      !record.bankName ||
+      !record.amount
+    ) {
+      return null;
+    }
+
+    // Map common Vietnamese bank names to SePay bank codes
+    const bankCodeMap = {
+      Vietcombank: "VCB",
+      "Ngân hàng TMCP Ngoại Thương Việt Nam": "VCB",
+      BIDV: "BIDV",
+      "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam": "BIDV",
+      Vietinbank: "VTB",
+      "Ngân hàng TMCP Công Thương Việt Nam": "VTB",
+      Techcombank: "TCB",
+      "Ngân hàng TMCP Kỹ Thương Việt Nam": "TCB",
+      ACB: "ACB",
+      "Ngân hàng TMCP Á Châu": "ACB",
+      VPBank: "VPB",
+      "Ngân hàng TMCP Việt Nam Thịnh Vượng": "VPB",
+      MBBank: "MBB",
+      "Ngân hàng TMCP Quân đội": "MBB",
+      TPBank: "TPB",
+      "Ngân hàng TMCP Tiên Phong": "TPB",
+      Sacombank: "STB",
+      "Ngân hàng TMCP Sài Gòn Thương Tín": "STB",
+      VIB: "VIB",
+      "Ngân hàng TMCP Quốc Tế Việt Nam": "VIB",
+      SHB: "SHB",
+      "Ngân hàng TMCP Sài Gòn - Hà Nội": "SHB",
+    };
+
+    // Get bank code, check if any map key is included in bank name
+    const bankName = record.bankName.trim();
+    let bankCode = bankName;
+
+    // First try exact match
+    if (bankCodeMap[bankName]) {
+      bankCode = bankCodeMap[bankName];
+    } else {
+      // Check if any key in the map is included in the bank name
+      // This handles cases like "BIDV (BIDV)" matching "BIDV"
+      const matchedKey = Object.keys(bankCodeMap).find((key) =>
+        bankName.includes(key)
+      );
+      if (matchedKey) {
+        bankCode = bankCodeMap[matchedKey];
+      }
+    }
+
+    // Format amount (remove any formatting, just use the number)
+    const amount = Math.round(record.amount || 0);
+
+    // Description
+    const description = `Rut tien - ${
+      record.accountFullName || record.accountName || ""
+    }`.trim();
+
+    // Build URL
+    const params = new URLSearchParams({
+      acc: record.accountNumber,
+      bank: bankCode,
+      amount: amount.toString(),
+      des: description,
+      template: "compact",
+    });
+
+    console.log(`https://qr.sepay.vn/img?${params.toString()}`);
+    return `https://qr.sepay.vn/img?${params.toString()}`;
   };
 
   // Handle approve
@@ -366,7 +445,7 @@ export default function ManageWithdrawalPage() {
     <div className="">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#ED2A46] mb-2 flex items-center gap-2">
-        <MdAdminPanelSettings />
+          <MdAdminPanelSettings />
           Quản Lý Yêu Cầu Rút Tiền
         </h1>
       </div>
@@ -738,6 +817,24 @@ export default function ManageWithdrawalPage() {
                   </div>
                 </div>
               </div>
+
+              {/* QR Code */}
+              {generateSePayQRUrl(requestToApprove) && (
+                <Card title="Mã QR chuyển tiền" size="small">
+                  <div className="flex flex-col items-center justify-center p-4">
+                    <Image
+                      src={generateSePayQRUrl(requestToApprove)}
+                      alt="QR Code chuyển tiền"
+                      className="rounded-lg border-2 border-gray-200"
+                      style={{ maxWidth: "300px", width: "100%" }}
+                      preview={false}
+                    />
+                    <p className="text-gray-500 text-sm mt-3 text-center">
+                      Quét mã QR để chuyển tiền nhanh chóng
+                    </p>
+                  </div>
+                </Card>
+              )}
 
               <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
                 <p className="text-orange-800 font-medium">
