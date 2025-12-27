@@ -419,7 +419,7 @@ export default function SubscriptionRegisPage() {
                 }
               >
                 {subscriptionAvailability.currentCount}/
-                {subscriptionAvailability.maxCount} gói đã sử dụng
+                {subscriptionAvailability.maxCount} gói đã bán ra
               </Tag>
             )}
           </div>
