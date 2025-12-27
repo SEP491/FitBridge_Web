@@ -65,6 +65,7 @@ export default function ManageReportPage() {
     pageSize: 10,
     total: 0,
   });
+  const [completionPercentage, setCompletionPercentage] = useState(null);
 
   // Fetch all reports
   const fetchReports = async (page = 1, pageSize = 10) => {
@@ -75,7 +76,13 @@ export default function ManageReportPage() {
         size: pageSize,
       });
 
-      const { items, total, page: currentPage, totalPages, summary } = response.data;
+      const {
+        items,
+        total,
+        page: currentPage,
+        totalPages,
+        summary,
+      } = response.data;
       setReports(items || []);
       setSummary(summary || {});
       setPagination({
@@ -206,6 +213,7 @@ export default function ManageReportPage() {
 
       if (response.data !== null) {
         const { completionPercentage } = response.data;
+        setCompletionPercentage(completionPercentage);
         if (completionPercentage > 50) {
           toast.error(
             `Không thể xác nhận gian lận: Người dùng đã hoàn thành ${completionPercentage.toFixed(
@@ -554,7 +562,6 @@ export default function ManageReportPage() {
     },
   ];
 
-
   if (loading && reports.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -676,9 +683,33 @@ export default function ManageReportPage() {
           size="middle"
           rowKey="id"
           onRow={(record) => ({
-            onClick: () => {
+            onClick: async () => {
               setSelectedReport(record);
               setIsModalReportDetailOpen(true);
+
+              // Fetch completion percentage if orderItemId exists and it's not a product report
+              if (
+                record.orderItemId &&
+                record.reportType !== "ProductReport" &&
+                !record.isProductReport
+              ) {
+                try {
+                  const response = await reportService.checkCompletion(
+                    record.orderItemId
+                  );
+                  if (response.data !== null) {
+                    const { completionPercentage } = response.data;
+                    setCompletionPercentage(completionPercentage);
+                  } else {
+                    setCompletionPercentage(null);
+                  }
+                } catch (error) {
+                  console.error("Error checking completion:", error);
+                  setCompletionPercentage(null);
+                }
+              } else {
+                setCompletionPercentage(null);
+              }
             },
             style: { cursor: "pointer" },
           })}
@@ -688,7 +719,10 @@ export default function ManageReportPage() {
       {/* Report Detail Modal - Enhanced UI */}
       <FitBridgeModal
         open={isModalReportDetailOpen}
-        onCancel={() => setIsModalReportDetailOpen(false)}
+        onCancel={() => {
+          setIsModalReportDetailOpen(false);
+          setCompletionPercentage(null);
+        }}
         title="Chi Tiết Báo Cáo"
         titleIcon={<EyeOutlined />}
         width={950}
@@ -801,8 +835,8 @@ export default function ManageReportPage() {
                 bordered={true}
                 style={{ borderColor: "#FFE5E9" }}
               >
-                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
-                  <Descriptions.Item label="Mã Báo Cáo" >
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item label="Mã Báo Cáo">
                     <div className="font-mono text-xs bg-gray-50 p-2 rounded inline-block">
                       {selectedReport.id}
                     </div>
@@ -816,20 +850,37 @@ export default function ManageReportPage() {
                     {getStatusTag(selectedReport.status)}
                   </Descriptions.Item>
 
+                  {selectedReport?.reportType !== "ProductReport" &&
+                    !selectedReport?.isProductReport && (
+                      <Descriptions.Item label="Tiến Độ Hoàn Thành Khóa Học">
+                        {completionPercentage !== null ? (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-blue-600">
+                              {completionPercentage.toFixed(2)}%
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">
+                            Không có thông tin
+                          </span>
+                        )}
+                      </Descriptions.Item>
+                    )}
+
                   <Descriptions.Item label="Tiêu Đề" span={2}>
                     <div className="font-semibold text-gray-800">
                       {selectedReport.title || "N/A"}
                     </div>
                   </Descriptions.Item>
                   {selectedReport.status === "FraudConfirmed" && (
-                  <Descriptions.Item label="Số Tiền Hoàn Trả" span={2}>
-                    <div className="font-semibold text-green-600">
-                      {selectedReport.refundAmount?.toLocaleString("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }) || "N/A"}
-                    </div>
-                  </Descriptions.Item>
+                    <Descriptions.Item label="Số Tiền Hoàn Trả" span={2}>
+                      <div className="font-semibold text-green-600">
+                        {selectedReport.refundAmount?.toLocaleString("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }) || "N/A"}
+                      </div>
+                    </Descriptions.Item>
                   )}
                   <Descriptions.Item label="Mô Tả" span={2}>
                     <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
@@ -927,7 +978,10 @@ export default function ManageReportPage() {
               >
                 <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg">
                   <Avatar
-                    src={selectedReport.reportedUserAvatarUrl || selectedReport.reportedProductImageUrl}
+                    src={
+                      selectedReport.reportedUserAvatarUrl ||
+                      selectedReport.reportedProductImageUrl
+                    }
                     icon={<UserOutlined />}
                     size={80}
                     style={{
@@ -1201,18 +1255,27 @@ export default function ManageReportPage() {
             name="note"
             label={
               <span className="font-semibold text-gray-700">
-                Ghi Chú {selectedReport?.isProductReport ? "Xác Nhận Báo Cáo" : "Xác Nhận Gian Lận"}{" "}
+                Ghi Chú{" "}
+                {selectedReport?.isProductReport
+                  ? "Xác Nhận Báo Cáo"
+                  : "Xác Nhận Gian Lận"}{" "}
                 <span className="text-red-500">*</span>
               </span>
             }
             rules={[
               {
                 required: true,
-                message: `Vui lòng nhập ghi chú ${selectedReport?.isProductReport ? "xác nhận báo cáo" : "xác nhận gian lận"}`,
+                message: `Vui lòng nhập ghi chú ${
+                  selectedReport?.isProductReport
+                    ? "xác nhận báo cáo"
+                    : "xác nhận gian lận"
+                }`,
               },
               {
                 min: 10,
-                message: `Ghi chú ${selectedReport?.isProductReport ? "báo cáo" : "gian lận"} phải có ít nhất 10 ký tự`,
+                message: `Ghi chú ${
+                  selectedReport?.isProductReport ? "báo cáo" : "gian lận"
+                } phải có ít nhất 10 ký tự`,
               },
             ]}
           >
